@@ -1,0 +1,6 @@
+{
+  "name": "Code Vibe",
+  "description": "Code Vibe landing page UI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
