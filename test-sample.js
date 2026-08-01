@@ -109,4 +109,4 @@ try {
   riskyOperation();
 } catch (e) {}
 
-http://api.example.com/data
+const insecureUrl = "http://api.example.com/data";
