@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, CodeXml, Github, User, X, Search, ChevronDown, BarChart2, Upload, Clipboard, Check, FileText, FolderOpen, Sparkles, Shield, Bug, Lightbulb, Gauge, Paintbrush, ChevronRight, AlertTriangle, Info, XCircle, Edit2, Lock } from 'lucide-react';
+import { CheckCircle2, CodeXml, Github, User, X, Search, ChevronDown, BarChart2, Upload, Clipboard, Check, FileText, FolderOpen, Sparkles, Shield, Bug, Lightbulb, Gauge, Paintbrush, ChevronRight, AlertTriangle, Info, XCircle, Edit2, Lock, Trash2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { analyzeCode, type AnalysisResult, type Finding, type Category } from './analyzer';
 import Onboarding from './Onboarding';
@@ -75,6 +75,11 @@ export default function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterOption, setFilterOption] = useState('Alphabetically');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileName, setProfileName] = useState('');
@@ -1155,19 +1160,176 @@ export default function App() {
                 )}
               </AnimatePresence>
 
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 relative z-10">
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 relative z-10 flex flex-col gap-3">
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setIsProfileModalOpen(false)}
+                    className="px-5 py-2 rounded-xl text-[13px] font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={handleUpdateProfile}
+                    disabled={isSavingProfile}
+                    className="px-6 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#3f2a24] hover:bg-[#5b443c] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+                <div className="h-px w-full bg-gray-200" />
                 <button
-                  onClick={() => setIsProfileModalOpen(false)}
-                  className="px-5 py-2 rounded-xl text-[13px] font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    setIsDeleteModalOpen(true);
+                    setIsProfileModalOpen(false);
+                    setDeleteConfirmText('');
+                    setDeleteError('');
+                  }}
+                  className="self-start text-[12px] font-medium text-red-400 hover:text-red-600 transition-colors flex items-center gap-1.5"
                 >
-                  Close
+                  <Trash2 className="w-3 h-3" /> Delete Account
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Account Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => !isDeletingAccount && setIsDeleteModalOpen(false)}
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative z-10 w-full max-w-[420px] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-red-100">
+                <h3 className="text-[16px] font-semibold text-red-700 flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" /> Delete Account
+                </h3>
+                <button
+                  onClick={() => !isDeletingAccount && setIsDeleteModalOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 flex flex-col gap-4">
+                <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                  <p className="text-[13px] font-semibold text-red-700 mb-1">⚠️ This action is permanent and cannot be undone.</p>
+                  <p className="text-[12px] text-red-600 leading-relaxed">
+                    All your data will be permanently deleted, including your profile, saved reviews, repositories, pull request history, and settings.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-semibold text-gray-700">
+                    Type <span className="font-bold text-red-600">DELETE</span> to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => { setDeleteConfirmText(e.target.value); setDeleteError(''); }}
+                    placeholder="Type DELETE here"
+                    disabled={isDeletingAccount}
+                    className="w-full bg-white border border-gray-200 focus:border-red-400 rounded-xl px-4 py-2.5 text-[14px] text-gray-900 outline-none transition-colors"
+                  />
+                </div>
+
+                <AnimatePresence>
+                  {deleteError && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-3 rounded-xl bg-red-50 text-red-600 text-[13px] font-medium">
+                        {deleteError}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeletingAccount}
+                  className="px-5 py-2 rounded-xl text-[13px] font-medium text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  Cancel
                 </button>
                 <button
-                  onClick={handleUpdateProfile}
-                  disabled={isSavingProfile}
-                  className="px-6 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#3f2a24] hover:bg-[#5b443c] transition-colors flex items-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  onClick={async () => {
+                    if (deleteConfirmText !== 'DELETE') {
+                      setDeleteError('Please type DELETE exactly to confirm.');
+                      return;
+                    }
+
+                    setIsDeletingAccount(true);
+                    setDeleteError('');
+
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.user) {
+                        setDeleteError('No active session. Please sign in again.');
+                        return;
+                      }
+
+                      const userId = session.user.id;
+
+                      // Delete all user-owned data from database tables
+                      const tablesToClear = ['profiles', 'reviews', 'repositories', 'pull_requests', 'settings'];
+                      for (const table of tablesToClear) {
+                        const { error: tableError } = await supabase
+                          .from(table)
+                          .delete()
+                          .eq('user_id', userId);
+                        
+                        // Ignore "relation does not exist" errors (table may not exist yet)
+                        if (tableError && !tableError.message?.includes('does not exist') && !tableError.message?.includes('relation')) {
+                          throw new Error(`Failed to delete data from ${table}: ${tableError.message}`);
+                        }
+                      }
+
+                      // Also try deleting from profiles where id = userId (profiles use id, not user_id)
+                      const { error: profileError } = await supabase
+                        .from('profiles')
+                        .delete()
+                        .eq('id', userId);
+                      
+                      if (profileError && !profileError.message?.includes('does not exist') && !profileError.message?.includes('relation')) {
+                        throw new Error('Failed to delete profile: ' + profileError.message);
+                      }
+
+                      // Sign out and clear session
+                      await supabase.auth.signOut();
+                      setUser(null);
+                      setIsDeleteModalOpen(false);
+
+                    } catch (err: any) {
+                      setDeleteError(err.message || 'An error occurred while deleting your account.');
+                    } finally {
+                      setIsDeletingAccount(false);
+                    }
+                  }}
+                  disabled={isDeletingAccount || deleteConfirmText !== 'DELETE'}
+                  className="px-6 py-2 rounded-xl text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  {isDeletingAccount ? 'Deleting...' : 'Delete My Account'}
                 </button>
               </div>
             </motion.div>

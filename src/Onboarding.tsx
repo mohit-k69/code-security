@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, Check, Lock, Mail, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Lock, Mail, User } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 // ─── Onboarding Images (abstract 3D renders) ──────────────────────
@@ -109,6 +109,12 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const TOUR_PAGE_COUNT = 4;
 
@@ -221,24 +227,40 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         return;
       }
 
-      const user = data.user;
-      onLogin({
-        name: `${firstName.trim()} ${lastName.trim()}`,
-        email: user?.email || email,
-      });
+      setSignupSuccess(true);
     } catch (err: any) {
       setEmailError(err.message || 'An unexpected signup error occurred.');
       setStep(0);
     } finally {
       setIsLoading(false);
     }
-  }, [firstName, lastName, email, password, onLogin]);
+  }, [firstName, lastName, email, password]);
 
   // ─── Google Sign In ───────────────────────────────
 
   const handleGoogleSignIn = async () => {
     setEmailError('Google sign in is coming soon! Please use email for now.');
   };
+
+  const handleForgotPassword = useCallback(async () => {
+    if (!forgotEmail.trim()) return;
+    if (!isValidEmailFormat(forgotEmail.trim())) {
+      setForgotError('Please enter a valid email address.');
+      return;
+    }
+    setForgotLoading(true);
+    setForgotError('');
+    try {
+      await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: window.location.origin,
+      });
+      setForgotSuccess(true);
+    } catch (err: any) {
+      setForgotSuccess(true);
+    } finally {
+      setForgotLoading(false);
+    }
+  }, [forgotEmail]);
 
   // ─── Onboarding Tour Data ─────────────────────────
   // Speaks directly to vibe coders — empathetic, warm,
@@ -274,6 +296,146 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   // ─── Render Right Panel Content ───────────────────
 
   const renderRightContent = () => {
+    // Forgot password screen
+    if (showForgotPassword) {
+      if (forgotSuccess) {
+        return (
+          <motion.div
+            key="forgot-success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            className="w-full flex flex-col items-center text-center px-4"
+          >
+            <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            </div>
+            <h2 className="text-[24px] font-semibold text-gray-900 mb-3">
+              Check your email
+            </h2>
+            <p className="text-[15px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+              If an account exists for this email, we've sent password reset instructions.
+            </p>
+            <button
+              onClick={() => {
+                setShowForgotPassword(false);
+                setForgotSuccess(false);
+                setForgotEmail('');
+                setForgotError('');
+              }}
+              className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20"
+            >
+              Back to Sign In
+            </button>
+          </motion.div>
+        );
+      }
+
+      return (
+        <motion.div
+          key="forgot-form"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.18, ease: 'easeInOut' }}
+          className="w-full flex flex-col items-center"
+        >
+          <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">
+            Reset your password
+          </h2>
+          <p className="text-[14px] text-gray-500 mb-8 text-center">
+            Enter your email and we'll send you a reset link
+          </p>
+
+          <div className="w-full mb-4">
+            <div className="relative">
+              <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
+                placeholder="name@email.com"
+                className={`w-full bg-transparent border-b-2 ${forgotError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+              />
+            </div>
+            <AnimatePresence>
+              {forgotError && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="text-red-500 text-[12px] mt-2 text-center"
+                >
+                  {forgotError}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={handleForgotPassword}
+            disabled={!forgotEmail.trim() || forgotLoading}
+            className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-6 rounded-full ${
+              forgotEmail.trim() && !forgotLoading
+                ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+          </button>
+
+          <button
+            onClick={() => {
+              setShowForgotPassword(false);
+              setForgotEmail('');
+              setForgotError('');
+            }}
+            className="text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            ← Back to Sign In
+          </button>
+        </motion.div>
+      );
+    }
+
+    // Signup success screen
+    if (signupSuccess) {
+      return (
+        <motion.div
+          key="signup-success"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="w-full flex flex-col items-center text-center px-4"
+        >
+          <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+          </div>
+          <h2 className="text-[24px] font-semibold text-gray-900 mb-3">
+            Account created successfully!
+          </h2>
+          <p className="text-[15px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+            Please check your email to verify your account before signing in.
+          </p>
+          <button
+            onClick={() => {
+              setSignupSuccess(false);
+              setMode('signin');
+              setStep(0);
+              setEmail('');
+              setPassword('');
+              setFirstName('');
+              setLastName('');
+            }}
+            className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20"
+          >
+            Go to Sign In
+          </button>
+        </motion.div>
+      );
+    }
+
     // Step 0: Email entry
     if (step === 0) {
       return (
@@ -390,6 +552,22 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
                     ? (mode === 'signup' ? 'Creating account...' : 'Signing in...')
                     : mode === 'signup' ? 'Continue' : 'Sign In'}
                 </button>
+
+                {/* Forgot Password — only in sign-in mode */}
+                {mode === 'signin' && (
+                  <button
+                    onClick={() => {
+                      setShowForgotPassword(true);
+                      setForgotEmail(email);
+                      setForgotError('');
+                      setForgotSuccess(false);
+                      setEmailError('');
+                    }}
+                    className="text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-4 self-center"
+                  >
+                    Forgot password?
+                  </button>
+                )}
 
                 {/* Divider */}
                 <div className="flex items-center gap-4 w-full mb-6">
