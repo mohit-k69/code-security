@@ -49,11 +49,11 @@ function isValidEmailFormat(email: string): boolean {
 
 function OnboardingImage({ src, alt }: { src: string; alt: string }) {
   return (
-    <div className="w-full flex justify-center items-center h-[260px] relative">
+    <div className="w-full flex justify-center items-center h-[340px] relative -mt-4 mb-6">
       <img
         src={src}
         alt={alt}
-        className="h-[250px] w-auto object-contain select-none pointer-events-none [mask-image:radial-gradient(ellipse_at_center,_black_50%,_transparent_90%)]"
+        className="h-full w-auto object-contain select-none pointer-events-none [mask-image:radial-gradient(circle_at_center,_black_50%,_transparent_100%)]"
         draggable={false}
       />
     </div>
@@ -236,10 +236,25 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     }
   }, [firstName, lastName, email, password]);
 
-  // ─── Google Sign In ───────────────────────────────
+  // ─── GitHub Sign In ───────────────────────────────
 
-  const handleGoogleSignIn = async () => {
-    setEmailError('Google sign in is coming soon! Please use email for now.');
+  const handleGithubSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setEmailError('');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      // Note: we don't need to setIsLoading(false) here on success 
+      // because the page will redirect to GitHub.
+    } catch (err: any) {
+      setEmailError(err.message || 'Failed to authenticate with GitHub.');
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = useCallback(async () => {
@@ -576,19 +591,16 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
-                {/* Google Sign In */}
+                {/* GitHub Sign In */}
                 <button
-                  onClick={handleGoogleSignIn}
+                  onClick={handleGithubSignIn}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 rounded-full bg-white border border-gray-200 px-4 py-3 text-[14px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors shadow-sm mb-6 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-3 rounded-full bg-[#24292e] border border-[#24292e] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[#1b1f23] transition-colors shadow-sm mb-6 cursor-pointer"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
-                    <path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09C3.515 21.3 7.565 24 12.255 24z"/>
-                    <path fill="#FBBC05" d="M5.525 18.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V10.62h-3.98a11.86 11.86 0 000 10.76l3.98-3.09z"/>
-                    <path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C18.205 1.19 15.495 0 12.255 0 7.565 0 3.515 2.7 1.545 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                   </svg>
-                  Continue with Google
+                  Continue with GitHub
                 </button>
 
 
@@ -699,48 +711,38 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         animate="center"
         exit={direction > 0 ? 'exitToLeft' : 'exitToRight'}
         transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-        className="w-full flex flex-col items-center"
+        className="w-full flex flex-col items-center relative"
       >
-        {/* Back button */}
+        {/* Back button — absolutely positioned to not disrupt vertical flow */}
         <button
           onClick={goBack}
-          className="self-start flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-[#3f2a24] transition-colors mb-3 cursor-pointer group"
+          className="absolute -top-6 left-0 flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-700 transition-colors cursor-pointer group z-10"
         >
           <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
           Back
         </button>
 
-        {/* Illustration — clean, centered */}
-        <div className="w-full mb-2">
+        {/* Illustration — larger, taking center stage */}
+        <div className="w-full">
           {page.illustration}
         </div>
 
-        {/* Title — big, empathetic */}
+        {/* Title — big, bold, tight tracking */}
         <motion.h2
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.4 }}
-          className="text-[21px] font-bold text-gray-900 mb-1.5 text-center leading-tight"
+          className="text-[28px] md:text-[32px] font-semibold text-gray-900 mb-2 text-center leading-tight tracking-tight"
         >
           {page.title}
         </motion.h2>
 
-        {/* Subtitle — warm, reassuring */}
+        {/* Description — clear, breathable, conversational */}
         <motion.p
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className="text-[13px] font-semibold text-[#3f2a24]/60 mb-3 text-center"
-        >
-          {page.subtitle}
-        </motion.p>
-
-        {/* Description — conversational tone */}
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.28, duration: 0.4 }}
-          className="text-[13px] text-gray-500 text-center leading-relaxed max-w-[340px] mb-7"
+          className="text-[15px] text-gray-500 text-center leading-relaxed max-w-[360px] mb-8"
         >
           {page.description}
         </motion.p>
@@ -749,7 +751,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         <button
           onClick={isLastPage ? handleFinish : goForward}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-medium hover:bg-[#5b443c] transition-colors cursor-pointer"
+          className="w-full bg-[#3f2a24] text-white py-3.5 rounded-full text-[15px] font-medium hover:bg-[#5b443c] transition-all flex justify-center items-center gap-2 cursor-pointer shadow-sm disabled:opacity-70 disabled:cursor-not-allowed mb-2 mt-2"
         >
           {isLoading ? (
             'Setting up your workspace...'

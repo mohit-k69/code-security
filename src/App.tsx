@@ -211,7 +211,13 @@ export default function App() {
       }
 
       if (profileNewPassword) {
-        await supabase.auth.signOut();
+        const { error: signOutError } = await supabase.auth.signOut();
+
+        console.log('signOut result:', signOutError);
+
+        if (signOutError) {
+          throw signOutError;
+        }
         setIsProfileModalOpen(false);
         return;
       }
@@ -1289,34 +1295,21 @@ export default function App() {
                         return;
                       }
 
-                      const userId = session.user.id;
-
-                      // Delete all user-owned data from database tables
-                      const tablesToClear = ['profiles', 'reviews', 'repositories', 'pull_requests', 'settings'];
-                      for (const table of tablesToClear) {
-                        const { error: tableError } = await supabase
-                          .from(table)
-                          .delete()
-                          .eq('user_id', userId);
-                        
-                        // Ignore "relation does not exist" errors (table may not exist yet)
-                        if (tableError && !tableError.message?.includes('does not exist') && !tableError.message?.includes('relation')) {
-                          throw new Error(`Failed to delete data from ${table}: ${tableError.message}`);
-                        }
-                      }
-
-                      // Also try deleting from profiles where id = userId (profiles use id, not user_id)
-                      const { error: profileError } = await supabase
-                        .from('profiles')
-                        .delete()
-                        .eq('id', userId);
+                      // Call the secure Edge Function to delete the auth user and all data
+                      const { data, error } = await supabase.functions.invoke('delete-account');
                       
-                      if (profileError && !profileError.message?.includes('does not exist') && !profileError.message?.includes('relation')) {
-                        throw new Error('Failed to delete profile: ' + profileError.message);
+                      if (error) {
+                        throw new Error(error.message || 'Failed to securely delete account.');
                       }
 
                       // Sign out and clear session
-                      await supabase.auth.signOut();
+                      const { error: signOutError } = await supabase.auth.signOut();
+
+                      console.log('signOut result:', signOutError);
+
+                      if (signOutError) {
+                        throw signOutError;
+                      }
                       setUser(null);
                       setIsDeleteModalOpen(false);
 
