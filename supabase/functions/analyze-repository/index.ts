@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 import { GithubService } from "./services/GithubService.ts";
 import { PRSelector } from "./services/PRSelector.ts";
+import { DependencyResolver } from "./services/DependencyResolver.ts";
+import { ContextManager } from "./services/ContextManager.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,9 +86,37 @@ Deno.serve(async (req) => {
     const selector = new PRSelector(supabaseAdmin, providerService);
     const selectionResult = await selector.selectNextReview(owner, repo);
 
-    // Return the raw output of the PR Selector. 
-    // Context Manager (when built) will consume this output.
-    return new Response(JSON.stringify(selectionResult), { 
+    if (selectionResult.status !== 'pr_selected') {
+      return new Response(JSON.stringify(selectionResult), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 200 
+      });
+    }
+
+    // Return the Context Package. 
+    // Sensitive Data Detector (when built) will consume this output.
+    const resolver = new DependencyResolver();
+    const contextManager = new ContextManager(providerService, resolver);
+    
+    // We pass the output of PRSelector directly into the ContextManager.
+    const contextPackage = await contextManager.buildContext(
+      owner, 
+      repo, 
+      selectionResult.prNumber!, 
+      selectionResult.commitSha!
+    );
+
+    if ('error' in contextPackage) {
+      return new Response(JSON.stringify({ 
+        status: 'context_error', 
+        message: contextPackage.error 
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    }
+
+    return new Response(JSON.stringify({
+      status: 'context_ready',
+      context: contextPackage
+    }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
       status: 200 
     });

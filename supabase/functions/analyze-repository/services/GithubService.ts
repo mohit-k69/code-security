@@ -89,4 +89,13 @@ export class GithubService implements ProviderService {
     // The response is plain text containing the diff
     return await res.text();
   }
+
+  async getFileContent(owner: string, repo: string, path: string, ref: string): Promise<string> {
+    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/contents/${path}?ref=${ref}`, {
+      headers: {
+        'Accept': 'application/vnd.github.v3.raw'
+      }
+    });
+    return await res.text();
+  }
 }

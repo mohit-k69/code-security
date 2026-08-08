@@ -48,4 +48,9 @@ export interface ProviderService {
    * Fetch the raw diff string for a pull request.
    */
   getDiff(owner: string, repo: string, pullNumber: number): Promise<string>;
+
+  /**
+   * Fetch the raw content of a specific file at a given commit/ref.
+   */
+  getFileContent(owner: string, repo: string, path: string, ref: string): Promise<string>;
 }
