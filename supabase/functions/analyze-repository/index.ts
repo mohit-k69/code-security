@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 import { GithubService } from "./services/GithubService.ts";
+import { PRSelector } from "./services/PRSelector.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,68 +79,20 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `Provider ${provider} is not supported.` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
     }
 
-    // 5. Decision Matrix & Auto-Proceed Flow
-    if (prNumber) {
-      // The frontend already asked the user and passed the selected PR.
-      return await performAnalysis(providerService, owner, repo, Number(prNumber));
-    }
+    // 5. Use PR Selector Component v1.0
+    // PR Selector autonomously decides the next PR. No user input required.
+    const selector = new PRSelector(supabaseAdmin, providerService);
+    const selectionResult = await selector.selectNextReview(owner, repo);
 
-    // Otherwise, fetch open PRs to decide
-    const openPrs = await providerService.getOpenPullRequests(owner, repo);
-
-    if (openPrs.length === 0) {
-      // No PRs
-      return new Response(JSON.stringify({ 
-        status: 'no_prs', 
-        message: 'There are no open pull requests in this repository to analyze.' 
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-    } else if (openPrs.length > 1) {
-      // Multiple PRs: return the lightweight list so the UI can ask the user
-      return new Response(JSON.stringify({ 
-        status: 'select_pr', 
-        prs: openPrs 
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
-    } else {
-      // Exactly 1 PR: automatically proceed!
-      return await performAnalysis(providerService, owner, repo, openPrs[0].number);
-    }
+    // Return the raw output of the PR Selector. 
+    // Context Manager (when built) will consume this output.
+    return new Response(JSON.stringify(selectionResult), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: 200 
+    });
 
   } catch (error: any) {
     console.error('analyze-repository error:', error.message);
     return new Response(JSON.stringify({ error: 'Internal server error during analysis orchestration.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
   }
 });
-
-/**
- * Encapsulates the heavy-lifting logic once a specific PR is chosen.
- */
-async function performAnalysis(service: GithubService, owner: string, repo: string, pullNumber: number): Promise<Response> {
-  try {
-    // 1. Fetch details, changed files, and diff in parallel for performance
-    const [prDetails, changedFiles, diff] = await Promise.all([
-      service.getPullRequestDetails(owner, repo, pullNumber),
-      service.getChangedFiles(owner, repo, pullNumber),
-      service.getDiff(owner, repo, pullNumber)
-    ]);
-
-    // 2. (Future) Feed this data to Gemini for analysis
-    // const analysisResult = await geminiAnalyze(prDetails, changedFiles, diff);
-
-    // 3. Return the consolidated successful result
-    // The frontend only needs Review, Status, Metadata. Not GitHub internals.
-    return new Response(JSON.stringify({
-      status: 'analysis_data_ready',
-      message: 'Successfully orchestrated backend fetching.',
-      metadata: {
-        prNumber: prDetails.number,
-        title: prDetails.title
-      }
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (err: any) {
-    console.error('Failed to perform analysis:', err.message);
-    throw new Error('Failed to fetch required analysis data from provider.');
-  }
-}

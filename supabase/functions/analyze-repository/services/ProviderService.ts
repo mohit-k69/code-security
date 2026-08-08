@@ -13,6 +13,7 @@ export interface PullRequest {
   };
   head: {
     ref: string;
+    sha: string;
   };
   base: {
     ref: string;

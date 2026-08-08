@@ -42,7 +42,7 @@ export class GithubService implements ProviderService {
         login: pr.user.login,
         avatar_url: pr.user.avatar_url,
       },
-      head: { ref: pr.head.ref },
+      head: { ref: pr.head.ref, sha: pr.head.sha },
       base: { ref: pr.base.ref },
     }));
   }
@@ -63,7 +63,7 @@ export class GithubService implements ProviderService {
         login: pr.user.login,
         avatar_url: pr.user.avatar_url,
       },
-      head: { ref: pr.head.ref },
+      head: { ref: pr.head.ref, sha: pr.head.sha },
       base: { ref: pr.base.ref },
     };
   }
