@@ -21,7 +21,11 @@ export interface DetectionResult {
   secretDetectionReport: SecretDetectionReport;
 }
 
-export class SensitiveDataDetector {
+export interface SecretScanner {
+  detect(contextPackage: ContextPackage): DetectionResult;
+}
+
+export class SensitiveDataDetector implements SecretScanner {
   private registry: PatternRegistry;
 
   constructor(registry: PatternRegistry) {

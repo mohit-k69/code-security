@@ -5,6 +5,9 @@ import { DependencyResolver } from "./services/DependencyResolver.ts";
 import { ContextManager } from "./services/ContextManager.ts";
 import { PatternRegistry } from "./services/PatternRegistry.ts";
 import { SensitiveDataDetector } from "./services/SensitiveDataDetector.ts";
+import { PlaceholderRegistry } from "./services/PlaceholderRegistry.ts";
+import { SensitiveDataSanitizer } from "./services/SensitiveDataSanitizer.ts";
+import { SanitizationValidator } from "./services/SanitizationValidator.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -122,11 +125,29 @@ Deno.serve(async (req) => {
     
     const detectionResult = detector.detect(contextPackage);
 
-    // Return the Detection Result. 
-    // Sensitive Data Sanitizer (when built) will consume this output.
+    // 8. Use Sensitive Data Sanitizer Component v1.1
+    // Replaces detected secrets with deterministic placeholders.
+    const placeholderRegistry = new PlaceholderRegistry();
+    const sanitizer = new SensitiveDataSanitizer(placeholderRegistry);
+    const sanitizedPackage = sanitizer.sanitize(detectionResult);
+
+    // 9. Validate Sanitization
+    const validator = new SanitizationValidator(detector);
+    try {
+      validator.validate(contextPackage, sanitizedPackage);
+    } catch (valErr: any) {
+      console.error('Validation failed:', valErr.message);
+      return new Response(JSON.stringify({ 
+        status: 'validation_error', 
+        message: 'Internal error: Context sanitization validation failed.' 
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+    }
+
+    // Return the Sanitized Context Package. 
+    // Prompt Builder (when built) will consume this output.
     return new Response(JSON.stringify({
-      status: 'detection_ready',
-      result: detectionResult
+      status: 'sanitized_ready',
+      context: sanitizedPackage
     }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
       status: 200 
