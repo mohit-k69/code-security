@@ -3,6 +3,8 @@ import { GithubService } from "./services/GithubService.ts";
 import { PRSelector } from "./services/PRSelector.ts";
 import { DependencyResolver } from "./services/DependencyResolver.ts";
 import { ContextManager } from "./services/ContextManager.ts";
+import { PatternRegistry } from "./services/PatternRegistry.ts";
+import { SensitiveDataDetector } from "./services/SensitiveDataDetector.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -113,9 +115,18 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
 
+    // 7. Use Sensitive Data Detector Component v1.0
+    // Scans the Context Package for secrets before sending to any downstream AI.
+    const patternRegistry = new PatternRegistry();
+    const detector = new SensitiveDataDetector(patternRegistry);
+    
+    const detectionResult = detector.detect(contextPackage);
+
+    // Return the Detection Result. 
+    // Sensitive Data Sanitizer (when built) will consume this output.
     return new Response(JSON.stringify({
-      status: 'context_ready',
-      context: contextPackage
+      status: 'detection_ready',
+      result: detectionResult
     }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
       status: 200 
