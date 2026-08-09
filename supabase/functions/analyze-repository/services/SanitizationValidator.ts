@@ -1,5 +1,4 @@
-import { ContextPackage } from "./ContextManager.ts";
-import { SanitizedContextPackage } from "./SensitiveDataSanitizer.ts";
+import { ContextPackage, SanitizedContextPackage } from "./types.ts";
 import { SecretScanner } from "./SensitiveDataDetector.ts";
 
 export class SanitizationValidator {

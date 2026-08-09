@@ -1,19 +1,36 @@
-import { ProviderService, PRFile } from "./ProviderService.ts";
+import { ProviderService } from "./ProviderService.ts";
 import { DependencyResolver } from "./DependencyResolver.ts";
+import { ContextPackage, ContextFile, DependencyFile, PipelineError } from "./types.ts";
 
-export interface ContextPackage {
-  repository: string;
-  prNumber: number;
-  commitSha: string;
-  changedFiles: { path: string; content?: string; deleted: boolean }[];
-  dependencies: { path: string; content: string }[];
-  missingDependencies: string[];
-  metadata: {
-    totalFiles: number;
-    totalChars: number;
-    truncated: boolean;
-  };
-}
+// Re-export for backward compatibility
+export type { ContextPackage } from "./types.ts";
+
+// ─── File-Type Configuration ─────────────────────────────────────
+// Consolidated into Sets for clean O(1) lookups.
+
+const EXCLUDED_EXTS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp',   // Images
+  '.pdf', '.doc', '.docx',                                     // Documents
+  '.md',                                                        // Markdown/docs
+  '.json', '.yaml', '.yml', '.toml',                           // Config (not code)
+  '.lock', '.sum',                                              // Lockfiles
+  '.woff', '.woff2', '.ttf', '.eot',                           // Fonts
+  '.mp3', '.mp4', '.wav', '.avi',                              // Media
+  '.zip', '.tar', '.gz',                                        // Archives
+]);
+
+const SUPPORTED_EXTS = new Set([
+  '.ts', '.tsx', '.js', '.jsx',      // JavaScript/TypeScript
+  '.py',                              // Python
+  '.go',                              // Go
+  '.java',                            // Java
+  '.c', '.cpp', '.h', '.hpp',        // C/C++
+  '.cs',                              // C#
+  '.rb',                              // Ruby
+  '.php',                             // PHP
+]);
+
+// ─── Context Manager ─────────────────────────────────────────────
 
 export class ContextManager {
   private provider: ProviderService;
@@ -21,29 +38,25 @@ export class ContextManager {
   
   // Configurable constant for context limits
   private readonly CONTEXT_MAX_SIZE = 200000;
-  
-  // Supported file extensions for dependency fetching.
-  // Rule 4: Ignore unrelated files (README, docs, images, assets, etc.)
-  private readonly SUPPORTED_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.rb', '.php'];
 
   constructor(provider: ProviderService, resolver: DependencyResolver) {
     this.provider = provider;
     this.resolver = resolver;
   }
 
-  public async buildContext(owner: string, repo: string, prNumber: number, commitSha: string): Promise<ContextPackage | { error: string }> {
+  public async buildContext(owner: string, repo: string, prNumber: number, commitSha: string): Promise<ContextPackage | PipelineError> {
     try {
       // 1. Fetch changed files
       const prFiles = await this.provider.getChangedFiles(owner, repo, prNumber);
       
       if (!prFiles || prFiles.length === 0) {
-        return { error: 'No changed files available for analysis.' };
+        return { stage: 'context_manager', message: 'No changed files available for analysis.', fatal: false };
       }
 
       let currentChars = 0;
       let truncated = false;
-      const changedFiles: { path: string; content?: string; deleted: boolean }[] = [];
-      const dependencies: { path: string; content: string }[] = [];
+      const changedFiles: ContextFile[] = [];
+      const dependencies: DependencyFile[] = [];
       const missingDependencies: string[] = [];
       
       const visitedFiles = new Set<string>();
@@ -96,8 +109,7 @@ export class ContextManager {
         if (visitedFiles.has(depPath)) continue;
         visitedFiles.add(depPath);
 
-        // Attempt to fetch dependency. Since extensions might be missing in imports (e.g., './utils'),
-        // we try common extensions if the exact path fails.
+        // Attempt to fetch dependency with extension fallback
         const fileContent = await this.fetchDependencyWithFallback(owner, repo, depPath, commitSha);
         
         if (!fileContent) {
@@ -138,20 +150,17 @@ export class ContextManager {
 
     } catch (err: any) {
       console.error('ContextManager Error:', err.message);
-      return { error: 'Failed to build context package.' };
+      return { stage: 'context_manager', message: 'Failed to build context package.', fatal: true };
     }
   }
 
   private isSupportedFile(filename: string): boolean {
-    const lower = filename.toLowerCase();
-    // Broad exclusion for binary/images/docs
-    if (lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || 
-        lower.endsWith('.gif') || lower.endsWith('.pdf') || lower.endsWith('.md') || 
-        lower.endsWith('.json') || lower.endsWith('.lock') || lower.endsWith('.svg')) {
-      return false;
-    }
-    // Only accept source code extensions
-    return this.SUPPORTED_EXTS.some(ext => lower.endsWith(ext));
+    const lastDot = filename.lastIndexOf('.');
+    if (lastDot === -1) return false;
+
+    const ext = filename.substring(lastDot).toLowerCase();
+    if (EXCLUDED_EXTS.has(ext)) return false;
+    return SUPPORTED_EXTS.has(ext);
   }
 
   private async fetchDependencyWithFallback(owner: string, repo: string, basePath: string, commitSha: string): Promise<{ path: string; content: string } | null> {
@@ -162,7 +171,7 @@ export class ContextManager {
       try {
         const content = await this.provider.getFileContent(owner, repo, tryPath, commitSha);
         return { path: tryPath, content };
-      } catch (err) {
+      } catch (_err) {
         // Ignored, try next extension
       }
     }

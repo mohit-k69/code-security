@@ -1,4 +1,4 @@
-import { ContextPackage } from "./ContextManager.ts";
+import { ContextPackage } from "./types.ts";
 import { PatternRegistry } from "./PatternRegistry.ts";
 
 export interface SecretFinding {

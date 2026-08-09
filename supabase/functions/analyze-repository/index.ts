@@ -14,6 +14,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ─── Response Helper ─────────────────────────────────────────────
+// Eliminates 9 identical response-construction patterns.
+
+function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  });
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -24,7 +34,7 @@ Deno.serve(async (req) => {
     // 1. Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 });
+      return jsonResponse({ error: 'No authorization header' }, 401);
     }
 
     const supabaseClient = createClient(
@@ -37,14 +47,14 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 });
+      return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
     // 2. Parse request body
-    const { owner, repo, prNumber } = await req.json();
+    const { owner, repo } = await req.json();
 
     if (!owner || !repo) {
-      return new Response(JSON.stringify({ error: 'Missing owner or repo parameters.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+      return jsonResponse({ error: 'Missing owner or repo parameters.' }, 400);
     }
 
     // ---------------------------------------------------------
@@ -52,7 +62,7 @@ Deno.serve(async (req) => {
     // ---------------------------------------------------------
     // Check Cache
     // If cached -> return review immediately (e.g. from a 'code_reviews' table)
-    // if (cachedReview) return new Response(...)
+    // if (cachedReview) return jsonResponse(...)
     // Otherwise -> continue GitHub fetch
     // ---------------------------------------------------------
 
@@ -71,9 +81,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (dbError || !connection || !connection.access_token) {
-      return new Response(JSON.stringify({ 
-        error: 'GitHub is not connected. Please reconnect your GitHub account.' 
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 });
+      return jsonResponse({ error: 'GitHub is not connected. Please reconnect your GitHub account.' }, 404);
     }
 
     const provider = connection.provider;
@@ -83,7 +91,7 @@ Deno.serve(async (req) => {
     if (provider === 'github') {
       providerService = new GithubService(connection.access_token);
     } else {
-      return new Response(JSON.stringify({ error: `Provider ${provider} is not supported.` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+      return jsonResponse({ error: `Provider ${provider} is not supported.` }, 400);
     }
 
     // 5. Use PR Selector Component v1.0
@@ -92,18 +100,13 @@ Deno.serve(async (req) => {
     const selectionResult = await selector.selectNextReview(owner, repo);
 
     if (selectionResult.status !== 'pr_selected') {
-      return new Response(JSON.stringify(selectionResult), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 200 
-      });
+      return jsonResponse(selectionResult as Record<string, unknown>);
     }
 
-    // Return the Context Package. 
-    // Sensitive Data Detector (when built) will consume this output.
+    // 6. Use Context Manager Component v1.0
     const resolver = new DependencyResolver();
     const contextManager = new ContextManager(providerService, resolver);
     
-    // We pass the output of PRSelector directly into the ContextManager.
     const contextPackage = await contextManager.buildContext(
       owner, 
       repo, 
@@ -111,22 +114,16 @@ Deno.serve(async (req) => {
       selectionResult.commitSha!
     );
 
-    if ('error' in contextPackage) {
-      return new Response(JSON.stringify({ 
-        status: 'context_error', 
-        message: contextPackage.error 
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    if ('stage' in contextPackage) {
+      return jsonResponse({ status: 'context_error', message: contextPackage.message });
     }
 
     // 7. Use Sensitive Data Detector Component v1.0
-    // Scans the Context Package for secrets before sending to any downstream AI.
     const patternRegistry = new PatternRegistry();
     const detector = new SensitiveDataDetector(patternRegistry);
-    
     const detectionResult = detector.detect(contextPackage);
 
     // 8. Use Sensitive Data Sanitizer Component v1.1
-    // Replaces detected secrets with deterministic placeholders.
     const placeholderRegistry = new PlaceholderRegistry();
     const sanitizer = new SensitiveDataSanitizer(placeholderRegistry);
     const sanitizedPackage = sanitizer.sanitize(detectionResult);
@@ -137,24 +134,15 @@ Deno.serve(async (req) => {
       validator.validate(contextPackage, sanitizedPackage);
     } catch (valErr: any) {
       console.error('Validation failed:', valErr.message);
-      return new Response(JSON.stringify({ 
-        status: 'validation_error', 
-        message: 'Internal error: Context sanitization validation failed.' 
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+      return jsonResponse({ status: 'validation_error', message: 'Internal error: Context sanitization validation failed.' }, 500);
     }
 
-    // Return the Sanitized Context Package. 
+    // Return the Sanitized Context Package.
     // Prompt Builder (when built) will consume this output.
-    return new Response(JSON.stringify({
-      status: 'sanitized_ready',
-      context: sanitizedPackage
-    }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-      status: 200 
-    });
+    return jsonResponse({ status: 'sanitized_ready', context: sanitizedPackage });
 
   } catch (error: any) {
     console.error('analyze-repository error:', error.message);
-    return new Response(JSON.stringify({ error: 'Internal server error during analysis orchestration.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
+    return jsonResponse({ error: 'Internal server error during analysis orchestration.' }, 500);
   }
 });

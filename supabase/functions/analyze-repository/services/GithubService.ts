@@ -26,30 +26,11 @@ export class GithubService implements ProviderService {
     return res;
   }
 
-  async getOpenPullRequests(owner: string, repo: string): Promise<PullRequest[]> {
-    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=30`);
-    const data = await res.json();
-    return data.map((pr: any) => ({
-      id: pr.id,
-      number: pr.number,
-      title: pr.title,
-      state: pr.state,
-      draft: pr.draft,
-      created_at: pr.created_at,
-      updated_at: pr.updated_at,
-      html_url: pr.html_url,
-      user: {
-        login: pr.user.login,
-        avatar_url: pr.user.avatar_url,
-      },
-      head: { ref: pr.head.ref, sha: pr.head.sha },
-      base: { ref: pr.base.ref },
-    }));
-  }
-
-  async getPullRequestDetails(owner: string, repo: string, pullNumber: number): Promise<PullRequest> {
-    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/pulls/${pullNumber}`);
-    const pr = await res.json();
+  /**
+   * Maps raw GitHub API PR JSON to our PullRequest interface.
+   * Single source of truth — used by both list and detail endpoints.
+   */
+  private mapPullRequest(pr: any): PullRequest {
     return {
       id: pr.id,
       number: pr.number,
@@ -66,6 +47,18 @@ export class GithubService implements ProviderService {
       head: { ref: pr.head.ref, sha: pr.head.sha },
       base: { ref: pr.base.ref },
     };
+  }
+
+  async getOpenPullRequests(owner: string, repo: string): Promise<PullRequest[]> {
+    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&per_page=30`);
+    const data = await res.json();
+    return data.map((pr: any) => this.mapPullRequest(pr));
+  }
+
+  async getPullRequestDetails(owner: string, repo: string, pullNumber: number): Promise<PullRequest> {
+    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/pulls/${pullNumber}`);
+    const pr = await res.json();
+    return this.mapPullRequest(pr);
   }
 
   async getChangedFiles(owner: string, repo: string, pullNumber: number): Promise<PRFile[]> {
@@ -86,7 +79,6 @@ export class GithubService implements ProviderService {
         'Accept': 'application/vnd.github.v3.diff'
       }
     });
-    // The response is plain text containing the diff
     return await res.text();
   }
 

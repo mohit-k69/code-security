@@ -1,22 +1,9 @@
-import { ContextPackage } from "./ContextManager.ts";
+import { SanitizedContextPackage, SanitizationMetadata, groupBy } from "./types.ts";
 import { DetectionResult, SecretFinding } from "./SensitiveDataDetector.ts";
 import { PlaceholderRegistry } from "./PlaceholderRegistry.ts";
 
-export interface SanitizationMetadata {
-  totalSecretsReplaced: number;
-  replacementTypes: Record<string, number>;
-  ignoredReplacements: number;
-  processingTimeMs: number;
-}
-
-export interface SanitizedContextPackage {
-  repository: string;
-  prNumber: number;
-  commitSha: string;
-  changedFiles: { path: string; content?: string; deleted: boolean }[];
-  dependencies: { path: string; content: string }[];
-  metadata: SanitizationMetadata;
-}
+// Re-export for backward compatibility
+export type { SanitizedContextPackage, SanitizationMetadata } from "./types.ts";
 
 export class SensitiveDataSanitizer {
   private registry: PlaceholderRegistry;
@@ -30,14 +17,8 @@ export class SensitiveDataSanitizer {
     const originalPackage = detectionResult.contextPackage;
     const findings = detectionResult.secretDetectionReport.findings;
 
-    // Group findings by file
-    const findingsByFile = new Map<string, SecretFinding[]>();
-    for (const finding of findings) {
-      if (!findingsByFile.has(finding.file)) {
-        findingsByFile.set(finding.file, []);
-      }
-      findingsByFile.get(finding.file)!.push(finding);
-    }
+    // Group findings by file using shared utility
+    const findingsByFile = groupBy(findings, f => f.file);
 
     let totalSecretsReplaced = 0;
     let ignoredReplacements = 0;
@@ -50,14 +31,8 @@ export class SensitiveDataSanitizer {
         return originalContent; // No secrets, return as is
       }
 
-      // Group findings by line number (1-indexed)
-      const findingsByLine = new Map<number, SecretFinding[]>();
-      for (const finding of fileFindings) {
-        if (!findingsByLine.has(finding.line)) {
-          findingsByLine.set(finding.line, []);
-        }
-        findingsByLine.get(finding.line)!.push(finding);
-      }
+      // Group findings by line number using shared utility
+      const findingsByLine = groupBy(fileFindings, f => f.line);
 
       const lines = originalContent.split('\n');
 
@@ -72,7 +47,6 @@ export class SensitiveDataSanitizer {
         lineFindings.sort((a, b) => b.startColumn - a.startColumn);
 
         // Track replaced regions to prevent overlapping substitutions on the same line
-        // We track the original column indices that have been mutated.
         const mutatedRanges: { start: number; end: number }[] = [];
 
         for (const finding of lineFindings) {
@@ -83,8 +57,7 @@ export class SensitiveDataSanitizer {
           const isOverlapping = mutatedRanges.some(r => Math.max(startIdx, r.start) < Math.min(endIdx, r.end));
           
           if (isOverlapping) {
-            // Already mutated this section (overlapping match), skip it.
-            continue;
+            continue; // Already mutated this section
           }
 
           const placeholder = this.registry.getPlaceholder(finding.category);
@@ -111,7 +84,7 @@ export class SensitiveDataSanitizer {
       return lines.join('\n');
     };
 
-    // Deep copy/reconstruct the files to produce the sanitized package
+    // Reconstruct the files to produce the sanitized package
     const sanitizedChangedFiles = originalPackage.changedFiles.map(file => {
       if (file.deleted || !file.content) return { ...file };
       return {
