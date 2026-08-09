@@ -137,6 +137,8 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         provider: 'github',
         options: {
           redirectTo: window.location.origin,
+          // Force GitHub to show the account selection/consent screen during signup
+          ...(mode === 'signup' ? { queryParams: { prompt: 'consent' } } : {}),
         },
       });
       if (error) throw error;
