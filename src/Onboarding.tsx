@@ -2,21 +2,12 @@ import { useState, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain } from './components/auth/onboarding/emailUtils';
-import { OnboardingImage } from './components/auth/onboarding/OnboardingComponents';
 
 import {
   OnboardingEmailStep,
-  OnboardingNameStep,
-  OnboardingTourStep,
   OnboardingForgotPassword,
   OnboardingSignupSuccess
 } from './components/auth/onboarding/OnboardingSteps';
-
-// ─── Onboarding Images ──────────────────────────────────────────
-import archwayImg from '../assets/onboard-archway.png';
-import untangleImg from '../assets/onboard-untangle.png';
-import elevateImg from '../assets/onboard-elevate.png';
-import domeImg from '../assets/onboard-dome.png';
 
 interface OnboardingProps {
   onLogin: (user: { name: string; email: string; avatar?: string }) => void;
@@ -24,8 +15,7 @@ interface OnboardingProps {
 
 export default function Onboarding({ onLogin }: OnboardingProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
+  const [direction] = useState(1);
 
   // Form state
   const [email, setEmail] = useState('');
@@ -42,18 +32,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotError, setForgotError] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
-
-  const TOUR_PAGE_COUNT = 4;
-
-  const goForward = useCallback(() => {
-    setDirection(1);
-    setStep(prev => prev + 1);
-  }, []);
-
-  const goBack = useCallback(() => {
-    setDirection(-1);
-    setStep(prev => Math.max(0, prev - 1));
-  }, []);
 
   const handleEmailContinue = useCallback(async () => {
     if (!email.trim()) return;
@@ -78,10 +56,18 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
       return;
     }
 
+    // Signup: also require name fields
+    if (mode === 'signup') {
+      if (!firstName.trim() || !lastName.trim()) {
+        setEmailError('Please enter your first and last name');
+        return;
+      }
+    }
+
     setEmailError('');
+    setIsLoading(true);
 
     if (mode === 'signin') {
-      setIsLoading(true);
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -111,49 +97,37 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setIsLoading(false);
       }
     } else {
-      goForward();
-    }
-  }, [email, password, mode, onLogin, goForward]);
-
-  const handleNameContinue = useCallback(() => {
-    if (!firstName.trim() || !lastName.trim()) return;
-    goForward();
-  }, [firstName, lastName, goForward]);
-
-  const handleFinish = useCallback(async () => {
-    setIsLoading(true);
-    setEmailError('');
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            full_name: `${firstName.trim()} ${lastName.trim()}`,
+      // Signup: create account directly — no tour, no extra steps
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+            },
           },
-        },
-      });
+        });
 
-      if (error) {
-        let friendlyError = error.message;
-        if (error.message.toLowerCase().includes('already registered')) {
-          friendlyError = 'An account with this email already exists. Try signing in instead.';
+        if (error) {
+          let friendlyError = error.message;
+          if (error.message.toLowerCase().includes('already registered')) {
+            friendlyError = 'An account with this email already exists. Try signing in instead.';
+          }
+          setEmailError(friendlyError);
+          return;
         }
-        setEmailError(friendlyError);
-        setStep(0);
-        return;
-      }
 
-      setSignupSuccess(true);
-    } catch (err: any) {
-      setEmailError(err.message || 'An unexpected signup error occurred.');
-      setStep(0);
-    } finally {
-      setIsLoading(false);
+        setSignupSuccess(true);
+      } catch (err: any) {
+        setEmailError(err.message || 'An unexpected signup error occurred.');
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, [firstName, lastName, email, password]);
+  }, [email, password, mode, firstName, lastName, onLogin]);
 
   const handleGithubSignIn = async () => {
     try {
@@ -192,33 +166,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     }
   }, [forgotEmail]);
 
-  const onboardingPages = [
-    {
-      illustration: <OnboardingImage src={archwayImg} alt="An open archway leading to warm sunlight — stepping forward with confidence" />,
-      title: 'Scared to hit deploy?',
-      subtitle: 'You\'re not alone — and we\'ve got your back.',
-      description: 'You built something real. That takes guts. Now let us check it over so you can ship with confidence, not anxiety.',
-    },
-    {
-      illustration: <OnboardingImage src={untangleImg} alt="Tangled threads smoothly becoming a clean flowing ribbon — from confusion to clarity" />,
-      title: 'No scary error messages.',
-      subtitle: 'We speak your language, not compiler.',
-      description: 'Every issue we find comes with a plain-English explanation of what went wrong and exactly how to fix it. No Googling required.',
-    },
-    {
-      illustration: <OnboardingImage src={elevateImg} alt="A small sphere elevated to match a larger one — leveling the playing field" />,
-      title: 'You don\'t need 10 years of experience.',
-      subtitle: 'Code Vibe checks what senior devs check.',
-      description: 'Security holes, bad patterns, performance traps — we catch the stuff that takes years of experience to spot. You just paste and go.',
-    },
-    {
-      illustration: <OnboardingImage src={domeImg} alt="A glass dome protecting a glowing orb — your code kept safe and private" />,
-      title: 'Your code stays between us.',
-      subtitle: 'Everything runs in your browser. Seriously.',
-      description: 'No servers, no uploads, no tracking. Whether it\'s a client project or a late-night side hustle — your code never leaves your machine.',
-    },
-  ];
-
   const renderRightContent = () => {
     if (showForgotPassword) {
       return (
@@ -241,7 +188,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         <OnboardingSignupSuccess
           setSignupSuccess={setSignupSuccess}
           setMode={setMode}
-          setStep={setStep}
           setEmail={setEmail}
           setPassword={setPassword}
           setFirstName={setFirstName}
@@ -249,61 +195,29 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         />
       );
     }
-
-    if (step === 0) {
-      return (
-        <OnboardingEmailStep
-          mode={mode}
-          setMode={setMode}
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          emailError={emailError}
-          setEmailError={setEmailError}
-          isLoading={isLoading}
-          handleEmailContinue={handleEmailContinue}
-          handleGithubSignIn={handleGithubSignIn}
-          setShowForgotPassword={setShowForgotPassword}
-          setForgotEmail={setForgotEmail}
-          setForgotError={setForgotError}
-          setForgotSuccess={setForgotSuccess}
-          direction={direction}
-        />
-      );
-    }
-
-    if (step === 1) {
-      return (
-        <OnboardingNameStep
-          firstName={firstName}
-          setFirstName={setFirstName}
-          lastName={lastName}
-          setLastName={setLastName}
-          handleNameContinue={handleNameContinue}
-          goBack={goBack}
-          direction={direction}
-          TOUR_PAGE_COUNT={TOUR_PAGE_COUNT}
-        />
-      );
-    }
-
-    const pageIndex = step - 2;
-    const page = onboardingPages[pageIndex];
-    const isLastPage = pageIndex === onboardingPages.length - 1;
 
     return (
-      <OnboardingTourStep
-        step={step}
-        direction={direction}
-        pageIndex={pageIndex}
-        page={page}
-        isLastPage={isLastPage}
+      <OnboardingEmailStep
+        mode={mode}
+        setMode={setMode}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        firstName={firstName}
+        setFirstName={setFirstName}
+        lastName={lastName}
+        setLastName={setLastName}
+        emailError={emailError}
+        setEmailError={setEmailError}
         isLoading={isLoading}
-        handleFinish={handleFinish}
-        goForward={goForward}
-        goBack={goBack}
-        TOUR_PAGE_COUNT={TOUR_PAGE_COUNT}
+        handleEmailContinue={handleEmailContinue}
+        handleGithubSignIn={handleGithubSignIn}
+        setShowForgotPassword={setShowForgotPassword}
+        setForgotEmail={setForgotEmail}
+        setForgotError={setForgotError}
+        setForgotSuccess={setForgotSuccess}
+        direction={direction}
       />
     );
   };

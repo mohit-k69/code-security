@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Lock, Mail, User } from 'lucide-react';
-import { slideVariants, StepDots } from './OnboardingComponents';
+import { CheckCircle2, Lock, Mail, User } from 'lucide-react';
+import { slideVariants } from './OnboardingComponents';
 
 // --- Types ---
 export interface OnboardingEmailStepProps {
@@ -11,6 +11,10 @@ export interface OnboardingEmailStepProps {
   setEmail: (val: string) => void;
   password: string;
   setPassword: (val: string) => void;
+  firstName: string;
+  setFirstName: (val: string) => void;
+  lastName: string;
+  setLastName: (val: string) => void;
   emailError: string;
   setEmailError: (val: string) => void;
   isLoading: boolean;
@@ -25,10 +29,16 @@ export interface OnboardingEmailStepProps {
 
 export function OnboardingEmailStep({
   mode, setMode, email, setEmail, password, setPassword,
+  firstName, setFirstName, lastName, setLastName,
   emailError, setEmailError, isLoading, handleEmailContinue,
   handleGithubSignIn, setShowForgotPassword, setForgotEmail,
   setForgotError, setForgotSuccess, direction
 }: OnboardingEmailStepProps) {
+
+  const isSignupReady = mode === 'signup'
+    ? email.trim() && password.trim() && firstName.trim() && lastName.trim()
+    : email.trim() && password.trim();
+
   return (
     <motion.div
       key="step-0"
@@ -84,6 +94,35 @@ export function OnboardingEmailStep({
               {mode === 'signup' ? 'Get started with Code Vibe today' : 'Sign in to your account to continue'}
             </p>
 
+            {/* Name fields — only visible on Sign Up */}
+            {mode === 'signup' && (
+              <div className="w-full flex gap-4 mb-4">
+                <div className="flex-1 relative">
+                  <User size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => { setFirstName(e.target.value); setEmailError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleEmailContinue()}
+                    placeholder="First name"
+                    autoFocus
+                    className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors"
+                  />
+                </div>
+                <div className="flex-1 relative">
+                  <User size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => { setLastName(e.target.value); setEmailError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleEmailContinue()}
+                    placeholder="Last name"
+                    className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="w-full mb-4">
               <div className="relative">
                 <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -126,16 +165,16 @@ export function OnboardingEmailStep({
 
             <button
               onClick={handleEmailContinue}
-              disabled={!email.trim() || !password.trim() || isLoading}
+              disabled={!isSignupReady || isLoading}
               className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-6 rounded-full ${
-                email.trim() && password.trim() && !isLoading
+                isSignupReady && !isLoading
                   ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
                   : 'bg-gray-100 text-gray-300 cursor-not-allowed'
               }`}
             >
               {isLoading
                 ? (mode === 'signup' ? 'Creating account...' : 'Signing in...')
-                : mode === 'signup' ? 'Continue' : 'Sign In'}
+                : mode === 'signup' ? 'Create Account' : 'Sign In'}
             </button>
 
             {mode === 'signin' && (
@@ -178,194 +217,6 @@ export function OnboardingEmailStep({
             </p>
           </motion.div>
         </AnimatePresence>
-      </div>
-    </motion.div>
-  );
-}
-
-// --- Name Step ---
-export interface OnboardingNameStepProps {
-  firstName: string;
-  setFirstName: (val: string) => void;
-  lastName: string;
-  setLastName: (val: string) => void;
-  handleNameContinue: () => void;
-  goBack: () => void;
-  direction: number;
-  TOUR_PAGE_COUNT: number;
-}
-
-export function OnboardingNameStep({
-  firstName, setFirstName, lastName, setLastName,
-  handleNameContinue, goBack, direction, TOUR_PAGE_COUNT
-}: OnboardingNameStepProps) {
-  return (
-    <motion.div
-      key="step-1"
-      variants={slideVariants}
-      initial={direction > 0 ? 'enterFromRight' : 'enterFromLeft'}
-      animate="center"
-      exit={direction > 0 ? 'exitToLeft' : 'exitToRight'}
-      transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-      className="w-full flex flex-col items-center"
-    >
-      <button
-        onClick={goBack}
-        className="self-start flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-[#3f2a24] transition-colors mb-8 cursor-pointer group"
-      >
-        <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-        Back
-      </button>
-
-      <div className="w-16 h-16 rounded-full bg-[#f5ebe6] flex items-center justify-center mb-6">
-        <User size={24} className="text-[#3f2a24] opacity-50" />
-      </div>
-
-      <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">
-        What's your name?
-      </h2>
-      <p className="text-[14px] text-gray-500 mb-8 text-center">
-        Let us know how to greet you
-      </p>
-
-      <div className="w-full mb-6">
-        <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
-          First Name
-        </label>
-        <input
-          type="text"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && lastName.trim() && handleNameContinue()}
-          placeholder="John"
-          autoFocus
-          className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] px-1 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-300 outline-none transition-colors"
-        />
-      </div>
-
-      <div className="w-full mb-8">
-        <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
-          Last Name
-        </label>
-        <input
-          type="text"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && firstName.trim() && handleNameContinue()}
-          placeholder="Doe"
-          className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] px-1 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-300 outline-none transition-colors"
-        />
-      </div>
-
-      <button
-        onClick={handleNameContinue}
-        disabled={!firstName.trim() || !lastName.trim()}
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-medium transition-all ${
-          firstName.trim() && lastName.trim()
-            ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
-            : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-        }`}
-      >
-        Next
-        <ArrowRight size={16} />
-      </button>
-
-      <div className="mt-8">
-        <StepDots current={0} total={TOUR_PAGE_COUNT + 1} />
-      </div>
-    </motion.div>
-  );
-}
-
-// --- Tour Step ---
-export interface OnboardingTourStepProps {
-  step: number;
-  direction: number;
-  pageIndex: number;
-  page: { illustration: React.ReactNode; title: string; subtitle: string; description: string; };
-  isLastPage: boolean;
-  isLoading: boolean;
-  handleFinish: () => void;
-  goForward: () => void;
-  goBack: () => void;
-  TOUR_PAGE_COUNT: number;
-}
-
-export function OnboardingTourStep({
-  step, direction, pageIndex, page, isLastPage, isLoading,
-  handleFinish, goForward, goBack, TOUR_PAGE_COUNT
-}: OnboardingTourStepProps) {
-  return (
-    <motion.div
-      key={`step-${step}`}
-      variants={slideVariants}
-      initial={direction > 0 ? 'enterFromRight' : 'enterFromLeft'}
-      animate="center"
-      exit={direction > 0 ? 'exitToLeft' : 'exitToRight'}
-      transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-      className="w-full flex flex-col items-center relative"
-    >
-      <button
-        onClick={goBack}
-        className="absolute -top-6 left-0 flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-700 transition-colors cursor-pointer group z-10"
-      >
-        <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-        Back
-      </button>
-
-      <div className="w-full">
-        {page.illustration}
-      </div>
-
-      <motion.h2
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12, duration: 0.4 }}
-        className="text-[28px] md:text-[32px] font-semibold text-gray-900 mb-2 text-center leading-tight tracking-tight"
-      >
-        {page.title}
-      </motion.h2>
-
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-        className="text-[15px] text-gray-500 text-center leading-relaxed max-w-[360px] mb-8"
-      >
-        {page.description}
-      </motion.p>
-
-      <button
-        onClick={isLastPage ? handleFinish : goForward}
-        disabled={isLoading}
-        className="w-full bg-[#3f2a24] text-white py-3.5 rounded-full text-[15px] font-medium hover:bg-[#5b443c] transition-all flex justify-center items-center gap-2 cursor-pointer shadow-sm disabled:opacity-70 disabled:cursor-not-allowed mb-2 mt-2"
-      >
-        {isLoading ? (
-          'Setting up your workspace...'
-        ) : isLastPage ? (
-          <>
-            Let's Go
-            <Check size={16} />
-          </>
-        ) : (
-          <>
-            Next
-            <ArrowRight size={16} />
-          </>
-        )}
-      </button>
-
-      {!isLastPage && (
-        <button
-          onClick={handleFinish}
-          className="mt-3 text-[13px] text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-        >
-          Skip for now
-        </button>
-      )}
-
-      <div className="mt-5">
-        <StepDots current={pageIndex + 1} total={TOUR_PAGE_COUNT + 1} />
       </div>
     </motion.div>
   );
@@ -488,7 +339,6 @@ export function OnboardingForgotPassword({
 export interface OnboardingSignupSuccessProps {
   setSignupSuccess: (val: boolean) => void;
   setMode: (mode: 'signin' | 'signup') => void;
-  setStep: (step: number) => void;
   setEmail: (val: string) => void;
   setPassword: (val: string) => void;
   setFirstName: (val: string) => void;
@@ -496,7 +346,7 @@ export interface OnboardingSignupSuccessProps {
 }
 
 export function OnboardingSignupSuccess({
-  setSignupSuccess, setMode, setStep, setEmail, setPassword, setFirstName, setLastName
+  setSignupSuccess, setMode, setEmail, setPassword, setFirstName, setLastName
 }: OnboardingSignupSuccessProps) {
   return (
     <motion.div
@@ -517,7 +367,6 @@ export function OnboardingSignupSuccess({
         onClick={() => {
           setSignupSuccess(false);
           setMode('signin');
-          setStep(0);
           setEmail('');
           setPassword('');
           setFirstName('');
