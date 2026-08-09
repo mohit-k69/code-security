@@ -48,6 +48,10 @@ export function useAuth() {
   };
 
   useEffect(() => {
+    // If the URL contains an OAuth callback payload, delay removing the loading screen
+    // until onAuthStateChange has a chance to parse it and fire the SIGNED_IN event.
+    const isOAuthCallback = window.location.hash.includes('access_token=') || window.location.hash.includes('error=');
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const meta = session.user.user_metadata;
@@ -60,7 +64,9 @@ export function useAuth() {
           last_password_updated_at: meta?.last_password_updated_at,
         });
       }
-      setIsInitializing(false);
+      if (!isOAuthCallback) {
+        setIsInitializing(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -95,6 +101,9 @@ export function useAuth() {
       } else {
         setUser(null);
       }
+      
+      // Stop showing the loading screen once auth state is settled
+      setIsInitializing(false);
     });
 
     return () => subscription.unsubscribe();
