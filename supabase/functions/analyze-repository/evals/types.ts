@@ -38,3 +38,50 @@ export interface EvalDataset {
   version: string;
   scenarios: EvalScenario[];
 }
+
+import type { CheckpointResult } from "../services/CheckpointRunner.ts";
+
+export interface ScenarioResult {
+  scenarioId: string;
+  expectedVerdict: string;
+  actualVerdict: string;
+  verdictMatch: boolean;
+  
+  expectedFindingsCount: number;
+  actualFindingsCount: number;
+  falsePositives: number;
+  falseNegatives: number;
+  
+  groundingScore: number;    // Percentage of findings that had accurate file/line/snippet evidence
+  executionTimeMs: number;
+  success: boolean;          // True if verdict matches AND falsePositives == 0 AND falseNegatives == 0
+  error?: string;            // If the runner threw an exception
+  
+  actualOutput?: CheckpointResult; // Complete AI output retained for debugging
+}
+
+export interface EvalReport {
+  datasetId: string;         // e.g., "SEC-AUTH-001"
+  datasetVersion: string;
+  model: string;             // e.g., "gemini-2.0-flash"
+  timestamp: string;
+
+  metrics: {
+    totalScenarios: number;
+    passedScenarios: number;
+    failedScenarios: number;
+    
+    verdictAccuracy: number; // % of scenarios where actualVerdict == expectedVerdict
+    detectionAccuracy: number; // % of scenarios completely succeeding (success == true)
+    
+    totalFalsePositives: number;
+    totalFalseNegatives: number;
+    falsePositiveRate: number; // FP / Total Scenarios
+    falseNegativeRate: number; // FN / Total Scenarios
+    
+    averageGroundingAccuracy: number; // Average of grounding scores across all scenarios
+    averageExecutionTimeMs: number;
+  };
+
+  scenarioResults: ScenarioResult[];
+}

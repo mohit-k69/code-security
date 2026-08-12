@@ -190,6 +190,7 @@ async function runSmokeTest(): Promise<void> {
 
   if (result.status === "completed" && result.findings.length > 0) {
     const f = result.findings[0];
+    assert("finding[0].criterionId is a string", typeof f.criterionId === "string");
     assert("finding[0].title is a string", typeof f.title === "string");
     assert("finding[0].severity is valid", ["critical", "warning", "info"].includes(f.severity));
     assert("finding[0].evidence is an array", Array.isArray(f.evidence));

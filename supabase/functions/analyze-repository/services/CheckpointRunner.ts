@@ -32,6 +32,7 @@ export interface CheckpointEvidence {
 }
 
 export interface CheckpointFinding {
+  criterionId: string;
   title: string;
   severity: "critical" | "warning" | "info";
   description: string;
@@ -180,6 +181,7 @@ You MUST respond with valid JSON matching this exact schema. Do not include any 
   "summary": "<one paragraph summarizing your assessment>",
   "findings": [
     {
+      "criterionId": "<the ID of the specific evaluation criterion this finding relates to, e.g. AUTH-C1>",
       "title": "<short title>",
       "severity": "critical" | "warning" | "info",
       "description": "<detailed description of the issue>",
@@ -310,6 +312,9 @@ If you cannot determine the result due to insufficient context, return verdict "
       const f = parsed.findings[i];
       const prefix = `findings[${i}]`;
 
+      if (typeof f.criterionId !== "string" || f.criterionId.trim().length === 0) {
+        throw new Error(`${prefix}: missing or empty criterionId.`);
+      }
       if (typeof f.title !== "string" || f.title.trim().length === 0) {
         throw new Error(`${prefix}: missing or empty title.`);
       }
@@ -353,6 +358,7 @@ If you cannot determine the result due to insufficient context, return verdict "
       }
 
       validatedFindings.push({
+        criterionId: f.criterionId,
         title: f.title,
         severity: f.severity,
         description: f.description,
