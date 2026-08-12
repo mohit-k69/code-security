@@ -11,6 +11,7 @@
 import { CheckpointRunner } from "../CheckpointRunner.ts";
 import type { ReviewSpecification, CheckpointResult } from "../CheckpointRunner.ts";
 import type { SanitizedContextPackage } from "../types.ts";
+import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../../prompts/SecurityReviewFramework.ts";
 
 // ─── Test Fixtures ───────────────────────────────────────────────
 
@@ -62,10 +63,6 @@ export function requireAuth(req, res, next) {
   },
 };
 
-const MOCK_SYSTEM_PROMPT = `You are a senior security engineer performing a code review. 
-Analyze the provided code changes for security issues. Be thorough but precise. 
-Only report real issues with concrete evidence from the code.`;
-
 const MOCK_SPEC: ReviewSpecification = {
   id: "SEC-AUTH-001",
   name: "Authentication Review",
@@ -96,18 +93,19 @@ async function runSmokeTest(): Promise<void> {
   }
 
   const model = Deno.env.get("GEMINI_MODEL") || "(default)";
-  console.log(`🔧 Model:  ${model}`);
-  console.log(`📦 Repo:   ${MOCK_SANITIZED_PACKAGE.repository}`);
-  console.log(`🔀 PR:     #${MOCK_SANITIZED_PACKAGE.prNumber}`);
-  console.log(`🎯 Check:  ${MOCK_SPEC.id} — ${MOCK_SPEC.name}`);
-  console.log(`📄 Files:  ${MOCK_SANITIZED_PACKAGE.changedFiles.length}\n`);
+  console.log(`🔧 Model:     ${model}`);
+  console.log(`📋 Framework: v${FRAMEWORK_VERSION}`);
+  console.log(`📦 Repo:      ${MOCK_SANITIZED_PACKAGE.repository}`);
+  console.log(`🔀 PR:        #${MOCK_SANITIZED_PACKAGE.prNumber}`);
+  console.log(`🎯 Check:     ${MOCK_SPEC.id} — ${MOCK_SPEC.name}`);
+  console.log(`📄 Files:     ${MOCK_SANITIZED_PACKAGE.changedFiles.length}\n`);
 
   console.log("⏳ Executing checkpoint...\n");
 
   const runner = new CheckpointRunner();
   const result: CheckpointResult = await runner.run(
     MOCK_SANITIZED_PACKAGE,
-    MOCK_SYSTEM_PROMPT,
+    SECURITY_REVIEW_FRAMEWORK,
     MOCK_SPEC
   );
 
@@ -170,6 +168,7 @@ async function runSmokeTest(): Promise<void> {
   assert("execution.model is a string", typeof result.execution.model === "string");
   assert("execution.executionTimeMs is a number", typeof result.execution.executionTimeMs === "number");
   assert("execution.timestamp is an ISO string", !isNaN(Date.parse(result.execution.timestamp)));
+  assert("FRAMEWORK_VERSION is non-empty", typeof FRAMEWORK_VERSION === "string" && FRAMEWORK_VERSION.length > 0);
 
   if (result.status === "completed" && result.findings.length > 0) {
     const f = result.findings[0];

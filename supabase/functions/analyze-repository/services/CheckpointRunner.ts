@@ -1,8 +1,15 @@
-// ─── Checkpoint Runner v1.0 ──────────────────────────────────────
+// ─── Checkpoint Runner v1.1 ──────────────────────────────────────
 // Single checkpoint execution engine.
-// Receives a sanitized context package, a system prompt, and a
-// review specification. Builds one Gemini request, executes it,
-// validates the response, and returns a standardized result.
+// Receives a sanitized context package, the global security review
+// framework prompt, and a review specification. Builds one Gemini
+// request, executes it, validates the response, and returns a
+// standardized result.
+//
+// Gemini request composition order:
+//   1. Security Review Framework  (system_instruction)
+//   2. Review Specification       (user prompt — section 1)
+//   3. Sanitized Context Package  (user prompt — section 2)
+//   4. Required Output JSON Schema(user prompt — section 3)
 //
 // No retries. No parallelism. No orchestration.
 
@@ -73,7 +80,7 @@ export class CheckpointRunner {
    */
   public async run(
     sanitizedPackage: SanitizedContextPackage,
-    systemPrompt: string,
+    frameworkPrompt: string,
     spec: ReviewSpecification
   ): Promise<CheckpointResult> {
     const startTime = performance.now();
@@ -81,7 +88,7 @@ export class CheckpointRunner {
 
     try {
       const apiKey = this.getApiKey();
-      const requestBody = this.buildRequest(sanitizedPackage, systemPrompt, spec);
+      const requestBody = this.buildRequest(sanitizedPackage, frameworkPrompt, spec);
       const rawText = await this.executeCall(apiKey, model, requestBody);
       const result = this.validateResponse(rawText, spec, model, startTime);
       return result;
@@ -106,16 +113,34 @@ export class CheckpointRunner {
 
   /**
    * Construct the Gemini generateContent request body.
-   * The system prompt sets the reviewer persona.
-   * The user prompt contains the sanitized code context + checkpoint instruction.
+   *
+   * Composition order:
+   *   1. Security Review Framework  → system_instruction
+   *   2. Review Specification       → user prompt section 1
+   *   3. Sanitized Context Package  → user prompt section 2
+   *   4. Required Output JSON Schema→ user prompt section 3
    */
   private buildRequest(
     sanitizedPackage: SanitizedContextPackage,
-    systemPrompt: string,
+    frameworkPrompt: string,
     spec: ReviewSpecification
   ): Record<string, unknown> {
 
-    // Serialize changed files into a readable block
+    // ── Section 2: Review Specification ───────────────────────────
+    const specSection = `
+## Review Specification
+
+**Checkpoint ID:** ${spec.id}
+**Checkpoint Name:** ${spec.name}
+**Category:** ${spec.category}
+**Description:** ${spec.description}
+
+### Evaluation Instructions
+
+${spec.promptInstruction}
+`.trim();
+
+    // ── Section 3: Sanitized Context Package ─────────────────────
     const changedFilesBlock = sanitizedPackage.changedFiles
       .map(f => {
         if (f.deleted) return `--- ${f.path} [DELETED] ---`;
@@ -123,41 +148,31 @@ export class CheckpointRunner {
       })
       .join("\n\n");
 
-    // Serialize dependency files
     const dependencyBlock = sanitizedPackage.dependencies.length > 0
       ? sanitizedPackage.dependencies
           .map(d => `--- ${d.path} ---\n${d.content}`)
           .join("\n\n")
       : "(no dependency files)";
 
-    // Build the user prompt
-    const userPrompt = `
-## Review Context
+    const contextSection = `
+## Pull Request Context
 
 **Repository:** ${sanitizedPackage.repository}
 **Pull Request:** #${sanitizedPackage.prNumber}
 **Commit:** ${sanitizedPackage.commitSha}
 
-## Checkpoint
-
-**ID:** ${spec.id}
-**Name:** ${spec.name}
-**Category:** ${spec.category}
-**Description:** ${spec.description}
-
-## Checkpoint Instruction
-
-${spec.promptInstruction}
-
-## Changed Files
+### Changed Files
 
 ${changedFilesBlock}
 
-## Dependency Files (for context)
+### Dependency Files (for context only)
 
 ${dependencyBlock}
+`.trim();
 
-## Required Response Format
+    // ── Section 4: Required Output JSON Schema ───────────────────
+    const outputSchemaSection = `
+## Required Output JSON Schema
 
 You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
 
@@ -187,10 +202,19 @@ If no issues are found, return verdict "PASS" with an empty findings array.
 If you cannot determine the result due to insufficient context, return verdict "NOT_VERIFIED".
 `.trim();
 
+    // ── Compose the full user prompt ─────────────────────────────
+    const userPrompt = [
+      specSection,
+      contextSection,
+      outputSchemaSection,
+    ].join("\n\n---\n\n");
+
     return {
+      // Section 1: Security Review Framework
       system_instruction: {
-        parts: [{ text: systemPrompt }],
+        parts: [{ text: frameworkPrompt }],
       },
+      // Sections 2–4: Spec → Context → Schema
       contents: [
         {
           role: "user",
