@@ -14,20 +14,11 @@
 // No retries. No parallelism. No orchestration.
 
 import { SanitizedContextPackage } from "./types.ts";
+import type { ReviewSpecification } from "../prompts/specifications/ReviewSpecification.ts";
 
-// ─── Input Types ─────────────────────────────────────────────────
-
-/**
- * Complete specification for a single security review checkpoint.
- * Passed in by the Orchestrator (Component 6) when it is built.
- */
-export interface ReviewSpecification {
-  id: string;               // e.g. "SEC-AUTH-001"
-  name: string;             // e.g. "Authentication Review"
-  description: string;      // Human-readable description of what this checkpoint evaluates
-  category: string;         // e.g. "authentication", "injection", "secrets"
-  promptInstruction: string; // Full instruction block for Gemini (what to look for, how to evaluate)
-}
+// Re-export so existing consumers don't break
+export type { ReviewSpecification } from "../prompts/specifications/ReviewSpecification.ts";
+export type { EvaluationCriterion } from "../prompts/specifications/ReviewSpecification.ts";
 
 // ─── Output Types ────────────────────────────────────────────────
 
@@ -127,17 +118,24 @@ export class CheckpointRunner {
   ): Record<string, unknown> {
 
     // ── Section 2: Review Specification ───────────────────────────
+    const criteriaBlock = spec.criteria.length > 0
+      ? `### Evaluation Criteria\n\n| # | Criterion | Description |\n|---|-----------|-------------|\n${spec.criteria.map(c => `| ${c.id} | ${c.name} | ${c.description} |`).join("\n")}\n`
+      : "";
+
+    const additionalInstructions = spec.promptInstruction.trim()
+      ? `### Additional Instructions\n\n${spec.promptInstruction.trim()}\n`
+      : "";
+
     const specSection = `
 ## Review Specification
 
 **Checkpoint ID:** ${spec.id}
 **Checkpoint Name:** ${spec.name}
+**Version:** ${spec.version}
 **Category:** ${spec.category}
 **Description:** ${spec.description}
 
-### Evaluation Instructions
-
-${spec.promptInstruction}
+${criteriaBlock}${additionalInstructions}
 `.trim();
 
     // ── Section 3: Sanitized Context Package ─────────────────────

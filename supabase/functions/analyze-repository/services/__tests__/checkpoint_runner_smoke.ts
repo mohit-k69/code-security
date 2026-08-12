@@ -9,7 +9,8 @@
 // It feeds synthetic data into the runner and validates the output.
 
 import { CheckpointRunner } from "../CheckpointRunner.ts";
-import type { ReviewSpecification, CheckpointResult } from "../CheckpointRunner.ts";
+import type { CheckpointResult } from "../CheckpointRunner.ts";
+import type { ReviewSpecification } from "../../prompts/specifications/ReviewSpecification.ts";
 import type { SanitizedContextPackage } from "../types.ts";
 import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../../prompts/SecurityReviewFramework.ts";
 
@@ -66,16 +67,33 @@ export function requireAuth(req, res, next) {
 const MOCK_SPEC: ReviewSpecification = {
   id: "SEC-AUTH-001",
   name: "Authentication Review",
-  description: "Review authentication logic for security vulnerabilities including plaintext password comparison, missing rate limiting, session fixation, and weak credential handling.",
+  version: "1.0",
   category: "authentication",
-  promptInstruction: `Evaluate the authentication implementation for the following concerns:
-
-1. **Password Storage**: Are passwords compared in plaintext? Is hashing used?
-2. **Rate Limiting**: Are login attempts rate-limited to prevent brute force?
-3. **Session Management**: Is the session regenerated after login? Is session fixation possible?
-4. **Input Validation**: Are inputs properly validated and sanitized?
-
-Report each issue as a separate finding with evidence from the code.`,
+  description: "Review authentication logic for security vulnerabilities including plaintext password comparison, missing rate limiting, session fixation, and weak credential handling.",
+  criteria: [
+    {
+      id: "AUTH-C1",
+      name: "Password Hashing",
+      description: "Passwords must be hashed using bcrypt, scrypt, or Argon2. Plaintext comparison is a critical vulnerability.",
+    },
+    {
+      id: "AUTH-C2",
+      name: "Rate Limiting",
+      description: "Login endpoints must implement rate limiting to prevent brute-force attacks.",
+    },
+    {
+      id: "AUTH-C3",
+      name: "Session Management",
+      description: "Sessions must be regenerated after login. Session fixation must not be possible.",
+    },
+    {
+      id: "AUTH-C4",
+      name: "Input Validation",
+      description: "All authentication inputs must be validated and sanitized before use.",
+    },
+  ],
+  promptInstruction: `Report each issue as a separate finding with evidence from the code.
+If a criterion cannot be evaluated due to missing context, note it in the summary.`,
 };
 
 // ─── Test Execution ──────────────────────────────────────────────
