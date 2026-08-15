@@ -7,13 +7,15 @@ interface GithubRepoListProps {
   githubSearchQuery: string;
   selectedRepoId: number | null;
   handleAnalyze: (repo: GithubRepo) => void;
+  viewStyle: 'grid' | 'list';
 }
 
 export function GithubRepoList({
   githubRepos,
   githubSearchQuery,
   selectedRepoId,
-  handleAnalyze
+  handleAnalyze,
+  viewStyle
 }: GithubRepoListProps) {
   if (githubRepos.length === 0) {
     return (
@@ -25,7 +27,7 @@ export function GithubRepoList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pb-12 pr-2 pt-3 pl-1 custom-scrollbar">
+    <div className={`grid grid-cols-1 ${viewStyle === 'grid' ? 'md:grid-cols-2' : ''} gap-4 overflow-y-auto pb-12 pr-2 pt-3 pl-1 custom-scrollbar`}>
       {githubRepos
         .filter(repo => {
           if (!githubSearchQuery.trim()) return true;

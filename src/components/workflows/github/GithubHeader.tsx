@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Search } from 'lucide-react';
+import { ChevronLeft, Search, LayoutGrid, List } from 'lucide-react';
 
 interface GithubHeaderProps {
   setActiveWorkflow: (workflow: 'none') => void;
@@ -8,6 +8,8 @@ interface GithubHeaderProps {
   setIsSearchExpanded: (expanded: boolean) => void;
   githubSearchQuery: string;
   setGithubSearchQuery: (query: string) => void;
+  viewStyle: 'grid' | 'list';
+  setViewStyle: (style: 'grid' | 'list') => void;
 }
 
 export function GithubHeader({
@@ -15,7 +17,9 @@ export function GithubHeader({
   isSearchExpanded,
   setIsSearchExpanded,
   githubSearchQuery,
-  setGithubSearchQuery
+  setGithubSearchQuery,
+  viewStyle,
+  setViewStyle
 }: GithubHeaderProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +62,7 @@ export function GithubHeader({
         )}
       </AnimatePresence>
 
-      <div className="absolute right-0 flex items-center justify-end h-10 top-1/2 -translate-y-1/2">
+      <div className="absolute right-0 flex items-center justify-end h-10 top-1/2 -translate-y-1/2 gap-2">
         <AnimatePresence>
           {isSearchExpanded ? (
             <motion.div
@@ -80,17 +84,29 @@ export function GithubHeader({
               />
             </motion.div>
           ) : (
-            <motion.button
-              key="search-button"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+            <div key="actions" className="flex items-center gap-1">
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setViewStyle(viewStyle === 'grid' ? 'list' : 'grid')}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
+                title={`Switch to ${viewStyle === 'grid' ? 'list' : 'grid'} view`}
+              >
+                {viewStyle === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setIsSearchExpanded(true)}
               className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
             >
               <Search className="w-5 h-5" />
-            </motion.button>
+              </motion.button>
+            </div>
           )}
         </AnimatePresence>
       </div>

@@ -38,6 +38,7 @@ export function GithubWorkflow({
   retryProviderTokenSetup
 }: GithubWorkflowProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'idle' });
   const [linkError, setLinkError] = useState<string>('');
 
@@ -103,6 +104,8 @@ export function GithubWorkflow({
         setIsSearchExpanded={setIsSearchExpanded}
         githubSearchQuery={githubSearchQuery}
         setGithubSearchQuery={setGithubSearchQuery}
+        viewStyle={viewStyle}
+        setViewStyle={setViewStyle}
       />
       
       <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-4 h-[calc(100vh-200px)]">
@@ -136,6 +139,7 @@ export function GithubWorkflow({
               githubSearchQuery={githubSearchQuery}
               selectedRepoId={selectedRepoId}
               handleAnalyze={handleAnalyze}
+              viewStyle={viewStyle}
             />
 
             <GithubAnalysisModals 
