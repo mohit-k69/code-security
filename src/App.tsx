@@ -143,40 +143,7 @@ export default function App() {
           ) : (
             <div className="flex flex-1 min-w-0">
               <div className="flex-1 flex flex-col min-w-0 relative bg-white">
-                <div className="h-[70px] border-b border-gray-100 flex flex-col justify-center px-6">
-                  <AnimatePresence mode="wait">
-                    {activeWorkflow === 'none' ? (
-                      <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex justify-end">
-                        <button
-                          onClick={handleCheckVibe}
-                          disabled={!hasUploadedCode && !hasPastedCode && !selectedRepoId}
-                          className={`px-8 py-2.5 rounded-full text-[13px] font-semibold transition-all duration-300 shadow-sm flex items-center gap-2 ${
-                            (hasUploadedCode || hasPastedCode || selectedRepoId) 
-                              ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow hover:-translate-y-0.5' 
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          }`}
-                        >
-                          Check Code Vibe
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex justify-end">
-                        <button
-                          onClick={handleCheckVibe}
-                          disabled={!hasUploadedCode && !hasPastedCode && !selectedRepoId}
-                          className={`px-8 py-2.5 rounded-full text-[13px] font-semibold transition-all duration-300 shadow-sm flex items-center gap-2 ${
-                            (hasUploadedCode || hasPastedCode || selectedRepoId)
-                              ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow hover:-translate-y-0.5' 
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          }`}
-                        >
-                          Check Code Vibe
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                
+
                 <div className="flex-1 p-6 flex flex-col min-h-0 bg-[#faf6f4]/30">
                   {activeWorkflow === 'none' && (
                     <WorkflowSelector 
