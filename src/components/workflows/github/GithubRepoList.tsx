@@ -95,38 +95,21 @@ export function GithubRepoList({
             </>
           ) : (
             <>
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <img src={repo.owner.avatar_url} alt="Owner" className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0 border border-gray-200" />
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-[14px] font-semibold text-gray-900 truncate" title={repo.name}>{repo.name}</h4>
-                    <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[9px] font-medium flex items-center gap-1 flex-shrink-0">
-                      {repo.private ? <Lock className="w-2.5 h-2.5" /> : <Globe className="w-2.5 h-2.5" />}
-                      {repo.private ? 'Private' : 'Public'}
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-gray-500 truncate mt-0.5" title={repo.description || repo.full_name}>
-                    {repo.description || repo.full_name}
-                  </p>
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <img src={repo.owner.avatar_url} alt="Owner" className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 border border-gray-200" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <h4 className="text-[15px] font-semibold text-gray-900 truncate" title={repo.name}>{repo.name}</h4>
+                  <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-medium flex items-center gap-1 flex-shrink-0">
+                    {repo.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                    {repo.private ? 'Private' : 'Public'}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 flex-shrink-0">
-                <div className="hidden md:flex items-center gap-4 text-[12px] text-gray-500">
-                  {repo.language && (
-                    <span className="flex items-center gap-1.5">
-                      <CodeXml className="w-3.5 h-3.5" />
-                      {repo.language}
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
-                    {new Date(repo.updated_at).toLocaleDateString()}
-                  </span>
-                </div>
+              <div className="flex items-center flex-shrink-0 ml-4">
                 <button 
                   onClick={() => handleAnalyze(repo)}
-                  className="px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 whitespace-nowrap"
+                  className="px-5 py-2 rounded-full text-[13px] font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 whitespace-nowrap"
                 >
                   Analyze
                 </button>
