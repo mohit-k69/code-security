@@ -120,7 +120,7 @@ async function runSmokeTest(): Promise<void> {
 
   console.log("⏳ Executing checkpoint...\n");
 
-  const runner = new CheckpointRunner();
+  const runner = new CheckpointRunner(new GeminiProvider(model));
   const result: CheckpointResult = await runner.run(
     MOCK_SANITIZED_PACKAGE,
     SECURITY_REVIEW_FRAMEWORK,

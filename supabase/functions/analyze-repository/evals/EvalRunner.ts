@@ -2,12 +2,13 @@ import { CheckpointRunner } from "../services/CheckpointRunner.ts";
 import type { ReviewSpecification, CheckpointResult } from "../services/CheckpointRunner.ts";
 import type { SanitizedContextPackage } from "../services/types.ts";
 import type { EvalDataset, EvalReport, ScenarioResult, ExpectedFinding } from "./types.ts";
+import type { ILLMProvider } from "../orchestrator/providers/ILLMProvider.ts";
 
 export class EvalRunner {
   private checkpointRunner: CheckpointRunner;
 
-  constructor() {
-    this.checkpointRunner = new CheckpointRunner();
+  constructor(provider: ILLMProvider) {
+    this.checkpointRunner = new CheckpointRunner(provider);
   }
 
   public async runEvaluation(
@@ -183,7 +184,7 @@ export class EvalRunner {
     return {
       datasetId: dataset.checkpointId,
       datasetVersion: dataset.version,
-      model: Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash",
+      model: "eval-runner-default",
       timestamp: new Date().toISOString(),
       metrics: {
         totalScenarios,

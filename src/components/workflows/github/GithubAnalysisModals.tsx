@@ -8,7 +8,7 @@ export type AnalysisState =
   | { status: 'loading' }
   | { status: 'no_prs' }
   | { status: 'select_pr'; prs: any[] }
-  | { status: 'analysis_data_ready'; metadata: any }
+  | { status: 'success'; report: any }
   | { status: 'error'; message: string };
 
 interface GithubAnalysisModalsProps {
@@ -100,42 +100,85 @@ export function GithubAnalysisModals({
             </motion.div>
           )}
 
-          {analysisState.status === 'analysis_data_ready' && (
+          {analysisState.status === 'success' && (
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl shadow-xl border border-gray-200 p-10 flex flex-col items-center max-w-md w-full"
+              className="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col max-w-2xl w-full max-h-[85vh] overflow-hidden"
             >
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-20"></div>
-                <div className="relative bg-emerald-50 w-20 h-20 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-3">
+                  {analysisState.report.verdict === 'PASS' ? (
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <Check className="w-5 h-5 text-emerald-600" />
+                    </div>
+                  ) : analysisState.report.verdict === 'NOT_VERIFIED' ? (
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-gray-500" />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-gray-900 font-semibold text-lg">
+                      Security Analysis {analysisState.report.verdict}
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      {analysisState.report.repository.owner}/{analysisState.report.repository.name} PR #{analysisState.report.repository.prNumber}
+                    </p>
+                  </div>
                 </div>
+                <button onClick={() => setAnalysisState({ status: 'idle' })} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <h3 className="text-gray-900 font-semibold text-xl mb-3 text-center">Analyzing Pull Request #{analysisState.metadata.prNumber}</h3>
-              <div className="flex flex-col gap-2 w-full text-sm font-medium">
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Connecting to GitHub
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Fetching Pull Request
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 2.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Collecting changed files
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 3.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Preparing analysis
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 4.5 }} className="flex items-center gap-3 text-gray-400 p-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> Waiting for AI analysis...
-                </motion.div>
+
+              <div className="p-6 overflow-y-auto custom-scrollbar">
+                {analysisState.report.verdict === 'PASS' && (
+                  <p className="text-gray-600">No critical security issues found in this pull request. The code appears safe to merge.</p>
+                )}
+                {analysisState.report.verdict === 'NOT_VERIFIED' && (
+                  <p className="text-gray-600">The AI could not confidently verify the security of this pull request, likely due to missing context or unavailable files.</p>
+                )}
+                {analysisState.report.verdict === 'FAIL' && analysisState.report.findings && (
+                  <div className="space-y-6">
+                    <p className="text-gray-600 mb-4">
+                      Found {analysisState.report.totalFindings} security {analysisState.report.totalFindings === 1 ? 'issue' : 'issues'} that require attention.
+                    </p>
+                    {['critical', 'warning', 'info'].map((severity) => {
+                      const findings = analysisState.report.findings[severity] || [];
+                      if (findings.length === 0) return null;
+                      
+                      return (
+                        <div key={severity} className="space-y-4">
+                          <h4 className="font-semibold text-sm uppercase tracking-wider text-gray-700 border-b pb-2">
+                            {severity} ({findings.length})
+                          </h4>
+                          <div className="space-y-4">
+                            {findings.map((finding: any) => (
+                              <div key={finding.findingId} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                <div className="flex justify-between items-start mb-2">
+                                  <h5 className="font-medium text-gray-900">{finding.title}</h5>
+                                  <span className="text-xs px-2 py-1 rounded-full bg-white border border-gray-200 text-gray-600 font-mono">
+                                    {finding.vulnerabilityClass}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-3">{finding.description}</p>
+                                <div className="bg-white p-3 rounded-lg border border-emerald-100 text-sm">
+                                  <span className="font-medium text-emerald-800 block mb-1">Recommendation:</span>
+                                  <span className="text-emerald-700">{finding.suggestion}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => setAnalysisState({ status: 'idle' })}
-                className="mt-8 text-xs text-gray-400 hover:text-gray-600 underline"
-              >
-                Cancel Analysis
-              </button>
             </motion.div>
           )}
 

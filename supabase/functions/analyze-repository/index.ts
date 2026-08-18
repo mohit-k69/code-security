@@ -8,6 +8,8 @@ import { SensitiveDataDetector } from "./services/SensitiveDataDetector.ts";
 import { PlaceholderRegistry } from "./services/PlaceholderRegistry.ts";
 import { SensitiveDataSanitizer } from "./services/SensitiveDataSanitizer.ts";
 import { SanitizationValidator } from "./services/SanitizationValidator.ts";
+import { OpenRouterProvider } from "./orchestrator/providers/OpenRouterProvider.ts";
+import { ReviewOrchestrator } from "./orchestrator/ReviewOrchestrator.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,14 +86,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'GitHub is not connected. Please reconnect your GitHub account.' }, 404);
     }
 
-    const provider = connection.provider;
+    const authProvider = connection.provider;
 
     // 4. Instantiate Provider Service
     let providerService;
-    if (provider === 'github') {
+    if (authProvider === 'github') {
       providerService = new GithubService(connection.access_token);
     } else {
-      return jsonResponse({ error: `Provider ${provider} is not supported.` }, 400);
+      return jsonResponse({ error: `Provider ${authProvider} is not supported.` }, 400);
     }
 
     // 5. Use PR Selector Component v1.0
@@ -100,7 +102,7 @@ Deno.serve(async (req) => {
     const selectionResult = await selector.selectNextReview(owner, repo);
 
     if (selectionResult.status !== 'pr_selected') {
-      return jsonResponse(selectionResult as Record<string, unknown>);
+      return jsonResponse(selectionResult as unknown as Record<string, unknown>);
     }
 
     // 6. Use Context Manager Component v1.0
@@ -137,9 +139,31 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: 'validation_error', message: 'Internal error: Context sanitization validation failed.' }, 500);
     }
 
-    // Return the Sanitized Context Package.
-    // Prompt Builder (when built) will consume this output.
-    return jsonResponse({ status: 'sanitized_ready', context: sanitizedPackage });
+    // 10. Execute the Review Orchestrator
+    const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
+    if (!openRouterKey) {
+      return jsonResponse({ error: 'Internal error: OPENROUTER_API_KEY not configured.' }, 500);
+    }
+
+    const llmModel = Deno.env.get('LLM_MODEL');
+    if (!llmModel) {
+      return jsonResponse({ error: 'Internal error: LLM_MODEL not configured.' }, 500);
+    }
+
+    const provider = new OpenRouterProvider(llmModel);
+    const orchestrator = new ReviewOrchestrator({ provider });
+
+    const executionResult = await orchestrator.review(sanitizedPackage);
+
+    const isDebug = Deno.env.get('DEBUG_INSTRUMENTATION') === 'true';
+
+    // Return the final result
+    if (isDebug) {
+      return jsonResponse(executionResult as unknown as Record<string, unknown>);
+    } else {
+      return jsonResponse({ report: executionResult.report } as unknown as Record<string, unknown>);
+    }
+
 
   } catch (error: any) {
     console.error('analyze-repository error:', error.message);

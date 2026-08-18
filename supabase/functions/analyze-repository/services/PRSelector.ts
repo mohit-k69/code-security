@@ -50,17 +50,25 @@ export class PRSelector {
         .in('pr_number', prNumbers)
         .order('reviewed_at', { ascending: false });
 
+      let reviewsList: any[] = [];
       if (error) {
-        console.error('Error fetching PR reviews:', error);
-        return {
-          status: 'error',
-          message: 'Database connection/access error.'
-        };
+        if (error.code === 'PGRST205') {
+          // Table doesn't exist yet (Phase 7B not deployed). Treat as no prior reviews.
+          console.warn('pr_reviews table not found (PGRST205). Proceeding with no prior reviews.');
+        } else {
+          console.error('Error fetching PR reviews:', error);
+          return {
+            status: 'error',
+            message: JSON.stringify(error)
+          };
+        }
+      } else {
+        reviewsList = reviews || [];
       }
 
       // Create a map of PR Number -> Latest Reviewed Commit SHA
       const latestReviews = new Map<number, string>();
-      for (const review of (reviews || [])) {
+      for (const review of reviewsList) {
         if (!latestReviews.has(review.pr_number)) {
           latestReviews.set(review.pr_number, review.commit_sha);
         }

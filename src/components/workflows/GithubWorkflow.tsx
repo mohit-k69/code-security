@@ -72,6 +72,8 @@ export function GithubWorkflow({
       const { data, error } = await supabase.functions.invoke('analyze-repository', {
         body: { owner: repo.owner.login, repo: repo.name, prNumber }
       });
+      console.log("invoke result", data);
+      console.log("JSON", JSON.stringify(data, null, 2));
       
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -80,8 +82,8 @@ export function GithubWorkflow({
         setAnalysisState({ status: 'no_prs' });
       } else if (data.status === 'select_pr') {
         setAnalysisState({ status: 'select_pr', prs: data.prs });
-      } else if (data.status === 'analysis_data_ready') {
-        setAnalysisState({ status: 'analysis_data_ready', metadata: data.metadata });
+      } else if (data.report) {
+        setAnalysisState({ status: 'success', report: data.report });
       } else {
         throw new Error('Unknown response from server');
       }

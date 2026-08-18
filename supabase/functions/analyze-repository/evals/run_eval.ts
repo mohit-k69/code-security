@@ -8,6 +8,7 @@ import { EvalRunner } from "./EvalRunner.ts";
 import { AuthenticationEvalDataset } from "./datasets/AuthenticationEvalDataset.ts";
 import { AuthenticationSpec } from "../prompts/specifications/AuthenticationSpec.ts";
 import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../prompts/SecurityReviewFramework.ts";
+import { GeminiProvider } from "../orchestrator/providers/GeminiProvider.ts";
 
 async function main() {
   console.log("═══════════════════════════════════════════════════");
@@ -20,14 +21,15 @@ async function main() {
     Deno.exit(1);
   }
 
-  const model = Deno.env.get("GEMINI_MODEL") || "(default)";
+  const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash";
   console.log(`🔧 Model:     ${model}`);
   console.log(`📋 Framework: v${FRAMEWORK_VERSION}`);
   console.log(`📊 Dataset:   ${AuthenticationEvalDataset.checkpointId} (v${AuthenticationEvalDataset.version})`);
   console.log(`📝 Scenarios: ${AuthenticationEvalDataset.scenarios.length}`);
   console.log("\n⏳ Starting evaluation run...\n");
 
-  const runner = new EvalRunner();
+  const provider = new GeminiProvider(model);
+  const runner = new EvalRunner(provider);
   const report = await runner.runEvaluation(
     AuthenticationEvalDataset,
     SECURITY_REVIEW_FRAMEWORK,

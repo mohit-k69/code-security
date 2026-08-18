@@ -1,0 +1,32 @@
+{
+  "version": "5",
+  "remote": {
+    "https://esm.sh/@supabase/supabase-js@2.111.0": "276104e20b7318fac2be1c67eb9be93f4280f5ec9f2fc5ac7b32e1f0ed6f31ba"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@babel/parser@^7.29.8",
+        "npm:@emailjs/browser@^4.4.1",
+        "npm:@google/genai@^2.4.0",
+        "npm:@supabase/supabase-js@^2.111.0",
+        "npm:@tailwindcss/vite@^4.1.14",
+        "npm:@types/express@^4.17.21",
+        "npm:@types/node@^22.14.0",
+        "npm:@vitejs/plugin-react@^5.0.4",
+        "npm:autoprefixer@^10.4.21",
+        "npm:dotenv@^17.2.3",
+        "npm:esbuild@0.25",
+        "npm:express@^4.21.2",
+        "npm:lucide-react@0.546",
+        "npm:motion@^12.23.24",
+        "npm:react-dom@^19.0.1",
+        "npm:react@^19.0.1",
+        "npm:tailwindcss@^4.1.14",
+        "npm:tsx@^4.21.0",
+        "npm:typescript@~5.8.2",
+        "npm:vite@^6.2.3"
+      ]
+    }
+  }
+}
