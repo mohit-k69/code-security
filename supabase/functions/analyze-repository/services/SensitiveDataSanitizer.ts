@@ -51,7 +51,8 @@ export class SensitiveDataSanitizer {
 
         for (const finding of lineFindings) {
           const startIdx = finding.startColumn - 1; // 0-indexed string position
-          const endIdx = finding.endColumn - 1;
+          // endColumn is match.index + length, so to get exclusive 0-indexed end, it's just finding.endColumn - 1 + 1
+          const endIdx = finding.endColumn; 
 
           // Check for overlapping matches
           const isOverlapping = mutatedRanges.some(r => Math.max(startIdx, r.start) < Math.min(endIdx, r.end));
@@ -69,6 +70,9 @@ export class SensitiveDataSanitizer {
 
           // Ensure the string actually matches what we expect (sanity check)
           const actualValue = currentLine.substring(startIdx, endIdx);
+          if (actualValue !== finding.matchedValue) {
+            console.error(`Mismatch: actual='${actualValue}', matched='${finding.matchedValue}'`);
+          }
           if (actualValue === finding.matchedValue) {
             currentLine = currentLine.substring(0, startIdx) + placeholder + currentLine.substring(endIdx);
             

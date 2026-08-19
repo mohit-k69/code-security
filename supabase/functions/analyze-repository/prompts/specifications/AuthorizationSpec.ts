@@ -42,12 +42,11 @@ export const AuthorizationSpec: ReviewSpecification = {
         "(e.g., WHERE id = ? AND user_id = ?, or an explicit permission check " +
         "before returning data). No user-controlled IDs are used for lookups " +
         "without ownership filtering.\n" +
-        "FAIL: A resource is fetched, updated, or deleted using only a " +
-        "client-supplied ID without verifying the requesting user owns or has " +
-        "permission to access it (IDOR). Or ownership checks can be bypassed " +
-        "via parameter manipulation.\n" +
+        "FAIL: The snippet explicitly demonstrates broken access control, such as a " +
+        "resource being fetched, updated, or deleted using only a client-supplied ID " +
+        "with explicit evidence that ownership filtering is omitted. Do NOT FAIL if the dangerous database operation is not actually shown.\n" +
         "NOT_VERIFIED: Resource ownership logic is delegated to a data access " +
-        "layer, ORM policy, or middleware not included in the provided context.",
+        "layer, ORM policy, or missing downstream database authorization logic not included in the provided context.",
     },
 
     // ────────────────────────────────────────────────────────────────

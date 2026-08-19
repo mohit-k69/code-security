@@ -13,6 +13,7 @@ import type { CheckpointResult } from "../CheckpointRunner.ts";
 import type { ReviewSpecification } from "../../prompts/specifications/ReviewSpecification.ts";
 import type { SanitizedContextPackage } from "../types.ts";
 import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../../prompts/SecurityReviewFramework.ts";
+import { GeminiProvider } from "../../orchestrator/providers/GeminiProvider.ts";
 
 // ─── Test Fixtures ───────────────────────────────────────────────
 

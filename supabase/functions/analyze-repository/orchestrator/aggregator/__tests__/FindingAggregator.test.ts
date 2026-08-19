@@ -3,68 +3,136 @@ import { FindingAggregator } from "../FindingAggregator.ts";
 import { VulnerabilityClass } from "../../types/VulnerabilityClass.ts";
 import type { CheckpointResult, CheckpointFinding } from "../../../services/CheckpointRunner.ts";
 
-function createMockFinding(id: string, severity: "critical" | "warning" | "info", cwe?: string): CheckpointFinding {
+function createFinding(
+  id: string, 
+  vulnClass: string, 
+  title: string, 
+  desc: string, 
+  file: string, 
+  line: number, 
+  snippet: string,
+  cwes: string[] = []
+): CheckpointFinding {
   return {
-    findingId: "HASH-123", // Same hash to trigger deduplication
-    criterionId: id,
-    vulnerabilityClass: VulnerabilityClass.XSS,
-    primaryLocation: { file: "src/app.ts", line: 42 },
-    title: `Title ${id}`,
-    severity,
-    description: `Description ${id}`,
-    suggestion: `Suggestion ${id}`,
-    cwe,
-    evidence: [{ file: "src/app.ts", line: 42, snippet: "console.log(x);", explanation: "Expl 1" }]
+    findingId: `HASH-${id}`,
+    criterionId: `CRI-${id}`,
+    vulnerabilityClass: vulnClass as VulnerabilityClass,
+    primaryLocation: { file, line },
+    title,
+    severity: "critical",
+    description: desc,
+    suggestion: "Suggestion",
+    cwes,
+    evidence: [{ file, line, snippet, explanation: "Expl" }]
   };
 }
 
-function createMockResult(checkpointId: string, confidence: number, findings: CheckpointFinding[]): CheckpointResult {
+function wrapFinding(finding: CheckpointFinding): CheckpointResult {
   return {
-    checkpointId,
-    checkpointName: `Name ${checkpointId}`,
+    checkpointId: `CHK-${finding.criterionId}`,
+    checkpointName: `Name`,
     verdict: "FAIL",
-    confidence,
+    confidence: 1.0,
     summary: "Mock summary",
-    findings,
+    findings: [finding],
     status: "completed",
-    execution: { executionTimeMs: 100, model: "test", timestamp: "" }
+    execution: { executionTimeMs: 100, llmDurationMs: 50, model: "test", timestamp: "" }
   };
 }
 
-// Rewriting as a standard tsx script since Deno might not be available
-function assert(condition: boolean, message: string) {
-  if (!condition) {
-    console.error(`❌ FAIL: ${message}`);
-    process.exit(1);
-  }
-}
+Deno.test("FindingAggregator - Test Case 1: Same Underlying Secret, Different Vulnerability Classes", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Secret", "Hardcoded JWT secret 'my_secret' found.", 
+    "auth.ts", 9, "const JWT_SECRET = 'my_secret';"
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "Hardcoded JWT", "JWT secret is hardcoded directly in the source.", 
+    "auth.ts", 9, "const JWT_SECRET = 'my_secret';"
+  );
 
-console.log("Running FindingAggregator tests...");
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge overlapping secret findings");
+  assertEquals(aggregated[0].contributingCheckpoints.length, 2);
+});
 
-const aggregator = new FindingAggregator();
+Deno.test("FindingAggregator - Test Case 2: Different Secrets on Nearby Lines", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Database Password", "Database password 'supersecret' is hardcoded.", 
+    "auth.ts", 7, "const DB_PASS = 'supersecret';"
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "JWT Secret", "JWT secret 'my_hardcoded_jwt_secret' is hardcoded.", 
+    "auth.ts", 9, "const JWT_SECRET = 'my_hardcoded_jwt_secret';"
+  );
 
-// Setup: Checkpoint A (Low confidence, Info severity)
-const findingA = createMockFinding("AUTH-C1", "info", "CWE-79");
-const resultA = createMockResult("SEC-AUTH", 0.5, [findingA]);
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on nearby lines");
+});
 
-// Setup: Checkpoint B (High confidence, Critical severity)
-const findingB = createMockFinding("XSS-C1", "critical", "CWE-79");
-findingB.evidence.push({ file: "src/db.ts", line: 10, snippet: "db.read()", explanation: "Trace" }); // Extra evidence
-const resultB = createMockResult("SEC-XSS", 0.99, [findingB]);
+Deno.test("FindingAggregator - Test Case 3: Hardcoded secret vs AUTH_BYPASS", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Database Password", "Database password is hardcoded directly in the source code.", 
+    "auth.ts", 12, "if (username === 'admin' && password === 'supersecret')"
+  );
+  const f2 = createFinding(
+    "2", "AUTH_BYPASS", "Authentication Bypass", "Authentication logic directly compares provided username against hardcoded values. Bypasses proper user management.", 
+    "auth.ts", 12, "if (username === 'admin' && password === 'supersecret')"
+  );
 
-const aggregated = aggregator.aggregate([resultA, resultB]);
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge hardcoded secret and auth bypass despite same line and snippet");
+});
 
-// Tests
-assert(aggregated.length === 1, "Should deduplicate 2 findings into 1");
+Deno.test("FindingAggregator - Test Case 4: Hardcoded JWT secret vs missing expiration", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "JWT_SECURITY", "Hardcoded JWT Secret", "The JWT secret is hardcoded directly into the source code.", 
+    "auth.ts", 16, "const token = jwt.sign({ user: username }, JWT_SECRET);"
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "Missing JWT Expiration", "The JWT is created without an expiration time, meaning it will never expire.", 
+    "auth.ts", 16, "const token = jwt.sign({ user: username }, JWT_SECRET);"
+  );
 
-const final = aggregated[0];
-assert(final.severity === "critical", "Should pick maximum severity");
-assert(final.confidence === 0.99, "Should pick maximum confidence");
-assert(final.description === findingB.description, "Should pick description from highest confidence finding");
-assert(final.suggestion === findingB.suggestion, "Should pick suggestion from highest confidence finding");
-assert(final.evidence.length === 2, "Should union distinct evidence items");
-assert(final.contributingCheckpoints.length === 2, "Should track both contributing checkpoints");
-assert(final.contributingCheckpoints.includes("SEC-AUTH") && final.contributingCheckpoints.includes("SEC-XSS"), "Should list correct checkpoints");
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge hardcoded secret and missing expiration");
+});
 
-console.log("✅ Passed: FindingAggregator correctly deterministically aggregates overlapping findings.");
-console.log("🎉 All FindingAggregator tests passed!");
+Deno.test("FindingAggregator - Test Case 5: Identical Vulnerability Spanning Slightly Different Lines (LLM Jitter)", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "INPUT_VALIDATION", "Missing Validation", "Missing validation on user email before SQL execution.", 
+    "db.ts", 15, "const query = 'SELECT * FROM users WHERE email = ' + req.body.email;"
+  );
+  const f2 = createFinding(
+    "2", "SQL_INJECTION", "SQL Injection", "User email input is concatenated directly into SQL query without parameterization.", 
+    "db.ts", 16, "const query = 'SELECT * FROM users WHERE email = ' + req.body.email;" // Jitter in line
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge jittered lines reporting the same issue");
+});
+
+Deno.test("FindingAggregator - Test Case 6: Same Vulnerability Class, Completely Different Sinks", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "INPUT_VALIDATION", "Missing Validation", "Missing validation on 'ip' before exec().", 
+    "app.ts", 25, "exec(ip);"
+  );
+  const f2 = createFinding(
+    "2", "INPUT_VALIDATION", "Missing Validation", "Missing validation on 'hostname' before exec().", 
+    "app.ts", 50, "exec(hostname);"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge distant lines even with same class and similar description");
+});

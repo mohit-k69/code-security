@@ -134,6 +134,10 @@ export class ContextManager {
         }
       }
 
+      if (changedFiles.length === 0) {
+        return { stage: 'context_manager', message: 'No supported source files were available for security analysis.', fatal: false };
+      }
+
       return {
         repository: `${owner}/${repo}`,
         prNumber,

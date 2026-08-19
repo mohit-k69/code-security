@@ -41,10 +41,11 @@ export const SessionJwtSpec: ReviewSpecification = {
         "the signature, expiration, issuer, audience, and algorithm. Using `jwt.decode()` " +
         "instead of `jwt.verify()` for authentication trust is a critical vulnerability.\n\n" +
         "PASS: JWTs are explicitly verified using robust libraries (e.g., jsonwebtoken's " +
-        "`verify()` method), checking the signature and throwing errors on invalid tokens.\n" +
+        "`verify()` method), checking the signature and throwing errors on invalid tokens. " +
+        "Explicitly specifying secure algorithms (e.g., `algorithms: ['HS256']`) inherently rejects 'none'.\n" +
         "FAIL: The application trusts `jwt.decode()` without verifying the signature, " +
         "accepts the 'none' algorithm, ignores the expiration date, or fails to verify " +
-        "critical claims (issuer/audience) when required.\n" +
+        "critical claims (issuer/audience) when required. Do not fail if 'none' is rejected implicitly by an explicit algorithm list.\n" +
         "NOT_VERIFIED: JWT verification is handled by an API Gateway or framework layer " +
         "not provided in the context.",
     },
@@ -61,9 +62,8 @@ export const SessionJwtSpec: ReviewSpecification = {
         "enforce absolute and/or idle timeouts.\n\n" +
         "PASS: Access tokens are created with short expiration times (e.g., '15m'), " +
         "and session configurations define explicit timeouts.\n" +
-        "FAIL: Access tokens are generated without an expiration, or sessions are " +
-        "configured to live forever without any idle or absolute timeout mechanisms.\n" +
-        "NOT_VERIFIED: Expiration policies are defined in an external Identity Provider.",
+        "FAIL: Access tokens are explicitly configured to never expire (e.g., infinite lifetimes), or sessions explicitly disable timeout mechanisms.\n" +
+        "NOT_VERIFIED: Expiration policies are defined in an external Identity Provider, or the snippet simply lacks the expiration configuration context.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -139,5 +139,6 @@ export const SessionJwtSpec: ReviewSpecification = {
     "- Missing `HttpOnly` on auth cookies (SESSION-C5) is a **FAIL**.\n" +
     "- Logging out by only deleting a client-side cookie without invalidating the refresh " +
     "token backend state (SESSION-C6) is a **FAIL**.\n" +
+    "- Treat `process.env.JWT_SECRET` or equivalent runtime secret retrieval as secure by default.\n" +
     "- Never infer vulnerabilities without sufficient code evidence.",
 };

@@ -28,7 +28,7 @@ export const SecurityConfigurationSpec: ReviewSpecification = {
         "FAIL: The application explicitly disables security headers, or configures them " +
         "insecurely (e.g., `unsafe-inline` in CSP where avoidable, missing X-Frame-Options).\n" +
         "NOT_VERIFIED: Security headers are managed by a reverse proxy, WAF, or CDN " +
-        "not visible in the provided code context.",
+        "not visible in the provided code context, or the server initialization snippet is simply incomplete.",
     },
 
     // ────────────────────────────────────────────────────────────────

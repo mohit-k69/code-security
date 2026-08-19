@@ -128,10 +128,11 @@ export const AuthenticationSpec: ReviewSpecification = {
         "Lockout policies must not enable denial-of-service against legitimate users.\n\n" +
         "PASS: Rate limiting or account lockout is implemented on authentication " +
         "endpoints with appropriate thresholds.\n" +
-        "FAIL: No rate limiting, no lockout mechanism, or thresholds are too " +
-        "permissive (e.g., unlimited attempts allowed).\n" +
-        "NOT_VERIFIED: Rate limiting is likely handled by infrastructure (API gateway, " +
-        "WAF) not visible in the code.",
+        "FAIL: Rate limiting or lockout is explicitly implemented with insecure " +
+        "thresholds (e.g., explicitly configuring unlimited attempts).\n" +
+        "NOT_VERIFIED: Rate limiting is not visible in the provided code snippet. " +
+        "It is likely handled by infrastructure (API gateway, WAF). Do not FAIL " +
+        "merely because rate limiting is absent.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -149,9 +150,11 @@ export const AuthenticationSpec: ReviewSpecification = {
         "Security questions alone are not acceptable as a recovery mechanism.\n\n" +
         "PASS: Reset tokens are random, single-use, and time-limited; the flow " +
         "does not leak account existence.\n" +
-        "FAIL: Predictable tokens, reusable tokens, no expiration, user enumeration " +
-        "via reset responses, or insecure token delivery.\n" +
-        "NOT_VERIFIED: No password reset flow is present in the changed files.",
+        "FAIL: Concrete evidence of predictable tokens, explicitly reusable tokens, " +
+        "explicit user enumeration logic, or insecure token delivery. Do not FAIL " +
+        "merely because protections are absent from a partial snippet.\n" +
+        "NOT_VERIFIED: No password reset flow is present, or the flow is incomplete " +
+        "in the changed files.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -191,11 +194,11 @@ export const AuthenticationSpec: ReviewSpecification = {
         "If JWT is used: signature validation must be enforced, the 'none' algorithm " +
         "must be explicitly rejected, tokens must have reasonable expiration (≤ 24h " +
         "for access tokens, ≤ 7d for refresh tokens), and signing secrets must not " +
-        "be hardcoded or weak (< 256 bits).\n\n" +
+        "be hardcoded or weak.\n\n" +
         "PASS: Sessions are regenerated post-auth; tokens are random, properly " +
-        "flagged, and have appropriate expiration.\n" +
+        "flagged, and have appropriate expiration. Fetching secrets via `process.env.VAR` is secure.\n" +
         "FAIL: No session regeneration, predictable tokens, missing cookie flags, " +
-        "JWT 'none' algorithm accepted, excessive token lifetimes, or weak/hardcoded secrets.\n" +
+        "JWT 'none' algorithm accepted, excessive token lifetimes, or explicitly weak/hardcoded secrets. Do NOT FAIL `process.env.JWT_SECRET` merely because runtime entropy/length is not checked in code.\n" +
         "NOT_VERIFIED: Session/token creation logic is handled by a framework or " +
         "library not visible in the changed files.",
     },
@@ -237,9 +240,12 @@ export const AuthenticationSpec: ReviewSpecification = {
         "HTTP status codes should not differ between 'user not found' and 'wrong password'.\n\n" +
         "PASS: Error messages are generic and consistent; no internal details or " +
         "user existence information is leaked.\n" +
-        "FAIL: Different error messages for invalid user vs invalid password, stack " +
-        "traces in responses, or registration/reset reveals account existence.\n" +
-        "NOT_VERIFIED: Error handling logic is not present in the changed files.",
+        "FAIL: Explicit evidence of returning stack traces (`err.stack`), internal " +
+        "SQL errors, or explicitly leaking user existence via differing generic " +
+        "responses. Do not infer enumeration merely because generic error handling " +
+        "is absent from a partial snippet.\n" +
+        "NOT_VERIFIED: Error handling logic is not present or incomplete in the " +
+        "changed files.",
     },
   ],
 
@@ -263,7 +269,8 @@ export const AuthenticationSpec: ReviewSpecification = {
     "- If a criterion cannot be fully evaluated because required context (middleware, " +
     "configuration, dependency code) is missing, use NOT_VERIFIED rather than making assumptions.\n" +
     "- Never infer vulnerabilities without sufficient code evidence. If you suspect an issue " +
-    "but lack evidence, flag it as NOT_VERIFIED with an explanation, not as FAIL.\n\n" +
+    "but lack evidence, flag it as NOT_VERIFIED with an explanation, not as FAIL.\n" +
+    "- **CRITICAL**: You MUST use an exact string from the allowed `vulnerabilityClass` list (e.g., `AUTH_BYPASS`, `BUSINESS_LOGIC_FLAW`, `INSECURE_CONFIGURATION`). Do NOT invent new classes like `INFORMATION_DISCLOSURE` or `SESSION_MANAGEMENT`. Map enumeration/disclosure issues to `BUSINESS_LOGIC_FLAW` or `AUTH_BYPASS`.\n\n" +
 
     "### Analysis Priorities\n\n" +
     "- Prioritize findings by exploitability: critical > warning > info.\n" +

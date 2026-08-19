@@ -26,10 +26,8 @@ export const InputValidationSpec: ReviewSpecification = {
         "an 'allowlist' approach where possible, explicitly defining what input is valid.\n\n" +
         "PASS: Input fields are explicitly validated for presence, type, format, and " +
         "length limits before processing.\n" +
-        "FAIL: Input is accepted and processed without validation. Missing length limits " +
-        "on string inputs. Relying on weak validation logic (e.g., flawed regex).\n" +
-        "NOT_VERIFIED: Validation is handled by a middleware or framework mechanism " +
-        "not visible in the provided context.",
+        "FAIL: Input validation explicitly relies on weak logic (e.g., flawed regex). (Do not FAIL simply because validation is missing; use NOT_VERIFIED instead). Do not report application/business rules (e.g., an optional 'description' field being empty) as security vulnerabilities unless the code demonstrates concrete security impact.\n" +
+        "NOT_VERIFIED: Validation is handled by a middleware or framework mechanism not visible in the provided context, or validation logic is simply absent from the partial snippet.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -46,10 +44,11 @@ export const InputValidationSpec: ReviewSpecification = {
         "on the general principle of safe input preparation.\n\n" +
         "PASS: Input is safely sanitized, type-cast, or encoded before storage or " +
         "processing (e.g., using DOMPurify for rich text, stripping null bytes).\n" +
-        "FAIL: Raw user input is passed directly to sensitive sinks or storage mechanisms " +
-        "without any preparation or sanitization.\n" +
+        "FAIL: Concrete evidence of raw user input being explicitly passed directly " +
+        "to a dangerous sink or sensitive mechanism. Do not FAIL simply because " +
+        "sanitization logic is absent from a partial snippet.\n" +
         "NOT_VERIFIED: Sanitization happens in an external service, middleware, or " +
-        "ORM layer not visible in the provided context.",
+        "ORM layer not visible in the provided context, or is simply absent.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -64,9 +63,10 @@ export const InputValidationSpec: ReviewSpecification = {
         "UX purposes only and is easily bypassed. Every API endpoint must independently " +
         "validate the input it receives.\n\n" +
         "PASS: The backend endpoint or server action independently validates the input.\n" +
-        "FAIL: Validation exists only on the frontend, while the corresponding backend " +
-        "endpoint accepts the data without validation.\n" +
-        "NOT_VERIFIED: The backend code is not provided in the context.",
+        "FAIL: Explicit evidence that validation exists only on the frontend, while " +
+        "the backend code explicitly processes the exact same raw data unsafely. " +
+        "Do not FAIL simply because backend validation logic is absent.\n" +
+        "NOT_VERIFIED: The backend code is not provided, or validation logic is absent.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -81,11 +81,11 @@ export const InputValidationSpec: ReviewSpecification = {
         "enter undefined states when encountering bad input.\n\n" +
         "PASS: Unexpected input types (e.g., arrays instead of strings), null values, " +
         "or excessively large payloads are explicitly rejected or safely handled.\n" +
-        "FAIL: Application crashes, throws unhandled exceptions, or exhibits unexpected " +
-        "behavior due to type confusion (e.g., calling .replace() on an array passed in " +
-        "JSON), null pointer dereferences, or lack of payload size limits.\n" +
+        "FAIL: Explicitly insecure handling of input that demonstrably causes a crash, " +
+        "type confusion, or undefined state. Do not FAIL simply because defensive " +
+        "parsing logic is absent.\n" +
         "NOT_VERIFIED: Error handling and payload parsing are managed by the framework " +
-        "or middleware out of context.",
+        "or middleware out of context, or absent.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -100,10 +100,11 @@ export const InputValidationSpec: ReviewSpecification = {
         "and potentially other security constraints (like safe storage paths or AV scanning).\n\n" +
         "PASS: Uploaded files have strict size limits enforced and file types are " +
         "verified (preferably beyond just trusting the extension).\n" +
-        "FAIL: File uploads lack size limits, accept dangerous file types (e.g., .exe, " +
-        ".php, .sh), or trust client-provided MIME types without verification.\n" +
-        "NOT_VERIFIED: The application has no file upload functionality in the provided " +
-        "context, or the upload logic is handled by a third-party service.",
+        "FAIL: Explicit evidence of file upload logic that explicitly accepts all " +
+        "file types or explicitly trusts client-provided MIME types. Do not FAIL " +
+        "simply because file validation logic is absent from the snippet.\n" +
+        "NOT_VERIFIED: The application has no file upload functionality, or the upload " +
+        "logic is handled by a third-party service or absent.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -119,11 +120,11 @@ export const InputValidationSpec: ReviewSpecification = {
         "a defense-in-depth approach to input validation.\n\n" +
         "PASS: The endpoint validates the entire request payload against a strictly " +
         "defined schema.\n" +
-        "FAIL: The endpoint manually extracts fields from the request body without " +
-        "comprehensive schema validation, potentially allowing unexpected fields or " +
-        "bypassing structural validation.\n" +
+        "FAIL: Explicit evidence of unsafe manual extraction of complex/nested payloads " +
+        "that demonstrably causes logic flaws. Do not FAIL simply because schema " +
+        "validation libraries are absent. Do not generate INFO/WARNING findings solely because optional defense-in-depth controls (such as full-object schema validation) are absent when the fields actually used are safely validated. Missing optional hardening should result in no finding or NOT_VERIFIED.\n" +
         "NOT_VERIFIED: Schema validation is enforced globally at the API Gateway or " +
-        "framework level not visible in the context.",
+        "framework level not visible in the context, or absent.",
     },
   ],
 
@@ -153,8 +154,6 @@ export const InputValidationSpec: ReviewSpecification = {
     "- Unrestricted file uploads (INPUT-C5) are almost always **critical** severity.\n" +
     "- Client-only validation without backend enforcement (INPUT-C3) is a **FAIL** and " +
     "typically **critical**.\n" +
-    "- Missing length limits (INPUT-C1) or missing schema validation (INPUT-C6) on " +
-    "complex JSON payloads is a **FAIL** and typically **warning** or **moderate**.\n" +
     "- For INPUT-C2, focus on the general principle of safely preparing untrusted input " +
     "before processing or storage. Do not perform a deep XSS or specific injection review, " +
     "as those are covered in dedicated checkpoints.",

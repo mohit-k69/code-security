@@ -117,6 +117,37 @@ Deno.serve(async (req) => {
     );
 
     if ('stage' in contextPackage) {
+      if (
+        contextPackage.message.includes('No supported source files') ||
+        contextPackage.message.includes('No changed files')
+      ) {
+        const emptyReport = {
+          scanId: `scan_${Date.now()}_empty`,
+          repository: {
+            owner,
+            name: repo,
+            prNumber: selectionResult.prNumber!,
+            commitSha: selectionResult.commitSha!
+          },
+          verdict: 'NOT_VERIFIED',
+          checkpoints: [],
+          findings: { critical: [], warning: [], info: [] },
+          coverage: {
+            totalCheckpoints: 0,
+            executedCheckpoints: 0,
+            skippedCheckpoints: 0,
+            notVerifiedCheckpoints: 0
+          },
+          totalFindings: 0,
+          generatedAt: new Date().toISOString()
+        };
+        const isDebug = Deno.env.get('DEBUG_INSTRUMENTATION') === 'true';
+        if (isDebug) {
+          return jsonResponse({ report: emptyReport, message: contextPackage.message } as unknown as Record<string, unknown>);
+        } else {
+          return jsonResponse({ report: emptyReport } as unknown as Record<string, unknown>);
+        }
+      }
       return jsonResponse({ status: 'context_error', message: contextPackage.message });
     }
 

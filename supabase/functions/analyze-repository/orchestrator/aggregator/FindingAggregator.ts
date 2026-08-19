@@ -8,23 +8,90 @@ export class FindingAggregator {
    * @param results The raw output from all executed CheckpointRunners.
    */
   public aggregate(results: CheckpointResult[]): AggregatedFinding[] {
-    const findingGroups = new Map<string, { finding: CheckpointFinding; parentResult: CheckpointResult }[]>();
-
-    // 1. Flatten and group all findings by their deterministic findingId
+    const flattenedItems: { finding: CheckpointFinding; parentResult: CheckpointResult }[] = [];
+    
+    // 1. Flatten all findings
     for (const result of results) {
       if (!result.findings) continue; // Skip errors or empty
-      
       for (const finding of result.findings) {
-        const group = findingGroups.get(finding.findingId) || [];
-        group.push({ finding, parentResult: result });
-        findingGroups.set(finding.findingId, group);
+        flattenedItems.push({ finding, parentResult: result });
+      }
+    }
+
+    // Helper for Jaccard Similarity
+    const computeSemanticSimilarity = (text1: string, text2: string): number => {
+      const stopwords = new Set(["the", "is", "a", "in", "for", "this", "to", "and", "of", "on", "with", "as", "it", "by", "or", "an", "be", "are", "at", "from", "that", "which"]);
+      const getWords = (text: string) => {
+        const words = text.toLowerCase().match(/\b[a-z0-9_]+\b/g) || [];
+        return new Set(words.filter(w => !stopwords.has(w)));
+      };
+      const set1 = getWords(text1);
+      const set2 = getWords(text2);
+      if (set1.size === 0 && set2.size === 0) return 1.0;
+      if (set1.size === 0 || set2.size === 0) return 0.0;
+      let intersectionCount = 0;
+      for (const word of set1) {
+        if (set2.has(word)) intersectionCount++;
+      }
+      return intersectionCount / (set1.size + set2.size - intersectionCount);
+    };
+
+    // 2. Group findings into semantic clusters
+    const clusters: { finding: CheckpointFinding; parentResult: CheckpointResult }[][] = [];
+
+    for (const item of flattenedItems) {
+      let matchedCluster = null;
+      
+      for (const cluster of clusters) {
+        const canonical = cluster[0].finding;
+        const f1 = canonical;
+        const f2 = item.finding;
+
+        const isSameFile = f1.primaryLocation.file === f2.primaryLocation.file;
+        if (!isSameFile) continue;
+
+        const isNearby = Math.abs(f1.primaryLocation.line - f2.primaryLocation.line) <= 3;
+        
+        const snippet1 = f1.evidence?.[0]?.snippet || "";
+        const snippet2 = f2.evidence?.[0]?.snippet || "";
+        const clean1 = snippet1.replace(/\s+/g, '');
+        const clean2 = snippet2.replace(/\s+/g, '');
+        const isSubstring = Boolean(clean1 && clean2 && (clean1.includes(clean2) || clean2.includes(clean1)));
+        const snippetSimilarity = computeSemanticSimilarity(snippet1, snippet2);
+        
+        const hasSnippetOverlap = isSubstring || snippetSimilarity > 0.3;
+
+        if (!isNearby) continue;
+
+        const text1 = `${f1.vulnerabilityClass} ${f1.title} ${f1.description}`;
+        const text2 = `${f2.vulnerabilityClass} ${f2.title} ${f2.description}`;
+        
+        let similarity = computeSemanticSimilarity(text1, text2);
+        
+        // Strongly reduce merge likelihood if evidence snippets do not overlap
+        if (!hasSnippetOverlap) {
+          similarity *= 0.2;
+        }
+
+        const sameCwe = Boolean(f1.cwes?.length > 0 && f2.cwes?.length > 0 && f1.cwes.some(c => f2.cwes?.includes(c)));
+
+        if (similarity >= 0.15 || (sameCwe && hasSnippetOverlap)) {
+          matchedCluster = cluster;
+          break;
+        }
+      }
+
+      if (matchedCluster) {
+        matchedCluster.push(item);
+      } else {
+        clusters.push([item]);
       }
     }
 
     const aggregated: AggregatedFinding[] = [];
 
-    // 2. Process each group into a single AggregatedFinding
-    for (const [findingId, group] of findingGroups.entries()) {
+    // 3. Process each group into a single AggregatedFinding
+    for (const group of clusters) {
       // Find the highest confidence to select canonical description/suggestion
       let highestConfidenceFinding = group[0];
       for (const item of group) {
@@ -62,8 +129,8 @@ export class FindingAggregator {
         }
 
         // Collect CWEs
-        if (f.cwe) {
-          cwes.add(f.cwe);
+        if (f.cwes && f.cwes.length > 0) {
+          f.cwes.forEach(c => cwes.add(c));
         }
 
         // Deduplicate evidence based on file + line + snippet substring
@@ -78,7 +145,7 @@ export class FindingAggregator {
       }
 
       aggregated.push({
-        findingId: findingId,
+        findingId: canonicalFinding.findingId,
         vulnerabilityClass: canonicalFinding.vulnerabilityClass,
         primaryLocation: canonicalFinding.primaryLocation,
         severity: maxSeverity,

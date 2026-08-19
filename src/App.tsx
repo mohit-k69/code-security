@@ -16,6 +16,7 @@ import { Header } from './components/layout/Header';
 import { WorkflowSelector } from './components/workflows/WorkflowSelector';
 import { UploadWorkflow } from './components/workflows/UploadWorkflow';
 import { PasteWorkflow } from './components/workflows/PasteWorkflow';
+import { SecurityReportModal } from './components/workflows/SecurityReportModal';
 import { GithubWorkflow } from './components/workflows/GithubWorkflow';
 import { AnalysisDashboard } from './components/analysis/AnalysisDashboard';
 import { HistoryView } from './components/analysis/HistoryView';
@@ -41,6 +42,7 @@ export default function App() {
   const {
     isAnalyzing,
     analysisResult,
+    setAnalysisResult,
     activeCategory,
     setActiveCategory,
     expandedFinding,
@@ -170,6 +172,8 @@ export default function App() {
                       setActiveWorkflow={setActiveWorkflow}
                       pastedCode={pastedCode}
                       setPastedCode={setPastedCode}
+                      handleCheckVibe={handleCheckVibe}
+                      isAnalyzing={isAnalyzing}
                     />
                   )}
 
@@ -191,14 +195,23 @@ export default function App() {
                 </div>
               </div>
               
-              <AnalysisDashboard 
-                isAnalyzing={isAnalyzing}
-                analysisResult={analysisResult}
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-                expandedFinding={expandedFinding}
-                setExpandedFinding={setExpandedFinding}
-                filteredFindings={filteredFindings}
+              {/* Legacy fallback UI */}
+              {!analysisResult?.verdict && (
+                <AnalysisDashboard 
+                  isAnalyzing={isAnalyzing}
+                  analysisResult={analysisResult}
+                  activeCategory={activeCategory}
+                  setActiveCategory={setActiveCategory}
+                  expandedFinding={expandedFinding}
+                  setExpandedFinding={setExpandedFinding}
+                  filteredFindings={filteredFindings}
+                />
+              )}
+              
+              {/* New AI Security Engine UI */}
+              <SecurityReportModal 
+                report={analysisResult?.verdict ? analysisResult : null} 
+                onClose={() => setAnalysisResult(null)} 
               />
             </div>
           )}

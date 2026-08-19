@@ -17,6 +17,7 @@
 import { SanitizedContextPackage } from "./types.ts";
 import type { ReviewSpecification } from "../prompts/specifications/ReviewSpecification.ts";
 import type { ILLMProvider, TokenUsage, ProviderResponse } from "../orchestrator/providers/ILLMProvider.ts";
+import { FindingGuardrail } from "./FindingGuardrail.ts";
 import { VulnerabilityClass } from "../orchestrator/types/VulnerabilityClass.ts";
 import { ProviderError } from "../orchestrator/providers/ProviderError.ts";
 import { SECURITY_REVIEW_FRAMEWORK } from "../prompts/SecurityReviewFramework.ts";
@@ -52,7 +53,7 @@ export interface CheckpointFinding {
   findingId: string; // Generated deterministically by the backend
   criterionId: string;
   vulnerabilityClass: VulnerabilityClass;
-  cwe?: string;
+  cwes: string[];
   primaryLocation: Location;
   title: string;
   severity: "critical" | "warning" | "info";
@@ -111,6 +112,42 @@ export class CheckpointRunner {
     try {
       const userPrompt = this.buildUserPrompt(sanitizedPackage, spec);
       
+      // ─── TEMPORARY DIAGNOSTIC INSTRUMENTATION ─────────────────
+      // Remove after verifying context correctness.
+      const changedFilePaths = sanitizedPackage.changedFiles.map(f => f.path);
+      const depFilePaths = sanitizedPackage.dependencies.map(d => d.path);
+      const allPaths = [...changedFilePaths, ...depFilePaths];
+      const suspectFiles = [
+        "server/controllers/userController.js",
+        "server/utils/generateToken.js",
+      ];
+      const suspectInContext = suspectFiles.filter(s =>
+        allPaths.some(p => p.includes(s)) || userPrompt.includes(s)
+      );
+
+      console.log("\n" + "═".repeat(80));
+      console.log("🔍 CHECKPOINT RUNNER DIAGNOSTIC");
+      console.log("═".repeat(80));
+      console.log(`Checkpoint:       ${spec.id} — ${spec.name}`);
+      console.log(`Repository:       ${sanitizedPackage.repository}`);
+      console.log(`PR Number:        #${sanitizedPackage.prNumber}`);
+      console.log(`Commit SHA:       ${sanitizedPackage.commitSha}`);
+      console.log(`Changed Files (${changedFilePaths.length}):`);
+      changedFilePaths.forEach(p => console.log(`  • ${p}`));
+      console.log(`Dependency Files (${depFilePaths.length}):`);
+      depFilePaths.forEach(p => console.log(`  • ${p}`));
+      console.log(`Total files in context: ${allPaths.length}`);
+      console.log(`Prompt length:    ${userPrompt.length} chars`);
+      console.log(`Suspect files found in context: ${suspectInContext.length > 0 ? suspectInContext.join(", ") : "NONE"}`);
+      // Safe preview: first 500 chars of the context section only (no secrets)
+      const contextStart = userPrompt.indexOf("## Pull Request Context");
+      const contextPreview = contextStart >= 0
+        ? userPrompt.substring(contextStart, contextStart + 500)
+        : "(context section not found)";
+      console.log(`Context preview:\n${contextPreview}`);
+      console.log("═".repeat(80) + "\n");
+      // ─── END DIAGNOSTIC ───────────────────────────────────────
+
       // 2. Execute LLM Call (provider handles retries and timeouts)
       const llmStartTime = Date.now();
       const response: ProviderResponse = await this.provider.generateContent(
@@ -213,7 +250,7 @@ You MUST respond with valid JSON matching this exact schema. Do not include any 
     {
       "criterionId": "<the ID of the specific evaluation criterion this finding relates to, e.g. AUTH-C1>",
       "vulnerabilityClass": "<MUST be exactly one of: ${allowedClasses}>",
-      "cwe": "<optional CWE identifier, e.g., CWE-79>",
+      "cwes": ["<CWE-798>", "<CWE-20>"], // array of strings, or [] if unable to map confidently
       "primaryLocation": {
         "file": "<file path containing the vulnerability root cause>",
         "line": <line number>
@@ -367,7 +404,7 @@ If you cannot determine the result due to insufficient context, return verdict "
         findingId,
         criterionId: f.criterionId,
         vulnerabilityClass: f.vulnerabilityClass as VulnerabilityClass,
-        cwe: typeof f.cwe === "string" ? f.cwe : undefined,
+        cwes: Array.isArray(f.cwes) ? f.cwes.filter((c: any) => typeof c === "string") : [],
         primaryLocation: {
           file: f.primaryLocation.file,
           line: f.primaryLocation.line
@@ -380,7 +417,7 @@ If you cannot determine the result due to insufficient context, return verdict "
       });
     }
 
-    return {
+    const rawResult: CheckpointResult = {
       checkpointId: spec.id,
       checkpointName: spec.name,
       verdict: parsed.verdict,
@@ -396,6 +433,8 @@ If you cannot determine the result due to insufficient context, return verdict "
         tokenUsage,
       },
     };
+
+    return FindingGuardrail.applyGuardrails(rawResult);
   }
 
   /**

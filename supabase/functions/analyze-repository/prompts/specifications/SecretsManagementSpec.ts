@@ -43,9 +43,9 @@ export const SecretsManagementSpec: ReviewSpecification = {
         "insecure locations. Configuration files (JSON, YAML, XML) must not contain " +
         "plaintext secrets.\n\n" +
         "PASS: Secrets are injected into the application at runtime via secure environments " +
-        "or fetched securely via a secrets manager.\n" +
+        "(e.g., `process.env.VAR`) or fetched securely via a secrets manager.\n" +
         "FAIL: Secrets are stored in plaintext configuration files, custom encrypted " +
-        "files with hardcoded keys, or insecure static locations.\n" +
+        "files with hardcoded keys, or use explicitly insecure fallbacks (e.g., `process.env.SECRET || 'dev_secret'`).\n" +
         "NOT_VERIFIED: The mechanism by which the environment variables or configuration " +
         "files are populated is external to the provided context.",
     },

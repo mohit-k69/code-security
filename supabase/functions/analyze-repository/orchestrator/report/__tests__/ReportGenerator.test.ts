@@ -35,7 +35,8 @@ function makeResult(
   const findings = Array.from({ length: findingCount }, (_, i) => ({
     findingId: `${id}-f${i}`,
     criterionId: `${id}-C${i}`,
-    vulnerabilityClass: VulnerabilityClass.XSS,
+    vulnerabilityClass: "SECURITY_CONFIGURATION" as VulnerabilityClass,
+    cwes: [],
     primaryLocation: { file: "src/app.ts", line: 10 + i },
     title: `Finding ${i}`,
     severity: "warning" as const,
@@ -53,7 +54,7 @@ function makeResult(
     findings,
     status,
     ...(error ? { error } : {}),
-    execution: { executionTimeMs: 500, model: "test", timestamp: "2026-01-01T00:00:00Z" },
+    execution: { executionTimeMs: 500, llmDurationMs: 450, model: "test", timestamp: "2026-01-01T00:00:00Z" },
   };
 }
 

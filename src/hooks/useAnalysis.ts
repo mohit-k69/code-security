@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { analyzeCode, type AnalysisResult, type Category, type Finding } from '../analyzer';
+import { supabase } from '../lib/supabase';
 
 export interface ReviewedItem {
   name: string;
@@ -64,11 +65,30 @@ export function useAnalysis() {
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    let finalResult: any;
 
-    const result = analyzeCode(allCode);
-    setAnalysisResult(result);
-    setIsAnalyzing(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-snippet', {
+        body: {
+          files: [
+            ...Array.from(fileContents.entries()).map(([name, content]) => ({ name, content })),
+            ...(pastedCode.trim() ? [{ name: 'snippet.js', content: pastedCode }] : [])
+          ]
+        }
+      });
+
+      if (error) throw error;
+      
+      finalResult = data.report;
+      setAnalysisResult(finalResult);
+    } catch (err: any) {
+      console.error('Analysis failed:', err);
+      // Fallback to legacy analyzer if the edge function fails or isn't deployed yet
+      finalResult = analyzeCode(allCode);
+      setAnalysisResult(finalResult as any);
+    } finally {
+      setIsAnalyzing(false);
+    }
 
     const name = uploadedFiles.length > 0
       ? uploadedFiles.map(f => f.name).join(', ')
@@ -76,20 +96,21 @@ export function useAnalysis() {
       
     setReviewedItems(prev => [{
       name: name.length > 40 ? name.slice(0, 37) + '...' : name,
-      vibeScore: result.vibeScore,
-      findings: result.findings.length,
+      vibeScore: finalResult.verdict ? (finalResult.verdict === 'PASS' ? 100 : (finalResult.verdict === 'NOT_VERIFIED' ? 50 : 0)) : (finalResult.vibeScore || 0),
+      findings: finalResult.verdict ? (finalResult.totalFindings || 0) : (finalResult.findings?.length || 0),
       date: new Date(),
-      result,
+      result: finalResult,
     }, ...prev]);
   }, [fileContents, pastedCode, uploadedFiles]);
 
-  const filteredFindings = analysisResult?.findings.filter(
-    f => activeCategory === 'all' || f.category === activeCategory
-  ) || [];
+  const filteredFindings = Array.isArray(analysisResult?.findings) 
+    ? analysisResult.findings.filter((f: any) => activeCategory === 'all' || f.category === activeCategory)
+    : [];
 
   return {
     isAnalyzing,
     analysisResult,
+    setAnalysisResult,
     activeCategory,
     setActiveCategory,
     expandedFinding,
