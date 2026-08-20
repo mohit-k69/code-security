@@ -74,6 +74,7 @@ export interface CheckpointResult {
   checkpointId: string;
   checkpointName: string;
   verdict: CheckpointVerdict;
+  applicability: "APPLICABLE" | "NOT_APPLICABLE" | "UNKNOWN";
   confidence: number;
   summary: string;
   findings: CheckpointFinding[];
@@ -218,7 +219,28 @@ ${criteriaBlock}${additionalInstructions}
           .join("\n\n")
       : "(no dependency files)";
 
+    const isPasteCode = sanitizedPackage.repository.endsWith("paste_snippet");
+    const pasteCodeOverride = isPasteCode ? `
+## Paste Code Specific Verdict Rules
+
+You are analyzing a standalone code snippet pasted by a user, not a full repository. Override the standard framework verdict semantics with the following:
+
+- **PASS**: Use PASS when the provided pasted code contains no demonstrated security vulnerability and the relevant security behavior can reasonably be evaluated from the supplied code. 
+  IMPORTANT: If the pasted code contains no functionality relevant to a checkpoint's security domain, that checkpoint must return PASS, not NOT_VERIFIED.
+- **FAIL**: Use FAIL when the pasted code contains concrete evidence of a security vulnerability.
+- **NOT_VERIFIED**: Use NOT_VERIFIED only when the pasted code contains security-sensitive behavior where an important security property genuinely depends on missing code, configuration, infrastructure, middleware, or downstream implementation. Do not use NOT_VERIFIED merely because the pasted snippet is not the entire application.
+
+**Authentication & Authorization Context:**
+For Paste Code, do not treat missing inline middleware as proof that a route is unprotected. If a sensitive route/action is present but authentication/authorization logic is not visible in the supplied snippet, assume it may be applied globally or elsewhere and return NOT_VERIFIED rather than FAIL.
+
+Example:
+- Small, self-contained safe snippet → PASS
+- Clearly vulnerable snippet → FAIL
+- Security-sensitive partial snippet where an important control depends on unseen code → NOT_VERIFIED
+` : "";
+
     const contextSection = `
+${pasteCodeOverride}
 ## Pull Request Context
 
 **Repository:** ${sanitizedPackage.repository}
@@ -244,6 +266,7 @@ You MUST respond with valid JSON matching this exact schema. Do not include any 
 
 {
   "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPLICABLE",
   "confidence": <number between 0.0 and 1.0>,
   "summary": "<one paragraph summarizing your assessment>",
   "findings": [
@@ -273,6 +296,15 @@ You MUST respond with valid JSON matching this exact schema. Do not include any 
 
 If no issues are found, return verdict "PASS" with an empty findings array.
 If you cannot determine the result due to insufficient context, return verdict "NOT_VERIFIED".
+Determine applicability from explicit security-sensitive logic present in the supplied code.
+Merely using Express, defining generic routes, creating a router, starting an HTTP server, or importing a framework does not make a security domain applicable.
+Examples:
+- app.listen() alone -> not Security Configuration applicable.
+- express.Router() alone -> not Authentication/Session applicable.
+- A database query alone -> not Authorization applicable unless authorization-related logic is actually present.
+- Explicit CORS/security headers/TLS/cookie security/auth middleware/JWT/session logic -> potentially applicable.
+If relevant security logic is explicitly present but cannot be fully verified because important context is missing, return "APPLICABLE" and verdict "NOT_VERIFIED".
+If no relevant security-sensitive logic is explicitly present, return "NOT_APPLICABLE".
 `.trim();
 
     return [
@@ -317,7 +349,13 @@ If you cannot determine the result due to insufficient context, return verdict "
     // 2. Validate verdict
     const validVerdicts: CheckpointVerdict[] = ["PASS", "FAIL", "NOT_VERIFIED"];
     if (!parsed.verdict || !validVerdicts.includes(parsed.verdict)) {
-      throw new Error(`Invalid or missing verdict. Got: "\${parsed.verdict}"`);
+      throw new Error(`Invalid or missing verdict. Got: "${parsed.verdict}"`);
+    }
+
+    // 2.5 Parse Applicability
+    let applicability: "APPLICABLE" | "NOT_APPLICABLE" | "UNKNOWN" = "UNKNOWN";
+    if (parsed.applicability === "APPLICABLE" || parsed.applicability === "NOT_APPLICABLE") {
+      applicability = parsed.applicability;
     }
 
     // 3. Validate confidence
@@ -420,7 +458,8 @@ If you cannot determine the result due to insufficient context, return verdict "
     const rawResult: CheckpointResult = {
       checkpointId: spec.id,
       checkpointName: spec.name,
-      verdict: parsed.verdict,
+      verdict: parsed.verdict as CheckpointVerdict,
+      applicability,
       confidence: parsed.confidence,
       summary: parsed.summary,
       findings: validatedFindings,
@@ -450,6 +489,7 @@ If you cannot determine the result due to insufficient context, return verdict "
       checkpointId: spec.id,
       checkpointName: spec.name,
       verdict: "NOT_VERIFIED",
+      applicability: "UNKNOWN",
       confidence: 0,
       summary: `Checkpoint failed: \${message}`,
       findings: [],

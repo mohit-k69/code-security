@@ -37,7 +37,7 @@ export class ReportGenerator {
     const checkpoints = this.buildCheckpointSummaries(results);
     const groupedFindings = this.groupFindingsBySeverity(findings);
     const coverage = this.buildCoverageSummary(results, totalRegisteredCheckpoints);
-    const verdict = this.computeOverallVerdict(results);
+    const verdict = this.computeOverallVerdict(results, findings, repositoryContext);
     const scanId = this.generateScanId(repositoryContext);
 
     return {
@@ -62,15 +62,44 @@ export class ReportGenerator {
    *  2. If NO checkpoint failed but ANY is "NOT_VERIFIED", the overall is NOT_VERIFIED.
    *  3. Otherwise, PASS.
    */
-  private computeOverallVerdict(results: CheckpointResult[]): RepositoryVerdict {
-    let hasNotVerified = false;
+  private computeOverallVerdict(
+    results: CheckpointResult[],
+    findings: AggregatedFinding[],
+    repositoryContext: RepositoryContext
+  ): RepositoryVerdict {
+    const isPasteCode = repositoryContext.commitSha === "local";
 
+    if (results.length === 0) {
+      return isPasteCode ? "PASS" : "NOT_VERIFIED";
+    }
+    
+    if (isPasteCode) {
+      let hasFail = false;
+      let hasApplicableNotVerified = false;
+
+      for (const r of results) {
+        if (r.verdict === "FAIL") {
+          hasFail = true;
+        }
+        if (r.verdict === "NOT_VERIFIED") {
+          if (r.applicability === "APPLICABLE" || r.applicability === "UNKNOWN") {
+            hasApplicableNotVerified = true;
+          }
+        }
+      }
+
+      if (hasFail) return "FAIL";
+      if (hasApplicableNotVerified) return "NOT_VERIFIED";
+      return "PASS";
+    }
+
+    // GitHub behavior
+    let hasNotVerified = false;
     for (const r of results) {
       if (r.verdict === "FAIL") return "FAIL";
       if (r.verdict === "NOT_VERIFIED") hasNotVerified = true;
     }
 
-    if (results.length === 0) return "NOT_VERIFIED";
     return hasNotVerified ? "NOT_VERIFIED" : "PASS";
   }
 
@@ -82,11 +111,12 @@ export class ReportGenerator {
       checkpointId: r.checkpointId,
       checkpointName: r.checkpointName,
       verdict: r.verdict,
+      applicability: r.applicability,
       confidence: r.confidence,
-      executionTimeMs: r.execution.executionTimeMs,
       findingCount: r.findings.length,
       status: r.status,
       ...(r.error ? { error: r.error } : {}),
+      executionTimeMs: r.execution.executionTimeMs,
     }));
   }
 

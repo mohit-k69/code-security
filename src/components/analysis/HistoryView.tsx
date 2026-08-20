@@ -3,9 +3,10 @@ import { Search, ChevronDown, FileText, ChevronRight } from 'lucide-react';
 
 interface ReviewedItem {
   name: string;
-  vibeScore: number;
-  findings: number;
+  verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
+  pr: number | null;
   date: Date;
+  result: any;
 }
 
 interface HistoryViewProps {
@@ -17,6 +18,7 @@ interface HistoryViewProps {
   filterOption: string;
   setFilterOption: (option: string) => void;
   setActiveTab: (tab: string) => void;
+  setAnalysisResult: (result: any) => void;
 }
 
 export function HistoryView({
@@ -27,7 +29,8 @@ export function HistoryView({
   setIsFilterOpen,
   filterOption,
   setFilterOption,
-  setActiveTab
+  setActiveTab,
+  setAnalysisResult
 }: HistoryViewProps) {
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white">
@@ -88,42 +91,54 @@ export function HistoryView({
 
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 text-gray-500 text-[14px]">
         <div className="flex-1">Name</div>
-        <div className="w-[120px] text-center">Score</div>
-        <div className="w-[120px] text-center">Findings</div>
+        <div className="w-[120px] text-center">Verdict</div>
+        <div className="w-[120px] text-center">PR</div>
         <div className="w-[150px] text-right">Date</div>
         <div className="w-[60px]"></div>
       </div>
       
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col">
-          {reviewedItems.map((item, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer">
+          {reviewedItems
+            .filter(item => Date.now() - item.date.getTime() <= 30 * 24 * 60 * 60 * 1000)
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .map((item, i) => (
+            <div 
+              key={i} 
+              onClick={() => setAnalysisResult(item.result)}
+              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer"
+            >
               <div className="flex-1 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
                   <FileText className="w-4 h-4" />
                 </div>
-                <span className="text-[14px] font-medium text-gray-900">{item.name}</span>
+                <span className="text-[14px] font-medium text-gray-900 truncate pr-4">{item.name}</span>
               </div>
               
               <div className="w-[120px] flex justify-center">
                 <span className={`px-2.5 py-1 rounded-md text-[12px] font-bold ${
-                  item.vibeScore >= 90 ? 'bg-emerald-100 text-emerald-700' :
-                  item.vibeScore >= 70 ? 'bg-amber-100 text-amber-700' :
-                  'bg-red-100 text-red-700'
+                  item.verdict === 'FAIL' ? 'bg-red-100 text-red-700' :
+                  item.verdict === 'NOT_VERIFIED' ? 'bg-orange-100 text-orange-700' :
+                  'bg-emerald-100 text-emerald-700'
                 }`}>
-                  {item.vibeScore}
+                  {item.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.verdict || 'PASS'}
                 </span>
               </div>
               
               <div className="w-[120px] flex justify-center">
                 <span className="text-[13px] text-gray-600 font-medium">
-                  {item.findings}
+                  {item.pr ? `PR #${item.pr}` : '—'}
                 </span>
               </div>
               
               <div className="w-[150px] text-right">
                 <span className="text-[13px] text-gray-500">
-                  {item.date.toLocaleDateString()}
+                  {item.date.toLocaleString(undefined, { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: 'numeric', 
+                    minute: '2-digit'
+                  })}
                 </span>
               </div>
               

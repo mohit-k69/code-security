@@ -39,14 +39,17 @@ export const InputValidationSpec: ReviewSpecification = {
       description:
         "Potentially dangerous user input must be safely handled (sanitized, encoded, " +
         "or escaped) before being stored or processed. Focus on whether the input is " +
-        "prepared safely for its destination context. Note: Detailed XSS or specific " +
-        "Injection reviews are covered in dedicated checkpoints; this criterion focuses " +
-        "on the general principle of safe input preparation.\n\n" +
+        "prepared safely for its destination context. Note: Detailed XSS reviews are " +
+        "covered in a dedicated checkpoint, but this checkpoint explicitly owns specific " +
+        "backend injection reviews (such as SQL Injection, where `SQL_INJECTION` is an allowed class).\n\n" +
         "PASS: Input is safely sanitized, type-cast, or encoded before storage or " +
-        "processing (e.g., using DOMPurify for rich text, stripping null bytes).\n" +
+        "processing (e.g., using DOMPurify for rich text, stripping null bytes). " +
+        "Parameterized/prepared SQL queries (e.g., using `?`, `$1`, or named parameters) " +
+        "must NOT be marked FAIL, even if the DB library implementation is out of context, " +
+        "unless the supplied code also demonstrates unsafe string interpolation/concatenation.\n" +
         "FAIL: Concrete evidence of raw user input being explicitly passed directly " +
-        "to a dangerous sink or sensitive mechanism. Do not FAIL simply because " +
-        "sanitization logic is absent from a partial snippet.\n" +
+        "to a dangerous sink or sensitive mechanism (e.g., via string interpolation or concatenation " +
+        "into a SQL statement). Do not FAIL simply because sanitization logic is absent from a partial snippet.\n" +
         "NOT_VERIFIED: Sanitization happens in an external service, middleware, or " +
         "ORM layer not visible in the provided context, or is simply absent.",
     },
@@ -154,7 +157,6 @@ export const InputValidationSpec: ReviewSpecification = {
     "- Unrestricted file uploads (INPUT-C5) are almost always **critical** severity.\n" +
     "- Client-only validation without backend enforcement (INPUT-C3) is a **FAIL** and " +
     "typically **critical**.\n" +
-    "- For INPUT-C2, focus on the general principle of safely preparing untrusted input " +
-    "before processing or storage. Do not perform a deep XSS or specific injection review, " +
-    "as those are covered in dedicated checkpoints.",
+    "- **Specific Vulnerability Classification**: For INPUT-C2, if you identify concrete evidence of an injection attack (such as SQL Injection), you MUST classify the finding using the specific class (e.g., `SQL_INJECTION`) rather than the generic `INPUT_VALIDATION` class.\n" +
+    "- **Deduplication**: If a specific injection vulnerability (like `SQL_INJECTION`) is identified under INPUT-C2, report it exactly ONCE. Do NOT report a redundant `INPUT_VALIDATION` finding under INPUT-C1 for the exact same input field at the same sink. The specific injection vulnerability supersedes the generic missing validation.",
 };

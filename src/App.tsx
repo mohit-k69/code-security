@@ -16,9 +16,8 @@ import { Header } from './components/layout/Header';
 import { WorkflowSelector } from './components/workflows/WorkflowSelector';
 import { UploadWorkflow } from './components/workflows/UploadWorkflow';
 import { PasteWorkflow } from './components/workflows/PasteWorkflow';
-import { SecurityReportModal } from './components/workflows/SecurityReportModal';
+import { SecurityReportPanel } from './components/workflows/SecurityReportPanel';
 import { GithubWorkflow } from './components/workflows/GithubWorkflow';
-import { AnalysisDashboard } from './components/analysis/AnalysisDashboard';
 import { HistoryView } from './components/analysis/HistoryView';
 import { ProfileModal } from './components/auth/ProfileModal';
 
@@ -68,7 +67,9 @@ export default function App() {
     selectedRepoId,
     setSelectedRepoId,
     fetchGithubRepositories,
-    isGithubConnected
+    isGithubConnected,
+    clearGithubSelection,
+    clearGithubCache
   } = useGithub(activeWorkflow);
 
   // Automatically switch to GitHub workflow if redirected back from OAuth Manual Linking
@@ -85,11 +86,12 @@ export default function App() {
   // Derived states
   const hasUploadedCode = uploadedFiles.length > 0;
   const hasPastedCode = pastedCode.trim().length > 0;
-  const githubConnected = isGithubConnected;
+  const githubConnected = selectedRepoId !== null;
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
+      clearGithubCache();
       setUser(null);
     } catch (err) {
       console.error('Error signing out:', err);
@@ -99,6 +101,15 @@ export default function App() {
   const handleOpenProfileModal = () => {
     setIsProfileOpen(false);
     setIsProfileModalOpen(true);
+  };
+
+  const handleReturnHome = () => {
+    setActiveWorkflow('none');
+    setAnalysisResult(null);
+    setPastedCode('');
+    setUploadedFiles([]);
+    setFileContents([]);
+    clearGithubSelection();
   };
 
   if (isInitializing) {
@@ -141,25 +152,30 @@ export default function App() {
               filterOption={filterOption}
               setFilterOption={setFilterOption}
               setActiveTab={setActiveTab}
+              setAnalysisResult={setAnalysisResult}
             />
           ) : (
-            <div className="flex flex-1 min-w-0">
-              <div className="flex-1 flex flex-col min-w-0 relative bg-white">
-
-                <div className="flex-1 p-6 flex flex-col min-h-0 bg-[#faf6f4]/30">
-                  {activeWorkflow === 'none' && (
+            <div className="flex-1 flex min-h-0 bg-white w-full">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] border-r border-gray-200">
+                <div className="min-h-full flex flex-col items-center py-12 px-6">
+                  <div 
+                    className="w-full max-w-4xl mx-auto space-y-8 pb-32"
+                    onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
+                  >
+                    {activeWorkflow === 'none' && (
                     <WorkflowSelector 
                       setActiveWorkflow={setActiveWorkflow}
                       hasUploadedCode={hasUploadedCode}
                       uploadedFilesCount={uploadedFiles.length}
                       hasPastedCode={hasPastedCode}
                       githubConnected={githubConnected}
+                      onClearState={handleReturnHome}
                     />
                   )}
 
                   {activeWorkflow === 'upload' && (
                     <UploadWorkflow 
-                      setActiveWorkflow={setActiveWorkflow}
+                      setActiveWorkflow={handleReturnHome}
                       uploadedFiles={uploadedFiles}
                       setUploadedFiles={setUploadedFiles}
                       setFileContents={setFileContents}
@@ -169,7 +185,7 @@ export default function App() {
 
                   {activeWorkflow === 'paste' && (
                     <PasteWorkflow 
-                      setActiveWorkflow={setActiveWorkflow}
+                      setActiveWorkflow={handleReturnHome}
                       pastedCode={pastedCode}
                       setPastedCode={setPastedCode}
                       handleCheckVibe={handleCheckVibe}
@@ -179,7 +195,7 @@ export default function App() {
 
                   {activeWorkflow === 'github' && (
                     <GithubWorkflow 
-                      setActiveWorkflow={setActiveWorkflow}
+                      setActiveWorkflow={handleReturnHome}
                       isFetchingRepos={isFetchingRepos}
                       githubReposError={githubReposError}
                       fetchGithubRepositories={fetchGithubRepositories}
@@ -190,28 +206,17 @@ export default function App() {
                       setSelectedRepoId={setSelectedRepoId}
                       providerTokenSetupError={providerTokenSetupError}
                       retryProviderTokenSetup={retryProviderTokenSetup}
+                      setReviewedItems={setReviewedItems}
                     />
                   )}
                 </div>
               </div>
-              
-              {/* Legacy fallback UI */}
-              {!analysisResult?.verdict && (
-                <AnalysisDashboard 
-                  isAnalyzing={isAnalyzing}
-                  analysisResult={analysisResult}
-                  activeCategory={activeCategory}
-                  setActiveCategory={setActiveCategory}
-                  expandedFinding={expandedFinding}
-                  setExpandedFinding={setExpandedFinding}
-                  filteredFindings={filteredFindings}
-                />
-              )}
-              
-              {/* New AI Security Engine UI */}
-              <SecurityReportModal 
-                report={analysisResult?.verdict ? analysisResult : null} 
-                onClose={() => setAnalysisResult(null)} 
+            </div>
+            
+            {/* Persistent Analysis Results Panel */}
+              <SecurityReportPanel 
+                report={analysisResult?.verdict ? analysisResult : null}
+                isAnalyzing={isAnalyzing}
               />
             </div>
           )}

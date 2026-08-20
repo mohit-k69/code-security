@@ -75,7 +75,24 @@ export class FindingAggregator {
 
         const sameCwe = Boolean(f1.cwes?.length > 0 && f2.cwes?.length > 0 && f1.cwes.some(c => f2.cwes?.includes(c)));
 
-        if (similarity >= 0.15 || (sameCwe && hasSnippetOverlap)) {
+        const sameVulnerabilityClass = f1.vulnerabilityClass === f2.vulnerabilityClass;
+        let definitiveClassMatch = false;
+
+        if (sameVulnerabilityClass) {
+          if (f1.vulnerabilityClass === "SECRET_EXPOSURE") {
+             if (f1.primaryLocation.line === f2.primaryLocation.line || hasSnippetOverlap) {
+                definitiveClassMatch = true;
+             }
+          } else if (f1.vulnerabilityClass === "JWT_SECURITY") {
+             // JWT_SECURITY can encompass distinct issues on the exact same line (e.g. missing expiration vs weak secret)
+             // So we do not force a definitive class match here; we let it rely on semantic similarity.
+             definitiveClassMatch = false;
+          } else {
+             definitiveClassMatch = true;
+          }
+        }
+
+        if (definitiveClassMatch || similarity >= 0.15 || (sameCwe && hasSnippetOverlap)) {
           matchedCluster = cluster;
           break;
         }

@@ -7,6 +7,7 @@ function createMockResult(findings: CheckpointFinding[]): CheckpointResult {
     checkpointId: "TEST-001",
     checkpointName: "Test Review",
     verdict: "FAIL",
+    applicability: "APPLICABLE",
     confidence: 0.9,
     summary: "Mock summary",
     findings,
@@ -278,6 +279,7 @@ Deno.test("Guardrail: Do not alter errors/NOT_VERIFIED", () => {
     checkpointId: "TEST-001",
     checkpointName: "Test",
     verdict: "NOT_VERIFIED",
+    applicability: "UNKNOWN",
     confidence: 0,
     summary: "LLM response is not valid JSON",
     findings: [],
@@ -295,4 +297,36 @@ Deno.test("Guardrail: Do not alter errors/NOT_VERIFIED", () => {
   assertEquals(guarded.status, "error");
   assertEquals(guarded.verdict, "NOT_VERIFIED");
   assertEquals(guarded.error, "Parse error");
+});
+
+Deno.test("Guardrail: Suppress parameterized SQL injection false positive", () => {
+  const finding = createMockFinding(
+    "INPUT-C2",
+    "SQL_INJECTION",
+    "critical",
+    "SQL Injection Risk",
+    "The implementation is out of context.",
+    "db.execute('SELECT * FROM users WHERE id = ?', [req.body.id]);",
+    "It uses a parameter but who knows."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 0);
+});
+
+Deno.test("Guardrail: Preserve unsafe string concatenation SQL injection", () => {
+  const finding = createMockFinding(
+    "INPUT-C2",
+    "SQL_INJECTION",
+    "critical",
+    "SQL Injection Risk",
+    "Unsafe string concatenation.",
+    "db.execute('SELECT * FROM users WHERE id = ' + req.body.id);",
+    "Direct interpolation."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 1);
 });

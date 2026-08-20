@@ -22,6 +22,7 @@ interface GithubWorkflowProps {
   setSelectedRepoId: (id: number | null) => void;
   providerTokenSetupError?: string | null;
   retryProviderTokenSetup?: () => void;
+  setReviewedItems: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export function GithubWorkflow({
@@ -35,7 +36,8 @@ export function GithubWorkflow({
   selectedRepoId,
   setSelectedRepoId,
   providerTokenSetupError,
-  retryProviderTokenSetup
+  retryProviderTokenSetup,
+  setReviewedItems
 }: GithubWorkflowProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
@@ -84,6 +86,13 @@ export function GithubWorkflow({
         setAnalysisState({ status: 'select_pr', prs: data.prs });
       } else if (data.report) {
         setAnalysisState({ status: 'success', report: data.report });
+        setReviewedItems(prev => [{
+          name: `${repo.owner.login}/${repo.name}`,
+          verdict: data.report.verdict || 'NOT_VERIFIED',
+          pr: prNumber || null,
+          date: new Date(),
+          result: data.report
+        }, ...prev]);
       } else {
         throw new Error('Unknown response from server');
       }
@@ -108,6 +117,7 @@ export function GithubWorkflow({
         setGithubSearchQuery={setGithubSearchQuery}
         viewStyle={viewStyle}
         setViewStyle={setViewStyle}
+        onRefresh={fetchGithubRepositories}
       />
       
       <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-4 h-[calc(100vh-200px)]">

@@ -8,6 +8,7 @@ interface WorkflowSelectorProps {
   uploadedFilesCount: number;
   hasPastedCode: boolean;
   githubConnected: boolean;
+  onClearState: () => void;
 }
 
 export function WorkflowSelector({
@@ -15,12 +16,13 @@ export function WorkflowSelector({
   hasUploadedCode,
   uploadedFilesCount,
   hasPastedCode,
-  githubConnected
+  githubConnected,
+  onClearState
 }: WorkflowSelectorProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-      className="flex-1 flex flex-col items-center justify-center text-center max-w-lg mx-auto w-full h-full"
+      className="flex-1 flex flex-col items-center justify-center text-center max-w-lg mx-auto w-full h-full mt-20"
     >
       <div className="mb-12">
         <h2 className="text-[26px] font-semibold text-gray-900 tracking-tight mb-3">
@@ -31,7 +33,7 @@ export function WorkflowSelector({
         </p>
       </div>
       
-      <div className="flex items-center justify-center gap-6 w-full">
+      <div className="flex items-center justify-center gap-6 w-full" onClick={(e) => e.stopPropagation()}>
         {/* Upload Button */}
         <button 
           onClick={() => setActiveWorkflow('upload')}

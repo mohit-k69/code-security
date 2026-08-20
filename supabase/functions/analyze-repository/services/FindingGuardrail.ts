@@ -101,7 +101,19 @@ export class FindingGuardrail {
       }
     }
 
-    // 7. Suppression: Operational/Debugging Preference (Generic Errors)
+    // 7. Suppression: Parameterized SQL Injection False Positives
+    // Suppress SQL_INJECTION if it clearly uses parameter placeholders without unsafe string concatenation/interpolation
+    if (finding.vulnerabilityClass === "SQL_INJECTION") {
+      const isSqlContext = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query)/i.test(combinedEvidenceSnippet);
+      const hasPlaceholders = /(\?|\$\d+|:\w+)/.test(combinedEvidenceSnippet);
+      const hasUnsafeConcatenation = /(\$\{.*\}|['"]\s*\+)/.test(combinedEvidenceSnippet);
+      
+      if (isSqlContext && hasPlaceholders && !hasUnsafeConcatenation) {
+        return true;
+      }
+    }
+
+    // 8. Suppression: Operational/Debugging Preference (Generic Errors)
     // Suppress findings that merely complain that a generic error message makes debugging harder.
     const complainsAboutGenericError = /(generic.*message|generic.*response)/i.test(combinedText);
     const complainsAboutDebugging = /(debugging|differentiate between|distinguish)/i.test(combinedText);

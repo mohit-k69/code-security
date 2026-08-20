@@ -27,12 +27,21 @@ export class CheckpointRouter {
   /**
    * Determine which checkpoints should execute for the given changed files.
    *
-   * @param changedFilePaths Array of file paths from the PR diff.
+   * @param routingInputs Array of file paths from the PR diff, or snippet contents if Paste Code.
+   * @param isPasteCode Whether we are routing for a Paste Code snippet.
    * @returns A deterministic RoutingDecision.
    */
-  public route(changedFilePaths: string[]): RoutingDecision {
-    // Edge case: no changed files → fail open
-    if (changedFilePaths.length === 0) {
+  public route(routingInputs: string[], isPasteCode: boolean = false): RoutingDecision {
+    // Edge case: no inputs → fail open for GitHub, empty for Paste Code
+    if (routingInputs.length === 0) {
+      if (isPasteCode) {
+        return {
+          selectedCheckpointIds: [],
+          skippedCheckpointIds: this.allCheckpointIds,
+          isFallback: true,
+          explanation: ["No code provided. Selected 0 checkpoints."]
+        };
+      }
       return this.buildFallbackDecision("No changed files detected. Executing all checkpoints (fail-open).");
     }
 
@@ -40,37 +49,47 @@ export class CheckpointRouter {
     const explanation: string[] = [];
     const matchedRuleNames: string[] = [];
 
-    const loweredPaths = changedFilePaths.map((p) => p.toLowerCase());
+    const loweredInputs = routingInputs.map((p) => p.toLowerCase());
 
     for (const rule of this.rules) {
-      const matchedFiles: string[] = [];
+      const matchedInputs: string[] = [];
+      const patternsToUse = isPasteCode ? rule.contentMatchPatterns : rule.fileMatchPatterns;
 
-      for (const filePath of loweredPaths) {
-        for (const pattern of rule.matchPatterns) {
-          if (filePath.includes(pattern.toLowerCase())) {
-            matchedFiles.push(filePath);
-            break; // one pattern match per file is sufficient
+      for (const input of loweredInputs) {
+        for (const pattern of patternsToUse) {
+          if (input.includes(pattern.toLowerCase())) {
+            matchedInputs.push(input);
+            break; // one pattern match per input is sufficient
           }
         }
       }
 
-      if (matchedFiles.length > 0) {
+      if (matchedInputs.length > 0) {
         for (const cpId of rule.checkpointIds) {
           selectedIds.add(cpId);
         }
         matchedRuleNames.push(rule.name);
-        const truncatedFiles = matchedFiles.slice(0, 3);
-        const suffix = matchedFiles.length > 3 ? ` (+${matchedFiles.length - 3} more)` : "";
+        const truncatedInputs = isPasteCode ? ["snippet code"] : matchedInputs.slice(0, 3);
+        const suffix = (!isPasteCode && matchedInputs.length > 3) ? ` (+${matchedInputs.length - 3} more)` : "";
         explanation.push(
-          `Rule "${rule.name}" matched ${matchedFiles.length} file(s): ${truncatedFiles.join(", ")}${suffix} → ${rule.checkpointIds.join(", ")}`
+          `Rule "${rule.name}" matched ${isPasteCode ? "code content" : `${matchedInputs.length} file(s)`}: ${truncatedInputs.join(", ")}${suffix} → ${rule.checkpointIds.join(", ")}`
         );
       }
     }
 
-    // Fail open: if no rules matched, run everything
+    // Fail open for GitHub: if no rules matched, run everything
+    // Empty for Paste Code: if no meaningful security domain signal is found, return empty set
     if (selectedIds.size === 0) {
+      if (isPasteCode) {
+        return {
+          selectedCheckpointIds: [],
+          skippedCheckpointIds: this.allCheckpointIds,
+          isFallback: true,
+          explanation: ["No security-sensitive keywords detected in code snippet. Skipping domain-specific checkpoints."]
+        };
+      }
       return this.buildFallbackDecision(
-        `No routing rules matched for files: ${loweredPaths.slice(0, 5).join(", ")}${loweredPaths.length > 5 ? " ..." : ""}. Executing all checkpoints (fail-open).`
+        `No routing rules matched for files: ${loweredInputs.slice(0, 5).join(", ")}${loweredInputs.length > 5 ? " ..." : ""}. Executing all checkpoints (fail-open).`
       );
     }
 

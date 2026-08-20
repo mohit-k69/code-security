@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabase';
 
 export interface ReviewedItem {
   name: string;
-  vibeScore: number;
-  findings: number;
+  verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
+  pr: number | null;
   date: Date;
   result: AnalysisResult;
 }
@@ -96,8 +96,8 @@ export function useAnalysis() {
       
     setReviewedItems(prev => [{
       name: name.length > 40 ? name.slice(0, 37) + '...' : name,
-      vibeScore: finalResult.verdict ? (finalResult.verdict === 'PASS' ? 100 : (finalResult.verdict === 'NOT_VERIFIED' ? 50 : 0)) : (finalResult.vibeScore || 0),
-      findings: finalResult.verdict ? (finalResult.totalFindings || 0) : (finalResult.findings?.length || 0),
+      verdict: finalResult.verdict || 'NOT_VERIFIED',
+      pr: null,
       date: new Date(),
       result: finalResult,
     }, ...prev]);

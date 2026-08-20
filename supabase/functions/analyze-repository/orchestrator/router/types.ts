@@ -16,7 +16,13 @@ export interface RoutingRule {
    * against changed file paths. A file matches if its lowercased
    * path contains any of these patterns.
    */
-  matchPatterns: string[];
+  fileMatchPatterns: string[];
+
+  /**
+   * Focused, specific substrings to match against actual source code content.
+   * Used for deterministic routing of isolated Paste Code snippets.
+   */
+  contentMatchPatterns: string[];
 
   /** Checkpoint IDs to execute when this rule matches */
   checkpointIds: string[];

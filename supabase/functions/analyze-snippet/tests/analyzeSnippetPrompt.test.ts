@@ -361,3 +361,254 @@ router.post('/api/delete-user', (req, res) => {
     assertEquals(hasAuthzFail, false, "Should not fail authorization when the dangerous logic is out of context");
   }
 });
+
+Deno.test({
+  name: "Prompt Accuracy - Concrete SQL Injection should be classified as SQL_INJECTION without redundant INPUT_VALIDATION",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const app = express();
+const db = require('./db');
+app.post('/api/user', (req, res) => {
+  const id = req.body.id;
+  db.query(\`SELECT * FROM users WHERE id = \${id}\`);
+  res.send('ok');
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    // We expect it to FAIL
+    assertEquals(res.report.verdict, "FAIL");
+    
+    // It should have a SQL_INJECTION finding
+    const findings = [...(res.report.findings?.critical || []), ...(res.report.findings?.warning || []), ...(res.report.findings?.info || [])];
+    const sqlFindings = findings.filter((f: any) => f.vulnerabilityClass === "SQL_INJECTION");
+    const inputFindings = findings.filter((f: any) => f.vulnerabilityClass === "INPUT_VALIDATION");
+    
+    assertEquals(sqlFindings.length > 0, true, "Expected at least one SQL_INJECTION finding");
+    
+    // SEC-INPUT-001 should be the contributing checkpoint
+    assertEquals(sqlFindings[0].contributingCheckpoints.includes("SEC-INPUT-001"), true, "SEC-INPUT-001 should own the SQL injection finding");
+    
+    // It should NOT have a redundant INPUT_VALIDATION finding for the exact same issue
+    // (We allow INPUT_VALIDATION if there are other fields, but here there's only 'id')
+    assertEquals(inputFindings.length, 0, "Should not emit a redundant INPUT_VALIDATION finding for the exact same input field");
+  }
+});
+
+Deno.test({
+  name: "Prompt Accuracy - Generic input validation missing without concrete injection sink should produce INPUT_VALIDATION",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const app = express();
+app.post('/api/profile', (req, res) => {
+  // Missing validation/length limits, but no dangerous sink shown
+  const { description } = req.body;
+  if (description !== undefined && typeof description !== 'string') {
+    return res.status(400).send("Invalid description");
+  }
+  res.send('Profile updated');
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    const findings = [...(res.report.findings?.critical || []), ...(res.report.findings?.warning || []), ...(res.report.findings?.info || [])];
+    const inputFindings = findings.filter((f: any) => f.vulnerabilityClass === "INPUT_VALIDATION");
+    
+    // It should identify the missing length validation or schema issue as INPUT_VALIDATION
+    assertEquals(inputFindings.length > 0, true, "Expected an INPUT_VALIDATION finding for generic validation weakness");
+  }
+});
+
+Deno.test({
+  name: "Paste Code Semantics - clean self-contained health/greeting snippet should return PASS",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const app = express();
+app.get('/health', (req, res) => {
+  res.send({ status: 'ok', time: Date.now() });
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    // Paste Code override should allow this self-contained snippet to PASS
+    assertEquals(res.report.verdict, "PASS");
+  }
+});
+
+Deno.test({
+  name: "Paste Code Semantics - SQL injection snippet should return FAIL",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const app = express();
+const db = require('./db');
+app.get('/user', (req, res) => {
+  const query = \`SELECT * FROM users WHERE id = \${req.query.id}\`;
+  db.query(query, (err, result) => res.json(result));
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    // Concrete vulnerability must FAIL
+    assertEquals(res.report.verdict, "FAIL");
+  }
+});
+
+Deno.test({
+  name: "Paste Code Semantics - partial security-sensitive authorization/database flow should return NOT_VERIFIED",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const router = express.Router();
+// The actual database query and user authentication logic are missing from this snippet
+router.post('/api/delete-user', (req, res) => {
+  const { userId } = req.body;
+  userService.deleteUser(userId);
+  res.send("Deleted");
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    // Paste Code override says: "Use NOT_VERIFIED only when the pasted code contains security-sensitive behavior where an important security property genuinely depends on missing code"
+    // Since this is a sensitive action (delete user) relying on missing auth/authz context, it should be NOT_VERIFIED.
+    assertEquals(res.report.verdict, "NOT_VERIFIED");
+  }
+});
+
+Deno.test({
+  name: "Paste Code Semantics - explicitly unprotected sensitive route should return FAIL",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const router = express.Router();
+// The user intentionally bypassed auth for testing
+router.post('/api/delete-user', (req, res) => {
+  if (req.query.bypass_auth === 'true') {
+    const { userId } = req.body;
+    userService.deleteUser(userId);
+    res.send("Deleted with bypass");
+  } else {
+    res.status(401).send("Unauthorized");
+  }
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    // Concrete proof of an auth bypass backdoor means FAIL.
+    assertEquals(res.report.verdict, "FAIL");
+  }
+});
+
+Deno.test({
+  name: "Applicability - Simple Express /health server -> Security Configuration NOT_APPLICABLE",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const app = express();
+app.get('/health', (req, res) => res.json({status: 'ok'}));
+app.listen(3000);
+    `;
+    const res = await runSnippetEvaluation(content);
+    const configCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-CONFIG-001");
+    // It should be completely NOT_APPLICABLE because there is no specific security configuration present.
+    assertEquals(configCp?.applicability, "NOT_APPLICABLE");
+  }
+});
+
+Deno.test({
+  name: "Applicability - express.Router() alone -> Authentication/Session NOT_APPLICABLE",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const router = express.Router();
+router.get('/products', (req, res) => res.json([]));
+module.exports = router;
+    `;
+    const res = await runSnippetEvaluation(content);
+    const authCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-AUTH-001");
+    const sessionCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-SESSION-001");
+    assertEquals(authCp?.applicability, "NOT_APPLICABLE");
+    assertEquals(sessionCp?.applicability, "NOT_APPLICABLE");
+  }
+});
+
+Deno.test({
+  name: "Applicability - Explicit helmet() / CORS / TLS -> Security Configuration APPLICABLE",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const app = express();
+app.use(helmet());
+app.use(cors());
+app.get('/', (req, res) => res.send('OK'));
+    `;
+    const res = await runSnippetEvaluation(content);
+    const configCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-CONFIG-001");
+    assertEquals(configCp?.applicability, "APPLICABLE");
+  }
+});
+
+Deno.test({
+  name: "Applicability - Explicit JWT middleware -> Session/Auth APPLICABLE",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const jwt = require('jsonwebtoken');
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).send();
+  // We only decode, causing a potential NOT_VERIFIED or FAIL, but it IS APPLICABLE
+  const payload = jwt.decode(token);
+  req.user = payload;
+  next();
+}
+    `;
+    const res = await runSnippetEvaluation(content);
+    const sessionCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-SESSION-001");
+    const authCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-AUTH-001");
+    assertEquals(sessionCp?.applicability, "APPLICABLE");
+    assertEquals(authCp?.applicability, "APPLICABLE");
+  }
+});
+
+Deno.test({
+  name: "Applicability - Database operation with no visible auth context -> Authorization NOT_APPLICABLE",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const db = require('./db');
+function getPublicProducts() {
+  return db.query("SELECT * FROM products WHERE is_public = true");
+}
+    `;
+    const res = await runSnippetEvaluation(content);
+    const authzCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-AUTHZ-001");
+    // A database query by itself with no user/role logic should not trigger Authorization
+    assertEquals(authzCp?.applicability, "NOT_APPLICABLE");
+  }
+});

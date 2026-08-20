@@ -81,9 +81,19 @@ export class ReviewOrchestrator {
     const allCheckpointIds = allCheckpoints.map((cp) => cp.id);
 
     // 2. Route: determine which checkpoints to run
-    const changedFilePaths = sanitizedPackage.changedFiles.map((f) => f.path);
+    const isPasteCode = sanitizedPackage.repository.endsWith("paste_snippet");
+    let routingInputs: string[];
+    
+    if (isPasteCode) {
+      // For Paste Code snippets, route using the code content itself
+      routingInputs = sanitizedPackage.changedFiles.map((f) => f.content || "");
+    } else {
+      // For GitHub PRs, route using file paths (existing behavior)
+      routingInputs = sanitizedPackage.changedFiles.map((f) => f.path);
+    }
+
     const router = new CheckpointRouter(allCheckpointIds, this.routingRules);
-    const routingDecision = router.route(changedFilePaths);
+    const routingDecision = router.route(routingInputs, isPasteCode);
 
     // 3. Resolve selected checkpoint implementations
     const selectedCheckpoints = allCheckpoints.filter((cp) =>
@@ -183,6 +193,7 @@ export class ReviewOrchestrator {
           checkpointId: cp.id,
           checkpointName: cp.name,
           verdict: "NOT_VERIFIED",
+          applicability: "UNKNOWN",
           confidence: 0,
           summary: `Checkpoint failed: ${outcome.reason?.message || "Unknown error"}`,
           findings: [],

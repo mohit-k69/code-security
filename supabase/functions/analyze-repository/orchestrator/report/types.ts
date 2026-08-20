@@ -14,6 +14,7 @@ export interface CheckpointSummary {
   checkpointId: string;
   checkpointName: string;
   verdict: CheckpointVerdict;
+  applicability: "APPLICABLE" | "NOT_APPLICABLE" | "UNKNOWN";
   confidence: number;
   executionTimeMs: number;
   findingCount: number;

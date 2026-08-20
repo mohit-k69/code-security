@@ -136,3 +136,67 @@ Deno.test("FindingAggregator - Test Case 6: Same Vulnerability Class, Completely
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
   assertEquals(aggregated.length, 2, "Should NOT merge distant lines even with same class and similar description");
 });
+
+Deno.test("FindingAggregator - Test Case 7: Same SQL_INJECTION class + same line + different descriptions", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SQL_INJECTION", "Missing Input Validation", "Input is not validated/sanitized.", 
+    "snippet.js", 10, "db.query(req.body.id);"
+  );
+  const f2 = createFinding(
+    "2", "SQL_INJECTION", "Missing Output Escaping", "Input is not escaped before SQL interpolation.", 
+    "snippet.js", 10, "db.query(req.body.id);"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge identical vulnerability class on same line despite different descriptions");
+});
+
+Deno.test("FindingAggregator - Test Case 8: Same SQL_INJECTION class + nearby lines + different evidence", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SQL_INJECTION", "Missing Input Validation", "Input is not validated.", 
+    "snippet.js", 10, "const id = req.body.id;"
+  );
+  const f2 = createFinding(
+    "2", "SQL_INJECTION", "Missing Output Escaping", "Input is not escaped.", 
+    "snippet.js", 11, "db.query(`SELECT * FROM users WHERE id = ${id}`);"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge identical vulnerability class on nearby lines with different evidence");
+});
+
+Deno.test("FindingAggregator - Test Case 9: SQL_INJECTION vs SECRET_EXPOSURE on same line", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SQL_INJECTION", "SQL Injection", "Unescaped input in query.", 
+    "snippet.js", 10, "db.query(`SELECT * FROM users WHERE pass = '${'secret'}'`);"
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Hardcoded Secret", "Hardcoded database password.", 
+    "snippet.js", 10, "db.query(`SELECT * FROM users WHERE pass = '${'secret'}'`);"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge different vulnerability classes on same line");
+});
+
+Deno.test("FindingAggregator - Test Case 10: SECRET_EXPOSURE distinct secrets on nearby lines", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "DB Password", "Hardcoded DB pass.", 
+    "snippet.js", 10, "const DB_PASS = 'db_secret';"
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "JWT Secret", "Hardcoded JWT secret.", 
+    "snippet.js", 11, "const JWT_SECRET = 'jwt_secret';"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on nearby lines");
+});

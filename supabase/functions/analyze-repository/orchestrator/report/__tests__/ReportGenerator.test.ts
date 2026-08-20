@@ -31,6 +31,7 @@ function makeResult(
   findingCount: number,
   status: "completed" | "error" = "completed",
   error?: string,
+  applicability: "APPLICABLE" | "NOT_APPLICABLE" | "UNKNOWN" = "UNKNOWN"
 ): CheckpointResult {
   const findings = Array.from({ length: findingCount }, (_, i) => ({
     findingId: `${id}-f${i}`,
@@ -49,6 +50,7 @@ function makeResult(
     checkpointId: id,
     checkpointName: name,
     verdict,
+    applicability,
     confidence,
     summary: `Summary for ${id}`,
     findings,
@@ -128,11 +130,11 @@ console.log("\n── Test 3: Overall verdict — clean PASS ──");
   assert(report.verdict === "PASS", "All PASS should produce overall PASS");
 }
 
-// ── Test 4: Overall Verdict — Empty results ─────────────────────
-console.log("\n── Test 4: Overall verdict — empty results ──");
+// ── Test 4: Overall Verdict — GitHub Empty results ────────────────
+console.log("\n── Test 4: Overall verdict — GitHub empty results ──");
 {
   const report = generator.generate([], [], 10, MOCK_REPO_CTX);
-  assert(report.verdict === "NOT_VERIFIED", "No results should produce NOT_VERIFIED");
+  assert(report.verdict === "NOT_VERIFIED", "GitHub: No results should produce NOT_VERIFIED");
 }
 
 // ── Test 5: Checkpoint Summaries ────────────────────────────────
@@ -276,6 +278,80 @@ console.log("\n── Test 14: Repository context ──");
   assert(report.repository.commitSha === "abc123def456", "Commit SHA preserved");
 }
 
+// ── Test 15: Paste Code — Clean snippet with irrelevant NOT_VERIFIED ──
+console.log("\n── Test 15: Paste Code — Clean snippet with irrelevant NOT_VERIFIED ──");
+{
+  const PASTE_CTX = { ...MOCK_REPO_CTX, commitSha: "local", name: "paste_snippet" };
+  const results = [
+    makeResult("CP1", "Auth", "NOT_VERIFIED", 0, 0, "completed", undefined, "NOT_APPLICABLE"),
+    makeResult("CP2", "Config", "PASS", 0.9, 0, "completed", undefined, "NOT_APPLICABLE"),
+  ];
+  // No findings (findings = [])
+  const report = generator.generate(results, [], 10, PASTE_CTX);
+  assert(report.verdict === "PASS", "Paste Code: Irrelevant NOT_VERIFIED with NOT_APPLICABLE -> PASS");
+}
+
+// ── Test 16: Paste Code — SQL injection -> FAIL ──
+console.log("\n── Test 16: Paste Code — SQL injection -> FAIL ──");
+{
+  const PASTE_CTX = { ...MOCK_REPO_CTX, commitSha: "local", name: "paste_snippet" };
+  const results = [
+    makeResult("CP1", "SQLi", "FAIL", 0.9, 1, "completed", undefined, "APPLICABLE"),
+    makeResult("CP2", "Auth", "NOT_VERIFIED", 0, 0, "completed", undefined, "NOT_APPLICABLE"),
+  ];
+  const findings: AggregatedFinding[] = [
+    makeFinding("f1", "critical", "snippet.js", 5, VulnerabilityClass.SQL_INJECTION)
+  ];
+  const report = generator.generate(results, findings, 10, PASTE_CTX);
+  assert(report.verdict === "FAIL", "Paste Code: Concrete FAIL finding -> FAIL");
+}
+
+// ── Test 17: Paste Code — Unresolved context -> NOT_VERIFIED ──
+console.log("\n── Test 17: Paste Code — Unresolved context -> NOT_VERIFIED ──");
+{
+  const PASTE_CTX = { ...MOCK_REPO_CTX, commitSha: "local", name: "paste_snippet" };
+  const results = [
+    makeResult("CP1", "Authz", "NOT_VERIFIED", 0, 0, "completed", undefined, "APPLICABLE"),
+    makeResult("CP2", "Config", "PASS", 0.9, 0, "completed", undefined, "NOT_APPLICABLE"),
+  ];
+  const findings: AggregatedFinding[] = [];
+  const report = generator.generate(results, findings, 10, PASTE_CTX);
+  assert(report.verdict === "NOT_VERIFIED", "Paste Code: APPLICABLE + NOT_VERIFIED -> NOT_VERIFIED");
+}
+
+// ── Test 18: Paste Code — Explicit Auth Bypass -> FAIL ──
+console.log("\n── Test 18: Paste Code — Explicit Auth Bypass -> FAIL ──");
+{
+  const PASTE_CTX = { ...MOCK_REPO_CTX, commitSha: "local", name: "paste_snippet" };
+  const results = [
+    makeResult("CP1", "Auth", "FAIL", 0.95, 1, "completed", undefined, "APPLICABLE"),
+  ];
+  const findings: AggregatedFinding[] = [
+    makeFinding("f1", "critical", "snippet.js", 5, VulnerabilityClass.AUTH_BYPASS)
+  ];
+  const report = generator.generate(results, findings, 10, PASTE_CTX);
+  assert(report.verdict === "FAIL", "Paste Code: Explicit authentication bypass -> FAIL");
+}
+
+// ── Test 18: Paste Code — UNKNOWN + NOT_VERIFIED -> NOT_VERIFIED ──
+console.log("\n── Test 18: Paste Code — UNKNOWN + NOT_VERIFIED -> NOT_VERIFIED ──");
+{
+  const PASTE_CTX = { ...MOCK_REPO_CTX, commitSha: "local", name: "paste_snippet" };
+  const results = [
+    makeResult("CP1", "Config", "NOT_VERIFIED", 0, 0, "completed", undefined, "UNKNOWN"),
+  ];
+  const report = generator.generate(results, [], 10, PASTE_CTX);
+  assert(report.verdict === "NOT_VERIFIED", "Paste Code: UNKNOWN applicability with NOT_VERIFIED -> NOT_VERIFIED");
+}
+
+// ── Test 19: Paste Code — 0 Checkpoints -> PASS ──
+console.log("\n── Test 19: Paste Code — 0 Checkpoints -> PASS ──");
+{
+  const PASTE_CTX = { ...MOCK_REPO_CTX, commitSha: "local", name: "paste_snippet" };
+  const report = generator.generate([], [], 10, PASTE_CTX);
+  assert(report.verdict === "PASS", "Paste Code: 0 checkpoints + 0 findings -> PASS");
+}
+
 // ─── Summary ────────────────────────────────────────────────────
 
 console.log("\n═══════════════════════════════════════════════════");
@@ -285,3 +361,4 @@ console.log("══════════════════════�
 if (failed > 0) {
   process.exit(1);
 }
+

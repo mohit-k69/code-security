@@ -14,7 +14,7 @@ export function PasteWorkflow({ setActiveWorkflow, pastedCode, setPastedCode, ha
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-      className="flex-1 flex flex-col h-full"
+      className="flex-1 flex flex-col h-full max-w-3xl mx-auto w-full"
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -43,7 +43,7 @@ export function PasteWorkflow({ setActiveWorkflow, pastedCode, setPastedCode, ha
         </button>
       </div>
       
-      <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-[65vh] bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
         <textarea 
           value={pastedCode}
           onChange={(e) => setPastedCode(e.target.value)}

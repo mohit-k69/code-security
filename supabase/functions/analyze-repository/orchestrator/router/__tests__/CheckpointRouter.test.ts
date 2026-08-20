@@ -137,7 +137,7 @@ console.log("\n── Test 9: Skipped checkpoints are correct ──");
 console.log("\n── Test 10: Custom routing rules ──");
 {
   const customRules: RoutingRule[] = [
-    { name: "Custom", matchPatterns: ["magic"], checkpointIds: ["SEC-AUTH-001", "SEC-XSS-001"] },
+    { name: "Custom", fileMatchPatterns: ["magic"], contentMatchPatterns: ["magic"], checkpointIds: ["SEC-AUTH-001", "SEC-XSS-001"] },
   ];
   const router = new CheckpointRouter(ALL_IDS, customRules);
   const decision = router.route(["src/magic-handler.ts"]);
@@ -182,6 +182,65 @@ console.log("\n── Test 14: File upload changes ──");
   const router = new CheckpointRouter(ALL_IDS);
   const decision = router.route(["api/uploadHandler.ts", "services/fileStorage.ts"]);
   assert(decision.selectedCheckpointIds.includes("SEC-FILE-001"), "File security checkpoint selected");
+}
+
+// ── Test 15: Paste Code with jwt.verify() routes to Session/Auth ──
+console.log("\n── Test 15: Paste Code with jwt.verify() ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["const token = jwt.verify(t, 'secret');"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session & JWT selected");
+  assert(decision.selectedCheckpointIds.includes("SEC-AUTH-001"), "Auth selected");
+}
+
+// ── Test 16: Paste Code with concrete SQL query ──
+console.log("\n── Test 16: Paste Code with SQL query ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["db.query(`SELECT * FROM users WHERE id = ${id}`)"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-INPUT-001"), "Input Validation selected");
+}
+
+// ── Test 17: Paste Code with XSS sink ──
+console.log("\n── Test 17: Paste Code with XSS sink ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["res.send(html);"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-XSS-001"), "XSS selected");
+}
+
+// ── Test 18: Paste Code with helmet() / CORS / TLS ──
+console.log("\n── Test 18: Paste Code with config ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["app.use(helmet()); app.use(cors());"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-CONFIG-001"), "Config selected");
+}
+
+// ── Test 19: Plain /health snippet selects no specialized checkpoints ──
+console.log("\n── Test 19: Plain /health snippet (empty fallback) ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["app.get('/health', (req, res) => res.json({status: 'ok'})); app.listen(3000);"], true);
+  assert(decision.isFallback, "Is fallback");
+  assert(decision.selectedCheckpointIds.length === 0, "No checkpoints selected");
+}
+
+// ── Test 20: Implicit AuthZ: userService.deleteUser ──
+console.log("\n── Test 20: Implicit AuthZ routing ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["userService.deleteUser(userId)"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-AUTHZ-001"), "AuthZ selected for deleteUser");
+}
+
+// ── Test 21: Generic Express route alone does not trigger AuthZ ──
+console.log("\n── Test 21: Generic route without keywords ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["app.get('/settings', (req, res) => res.json({}));"], true);
+  assert(decision.isFallback, "Is fallback");
+  assert(decision.selectedCheckpointIds.length === 0, "No specialized checkpoints selected for generic route");
 }
 
 // ─── Summary ────────────────────────────────────────────────────
