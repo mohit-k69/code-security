@@ -59,7 +59,7 @@ Deno.test("Guardrail: Suppress algorithms: ['HS256'] false critical finding", ()
   
   // It should be suppressed completely
   assertEquals(guarded.findings.length, 0);
-  assertEquals(guarded.verdict, "PASS");
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
 });
 
 Deno.test("Guardrail: Suppress process.env.JWT_SECRET without unsafe fallback (entropy warning)", () => {
@@ -76,7 +76,7 @@ Deno.test("Guardrail: Suppress process.env.JWT_SECRET without unsafe fallback (e
   const guarded = FindingGuardrail.applyGuardrails(result);
   
   assertEquals(guarded.findings.length, 0);
-  assertEquals(guarded.verdict, "PASS");
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
 });
 
 Deno.test("Guardrail: Preserve process.env.JWT_SECRET || 'default-secret' (unsafe fallback)", () => {
@@ -109,7 +109,7 @@ Deno.test("Guardrail: Suppress INPUT-C6 optional schema absence", () => {
   const guarded = FindingGuardrail.applyGuardrails(result);
   
   assertEquals(guarded.findings.length, 0);
-  assertEquals(guarded.verdict, "PASS");
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
 });
 
 Deno.test("Guardrail: Preserve genuine unsafe input/schema behavior", () => {
@@ -174,7 +174,7 @@ Deno.test("Guardrail: Suppress absence of context (WARNING)", () => {
   const guarded = FindingGuardrail.applyGuardrails(result);
   
   assertEquals(guarded.findings.length, 0);
-  assertEquals(guarded.verdict, "PASS");
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
 });
 
 Deno.test("Guardrail: Suppress absence of context (CRITICAL)", () => {
@@ -191,7 +191,7 @@ Deno.test("Guardrail: Suppress absence of context (CRITICAL)", () => {
   const guarded = FindingGuardrail.applyGuardrails(result);
   
   assertEquals(guarded.findings.length, 0);
-  assertEquals(guarded.verdict, "PASS");
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
 });
 
 Deno.test("Guardrail: Preserve concrete CRITICAL vulnerability with evidence in supplied code", () => {
@@ -324,6 +324,184 @@ Deno.test("Guardrail: Preserve unsafe string concatenation SQL injection", () =>
     "Unsafe string concatenation.",
     "db.execute('SELECT * FROM users WHERE id = ' + req.body.id);",
     "Direct interpolation."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 1);
+});
+
+Deno.test("Guardrail: Suppress generic missing validation on req.body assignment", () => {
+  const finding = createMockFinding(
+    "INPUT-C1",
+    "INPUT_VALIDATION",
+    "critical",
+    "Missing Validation",
+    "Input extracted directly from req.body without validation.",
+    "const id = req.body.id;",
+    "Extracted directly from request body."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 0);
+});
+
+Deno.test("Guardrail: Suppress generic missing validation on req.body destructuring", () => {
+  const finding = createMockFinding(
+    "INPUT-C1",
+    "INPUT_VALIDATION",
+    "critical",
+    "Missing Validation",
+    "Input extracted directly from req.body without validation.",
+    "const { userId } = req.body;",
+    "Extracted directly from request body."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 0);
+});
+
+Deno.test("Guardrail: Suppress false IDOR on partial DB operation with no visible authorization", () => {
+  const finding = createMockFinding(
+    "AUTHZ-C1",
+    "BUSINESS_LOGIC_FLAW",
+    "critical",
+    "IDOR",
+    "Direct use of req.body.userId in UPDATE without auth",
+    "const userId = req.body.userId;\ndb.execute('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, userId]);",
+    "Extracted directly from request body."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 0);
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
+});
+
+Deno.test("Guardrail: Suppress false IDOR with abbreviated evidence but DB operation in full context", () => {
+  const finding = createMockFinding(
+    "AUTHZ-C1",
+    "AUTH_BYPASS",
+    "critical",
+    "IDOR",
+    "Uses req.body.userId",
+    "const userId = req.body.userId;", // LLM cited ONLY extraction
+    "Extracted directly from request body."
+  );
+  const result = createMockResult([finding]);
+  
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test.js", // Matches finding.primaryLocation.file from createMockFinding
+      content: "const userId = req.body.userId;\ndb.execute('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, userId]);"
+    }]
+  };
+
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+  
+  assertEquals(guarded.findings.length, 0);
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
+});
+
+Deno.test("Guardrail: Preserve bypassAuth query parameter AUTH_BYPASS", () => {
+  const finding = createMockFinding(
+    "AUTH-C1",
+    "AUTH_BYPASS",
+    "critical",
+    "Auth Bypass",
+    "Bypass via query param",
+    "const bypassAuth = req.query.bypass === 'true';",
+    "Explicit bypass logic."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 1);
+});
+
+Deno.test("Guardrail: Preserve req.body.admin trusted as authorization state", () => {
+  const finding = createMockFinding(
+    "AUTHZ-C1",
+    "BUSINESS_LOGIC_FLAW",
+    "critical",
+    "Client-controlled Role",
+    "Trusts req.body.admin",
+    "const isAdmin = req.body.admin;",
+    "Extracts admin flag directly from client."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 1);
+});
+
+Deno.test("Guardrail: Preserve explicit flawed ownership comparison", () => {
+  const finding = createMockFinding(
+    "AUTHZ-C1",
+    "AUTH_BYPASS",
+    "critical",
+    "Flawed Check",
+    "Checks session but not ownership",
+    "if (req.session.user) {\n  db.execute('DELETE FROM users WHERE id = ?', [req.body.userId]);\n}",
+    "Flawed logic checking existence rather than ownership."
+  );
+  const result = createMockResult([finding]);
+  
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test.js",
+      content: "if (req.session.user) {\n  db.execute('DELETE FROM users WHERE id = ?', [req.body.userId]);\n}"
+    }]
+  };
+
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+  
+  assertEquals(guarded.findings.length, 1);
+});
+
+Deno.test("Guardrail: Suppress generic if (userId) with no auth semantics", () => {
+  const finding = createMockFinding(
+    "AUTHZ-C1",
+    "BUSINESS_LOGIC_FLAW",
+    "critical",
+    "IDOR",
+    "If check without auth semantics",
+    "if (req.body.userId) {\n  db.execute('DELETE FROM users WHERE id = ?', [req.body.userId]);\n}",
+    "Missing proper auth."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 0);
+});
+
+Deno.test("Guardrail: Suppress generic missing validation on parameterized SQL", () => {
+  const finding = createMockFinding(
+    "INPUT-C1",
+    "INPUT_VALIDATION",
+    "warning",
+    "Missing Validation",
+    "Input used in database without any validation.",
+    "db.execute('UPDATE accounts SET balance = balance - ? WHERE id = ?', [amount, userId]);",
+    "Extracted directly from request body."
+  );
+  const result = createMockResult([finding]);
+  const guarded = FindingGuardrail.applyGuardrails(result);
+  
+  assertEquals(guarded.findings.length, 0);
+});
+
+Deno.test("Guardrail: Preserve generic missing validation if unsafe concatenation", () => {
+  const finding = createMockFinding(
+    "INPUT-C1",
+    "INPUT_VALIDATION",
+    "warning",
+    "Missing Validation",
+    "Input used in database without any validation.",
+    "db.execute('UPDATE accounts SET balance = balance - ' + amount + ' WHERE id = ' + userId);",
+    "Extracted directly from request body."
   );
   const result = createMockResult([finding]);
   const guarded = FindingGuardrail.applyGuardrails(result);

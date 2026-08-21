@@ -32,11 +32,31 @@ function wrapFinding(finding: CheckpointFinding): CheckpointResult {
     checkpointId: `CHK-${finding.criterionId}`,
     checkpointName: `Name`,
     verdict: "FAIL",
+    applicability: "APPLICABLE",
     confidence: 1.0,
     summary: "Mock summary",
     findings: [finding],
     status: "completed",
     execution: { executionTimeMs: 100, llmDurationMs: 50, model: "test", timestamp: "" }
+  };
+}
+
+function createMockResult(findings: CheckpointFinding[]): CheckpointResult {
+  return {
+    checkpointId: "TEST-1",
+    checkpointName: "Test Checkpoint",
+    verdict: "FAIL",
+    applicability: "APPLICABLE",
+    confidence: 1.0,
+    summary: "Test summary",
+    findings,
+    status: "completed",
+    execution: {
+      executionTimeMs: 100,
+      llmDurationMs: 100,
+      model: "test-model",
+      timestamp: "2026-08-19T00:00:00Z"
+    }
   };
 }
 
@@ -199,4 +219,53 @@ Deno.test("FindingAggregator - Test Case 10: SECRET_EXPOSURE distinct secrets on
 
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
   assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on nearby lines");
+});
+
+Deno.test("Aggregator: Merges identical class with overlapping evidence despite large line distance", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "AUTH_BYPASS", "Auth Bypass", "Authentication bypass via query parameter.", 
+    "snippet.js", 61, "const bypassAuth = req.query.bypass === 'true';"
+  );
+  const f2 = createFinding(
+    "2", "AUTH_BYPASS", "Auth Bypass", "Bypass allowed by bypassAuth flag.", 
+    "snippet.js", 74, "const bypassAuth = req.query.bypass === 'true';"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge because evidence snippets overlap strongly despite line distance");
+});
+
+Deno.test("Aggregator: Does not merge identical class if far apart and no evidence overlap", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SQL_INJECTION", "SQL Injection 1", "Unsafe interpolation.", 
+    "snippet.js", 20, "db.query(`SELECT * FROM a WHERE id=${id}`)"
+  );
+  const f2 = createFinding(
+    "2", "SQL_INJECTION", "SQL Injection 2", "Unsafe concatenation.", 
+    "snippet.js", 80, "db.execute('DELETE FROM b WHERE x=' + x)"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge because they are far apart and evidence differs");
+});
+
+Deno.test("Aggregator: Does not merge different classes far apart even with same evidence (preserves existing behavior)", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Exposed Secret", "A secret is exposed.", 
+    "snippet.js", 20, "const secret = 'super_secret';"
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "Weak JWT", "JWT uses weak signing key.", 
+    "snippet.js", 80, "const secret = 'super_secret';"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  // similarity between text1 and text2 will be calculated.
+  // text1: "SECRET_EXPOSURE Exposed Secret A secret is exposed."
+  // text2: "JWT_SECURITY Weak JWT JWT uses weak signing key."
+  // Overlap is minimal, similarity < 0.15, so they remain separate.
+  assertEquals(aggregated.length, 2, "Different classes should remain separate even if evidence overlaps, if text similarity is low");
 });

@@ -168,11 +168,24 @@ export async function handleRequest(req: Request): Promise<Response> {
       return jsonResponse({ error: 'Missing OPENROUTER_API_KEY' }, 500);
     }
     const llmModel = Deno.env.get('LLM_MODEL');
-    if (!llmModel) {
-      return jsonResponse({ error: 'Missing LLM_MODEL' }, 500);
+    const standardModel = Deno.env.get('STANDARD_MODEL') || llmModel;
+    const majorModel = Deno.env.get('MAJOR_MODEL') || standardModel;
+    
+    if (!standardModel || !majorModel) {
+      return jsonResponse({ error: 'Missing LLM_MODEL or STANDARD_MODEL configuration' }, 500);
     }
-    const llmProvider = new OpenRouterProvider(llmModel);
-    const orchestrator = new ReviewOrchestrator({ provider: llmProvider });
+    
+    // OpenRouterProvider can take no argument if a specific model is always passed per execution,
+    // but we can pass standardModel as the default fallback for the provider itself.
+    const llmProvider = new OpenRouterProvider(standardModel);
+    
+    const orchestrator = new ReviewOrchestrator({ 
+      provider: llmProvider,
+      models: {
+        standard: standardModel,
+        major: majorModel
+      }
+    });
 
     const executionResult = await orchestrator.review(sanitizedPackage);
 

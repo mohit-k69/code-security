@@ -140,5 +140,6 @@ export const SessionJwtSpec: ReviewSpecification = {
     "- Logging out by only deleting a client-side cookie without invalidating the refresh " +
     "token backend state (SESSION-C6) is a **FAIL**.\n" +
     "- Treat `process.env.JWT_SECRET` or equivalent runtime secret retrieval as secure by default.\n" +
+    "- **CRITICAL**: Do NOT flag hardcoded JWT secrets or keys here. Secret exposure is strictly evaluated by SEC-SECRET-001.\n" +
     "- Never infer vulnerabilities without sufficient code evidence.",
 };

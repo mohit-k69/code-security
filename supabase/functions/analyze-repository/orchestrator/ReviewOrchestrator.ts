@@ -35,6 +35,12 @@ export interface OrchestratorConfig {
 
   /** Optional custom routing rules (defaults to the standard routing table) */
   routingRules?: RoutingRule[];
+
+  /** Model overrides mapping for standard vs major checkpoints */
+  models?: {
+    standard: string;
+    major: string;
+  };
 }
 
 export interface PipelineMetrics {
@@ -59,10 +65,12 @@ export class ReviewOrchestrator {
   private aggregator: FindingAggregator;
   private reportGenerator: ReportGenerator;
   private routingRules?: RoutingRule[];
+  private models?: { standard: string; major: string };
 
   constructor(config: OrchestratorConfig) {
     this.provider = config.provider;
     this.routingRules = config.routingRules;
+    this.models = config.models;
     this.aggregator = new FindingAggregator();
     this.reportGenerator = new ReportGenerator();
   }
@@ -172,11 +180,24 @@ export class ReviewOrchestrator {
     checkpoints: RegisteredCheckpoint[],
     sanitizedPackage: SanitizedContextPackage
   ): Promise<CheckpointResult[]> {
-    const runner = new CheckpointRunner(this.provider);
+    const MAJOR_CHECKPOINTS = new Set([
+      "SEC-AUTH-001",
+      "SEC-AUTHZ-001",
+      "SEC-SESSION-001",
+      "SEC-CRYPTO-001"
+    ]);
 
-    const promises = checkpoints.map((cp) =>
-      runner.run(sanitizedPackage, SECURITY_REVIEW_FRAMEWORK, cp.spec)
-    );
+    const promises = checkpoints.map((cp) => {
+      let targetModel: string | undefined = undefined;
+      if (this.models) {
+        targetModel = MAJOR_CHECKPOINTS.has(cp.id) 
+          ? this.models.major 
+          : this.models.standard;
+      }
+      
+      const runner = new CheckpointRunner(this.provider, targetModel);
+      return runner.run(sanitizedPackage, SECURITY_REVIEW_FRAMEWORK, cp.spec);
+    });
 
     const settled = await Promise.allSettled(promises);
     const results: CheckpointResult[] = [];

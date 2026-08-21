@@ -26,7 +26,11 @@ export const InputValidationSpec: ReviewSpecification = {
         "an 'allowlist' approach where possible, explicitly defining what input is valid.\n\n" +
         "PASS: Input fields are explicitly validated for presence, type, format, and " +
         "length limits before processing.\n" +
-        "FAIL: Input validation explicitly relies on weak logic (e.g., flawed regex). (Do not FAIL simply because validation is missing; use NOT_VERIFIED instead). Do not report application/business rules (e.g., an optional 'description' field being empty) as security vulnerabilities unless the code demonstrates concrete security impact.\n" +
+        "FAIL: Input validation explicitly relies on weak logic (e.g., flawed regex). " +
+        "(Do not FAIL simply because validation is missing; use NOT_VERIFIED instead). " +
+        "Direct extraction from `req.body`, `req.query`, or `req.params` alone is NOT a security FAIL. " +
+        "Generic missing validation before a parameterized query must NOT be marked FAIL without a concrete dangerous sink. " +
+        "Do not report application/business rules (e.g., an optional 'description' field being empty) as security vulnerabilities unless the code demonstrates concrete security impact.\n" +
         "NOT_VERIFIED: Validation is handled by a middleware or framework mechanism not visible in the provided context, or validation logic is simply absent from the partial snippet.",
     },
 

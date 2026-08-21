@@ -243,6 +243,15 @@ console.log("\n── Test 21: Generic route without keywords ──");
   assert(decision.selectedCheckpointIds.length === 0, "No specialized checkpoints selected for generic route");
 }
 
+// ── Test 22: Comments with security keywords do not trigger routing ──
+console.log("\n── Test 22: Comments do not trigger routing ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = router.route(["// Need to add authorization and jwt and deleteuser here\napp.get('/health', (req, res) => res.send('ok'));"], true);
+  assert(decision.isFallback, "Is fallback");
+  assert(decision.selectedCheckpointIds.length === 0, "No specialized checkpoints selected for comments");
+}
+
 // ─── Summary ────────────────────────────────────────────────────
 
 console.log("\n═══════════════════════════════════════════════════");

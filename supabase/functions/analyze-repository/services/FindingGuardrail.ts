@@ -1,11 +1,11 @@
 import type { CheckpointFinding, CheckpointResult } from "./CheckpointRunner.ts";
-
+import type { SanitizedContextPackage } from "./types.ts";
 export class FindingGuardrail {
   /**
    * Applies deterministic guardrail rules to filter or modify findings
    * before they are aggregated.
    */
-  public static applyGuardrails(result: CheckpointResult): CheckpointResult {
+  public static applyGuardrails(result: CheckpointResult, contextPackage?: SanitizedContextPackage): CheckpointResult {
     if (result.status !== "completed" || !result.findings) {
       return result;
     }
@@ -13,7 +13,7 @@ export class FindingGuardrail {
     const filteredFindings: CheckpointFinding[] = [];
 
     for (const finding of result.findings) {
-      if (this.shouldSuppress(finding)) {
+      if (this.shouldSuppress(finding, contextPackage)) {
         continue;
       }
       
@@ -26,8 +26,7 @@ export class FindingGuardrail {
     let newVerdict = result.verdict;
     if (result.verdict === "FAIL" && filteredFindings.length === 0) {
       // All findings were dropped by the guardrail.
-      // If we have enough confidence, we can mark PASS, otherwise NOT_VERIFIED.
-      newVerdict = result.confidence > 0.5 ? "PASS" : "NOT_VERIFIED";
+      newVerdict = "NOT_VERIFIED";
     }
 
     return {
@@ -37,8 +36,8 @@ export class FindingGuardrail {
     };
   }
 
-  private static shouldSuppress(finding: CheckpointFinding): boolean {
-    const combinedEvidenceSnippet = finding.evidence.map((e: any) => e.snippet).join("\\n");
+  private static shouldSuppress(finding: CheckpointFinding, contextPackage?: SanitizedContextPackage): boolean {
+    const combinedEvidenceSnippet = finding.evidence.map((e: any) => e.snippet).join("\n");
     const combinedEvidenceExplanation = finding.evidence.map((e: any) => e.explanation).join("\\n");
     const combinedText = finding.title + " " + finding.description + " " + combinedEvidenceExplanation;
 
@@ -113,12 +112,54 @@ export class FindingGuardrail {
       }
     }
 
+    // 8. Suppression: Generic missing validation on variable assignment or parameterized SQL
+    if (finding.vulnerabilityClass === "INPUT_VALIDATION") {
+      // Condition A: Evidence snippet is solely a variable extraction (e.g., const id = req.body.id;)
+      const isJustExtraction = /^\s*(const|let|var)\s+.*?=\s*req\.(body|query|params).*?;?$/im.test(combinedEvidenceSnippet.trim());
+      
+      // Condition B: Evidence shows a parameterized SQL query without unsafe string concatenation
+      const isSqlContext = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query)/i.test(combinedEvidenceSnippet);
+      const hasPlaceholders = /(\?|\$\d+|:\w+)/.test(combinedEvidenceSnippet);
+      const hasUnsafeConcatenation = /(\$\{.*\}|['"]\s*\+)/.test(combinedEvidenceSnippet);
+      const isSafeParameterizedSql = isSqlContext && hasPlaceholders && !hasUnsafeConcatenation;
+
+      const complainsAboutMissingValidation = /(without any validation|lack of validation|extracted directly|no validation)/i.test(combinedText);
+
+      if (complainsAboutMissingValidation && (isJustExtraction || isSafeParameterizedSql)) {
+        return true;
+      }
+    }
+
     // 8. Suppression: Operational/Debugging Preference (Generic Errors)
     // Suppress findings that merely complain that a generic error message makes debugging harder.
     const complainsAboutGenericError = /(generic.*message|generic.*response)/i.test(combinedText);
     const complainsAboutDebugging = /(debugging|differentiate between|distinguish)/i.test(combinedText);
     if (complainsAboutGenericError && complainsAboutDebugging && finding.severity !== "critical") {
       return true;
+    }
+
+    // 9. Suppression: IDOR false positives on partial snippets
+    if (finding.vulnerabilityClass === "AUTH_BYPASS" || finding.vulnerabilityClass === "BUSINESS_LOGIC_FLAW") {
+      let codeContext = combinedEvidenceSnippet;
+      
+      if (contextPackage && finding.primaryLocation?.file) {
+        const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
+        if (fileData && fileData.content) {
+          codeContext = fileData.content;
+        }
+      }
+
+      // Strip comments to prevent matching auth keywords in explanatory text
+      const cleanCodeContext = codeContext.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
+
+      const isClientControlledId = /req\.(body|query|params)/i.test(cleanCodeContext);
+      const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query)/i.test(cleanCodeContext);
+      
+      const hasExplicitAuthLogic = /(bypass|role|admin|permission|ownerId|req\.session|req\.user|jwt|verify|auth)/i.test(cleanCodeContext);
+
+      if (isClientControlledId && isDbOperation && !hasExplicitAuthLogic) {
+        return true;
+      }
     }
 
     return false;

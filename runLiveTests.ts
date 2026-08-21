@@ -66,17 +66,17 @@ async function runTest(name, code, expectedVerdict) {
 
 async function main() {
   const t1 = `
-const express = require('express');
+const express = require("express");
 const app = express();
-app.get('/health', (req, res) => res.json({status: 'ok'}));
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.listen(3000);
 `;
 
   const t2 = `
-const db = require('./db');
-function getUser(id) {
-  return db.query("SELECT * FROM users WHERE id = " + id);
-}
+const express = require("express");
+// Need to add authorization and jwt and deleteuser here
+const app = express();
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
 `;
 
   const t3 = `
@@ -98,30 +98,45 @@ router.post("/api/charge-user", (req, res) => {
 `;
 
   const t4 = `
-function chargeUser(req, res) {
-  const userId = req.body.userId;
-  const amount = req.body.amount;
-  db.execute("UPDATE accounts SET balance = balance - " + amount + " WHERE id = " + userId);
-  res.send("Charged");
-}
+const userId = req.body.userId;
+db.execute("DELETE FROM users WHERE id = " + userId);
 `;
 
   const t5 = `
 const express = require('express');
 const app = express();
 app.post('/api/data', (req, res) => {
-  // bypass auth for testing
-  // if (!req.session.user) return res.status(401).send();
-  db.execute("DELETE FROM items WHERE id = ?", [req.body.id]);
-  res.send("Deleted");
+  const bypassAuth = req.query.bypass === "true";
+
+  if (bypassAuth || req.session) {
+    db.execute("DELETE FROM items WHERE id = ?", [req.body.id]);
+    return res.send("Deleted");
+  }
+
+  return res.status(401).send("Unauthorized");
 });
 `;
 
-  await runTest("Clean health snippet", t1, "PASS, 0 findings, 0 selected security checkpoints.");
-  await runTest("Direct SQL interpolation", t2, "FAIL, SQL_INJECTION, exactly 1 underlying SQL injection finding.");
-  await runTest("Partial security-sensitive operation with parameterized SQL", t3, "AuthZ selected / applicable; NOT_VERIFIED; no SQL_INJECTION; overall NOT_VERIFIED");
-  await runTest("Explicit SQL injection using concatenation", t4, "FAIL, SQL_INJECTION.");
-  await runTest("Explicit authentication bypass", t5, "FAIL, AUTH_BYPASS.");
+  const t6 = `
+const express = require("express");
+const app = express();
+
+app.post("/api/admin-action", (req, res) => {
+  const isAdmin = req.body.admin;
+  if (isAdmin) {
+    db.execute("DELETE FROM accounts WHERE id = ?", [req.body.id]);
+    return res.send("Deleted");
+  }
+  return res.status(403).send("Forbidden");
+});
+`;
+
+  await runTest("Clean health snippet", t1, "PASS, 0 findings.");
+  await runTest("Comment-only security keywords", t2, "PASS, no Auth/AuthZ/JWT routing caused by the comment.");
+  await runTest("Partial security-sensitive flow with parameterized SQL", t3, "AuthZ selected, APPLICABLE + NOT_VERIFIED, no SQL_INJECTION, no generic INPUT_VALIDATION, overall NOT_VERIFIED");
+  await runTest("Unsafe SQL", t4, "FAIL with SQL_INJECTION.");
+  await runTest("Explicit auth bypass", t5, "FAIL with AUTH_BYPASS.");
+  await runTest("Client-controlled admin/role value", t6, "FAIL, AUTH_BYPASS or BUSINESS_LOGIC_FLAW.");
 }
 
 main();

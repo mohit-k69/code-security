@@ -61,7 +61,8 @@ export class FindingAggregator {
         
         const hasSnippetOverlap = isSubstring || snippetSimilarity > 0.3;
 
-        if (!isNearby) continue;
+        const isStrongSnippetOverlap = isSubstring || snippetSimilarity > 0.6;
+        if (!isNearby && !isStrongSnippetOverlap) continue;
 
         const text1 = `${f1.vulnerabilityClass} ${f1.title} ${f1.description}`;
         const text2 = `${f2.vulnerabilityClass} ${f2.title} ${f2.description}`;

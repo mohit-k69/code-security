@@ -177,12 +177,21 @@ Deno.serve(async (req) => {
     }
 
     const llmModel = Deno.env.get('LLM_MODEL');
-    if (!llmModel) {
-      return jsonResponse({ error: 'Internal error: LLM_MODEL not configured.' }, 500);
+    const standardModel = Deno.env.get('STANDARD_MODEL') || llmModel;
+    const majorModel = Deno.env.get('MAJOR_MODEL') || standardModel;
+    
+    if (!standardModel || !majorModel) {
+      return jsonResponse({ error: 'Internal error: LLM_MODEL or STANDARD_MODEL not configured.' }, 500);
     }
 
-    const provider = new OpenRouterProvider(llmModel);
-    const orchestrator = new ReviewOrchestrator({ provider });
+    const provider = new OpenRouterProvider(standardModel);
+    const orchestrator = new ReviewOrchestrator({ 
+      provider,
+      models: {
+        standard: standardModel,
+        major: majorModel
+      }
+    });
 
     const executionResult = await orchestrator.review(sanitizedPackage);
 

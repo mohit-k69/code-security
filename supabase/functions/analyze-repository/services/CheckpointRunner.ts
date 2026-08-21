@@ -161,6 +161,7 @@ export class CheckpointRunner {
       // 3. Parse and Validate Response
       const result = await this.validateResponse(
         response.text,
+        sanitizedPackage,
         spec,
         this.provider.name,
         startTime,
@@ -330,6 +331,7 @@ If no relevant security-sensitive logic is explicitly present, return "NOT_APPLI
    */
   private async validateResponse(
     rawText: string,
+    sanitizedPackage: SanitizedContextPackage,
     spec: ReviewSpecification,
     providerName: string,
     startTime: number,
@@ -473,7 +475,7 @@ If no relevant security-sensitive logic is explicitly present, return "NOT_APPLI
       },
     };
 
-    return FindingGuardrail.applyGuardrails(rawResult);
+    return FindingGuardrail.applyGuardrails(rawResult, sanitizedPackage);
   }
 
   /**

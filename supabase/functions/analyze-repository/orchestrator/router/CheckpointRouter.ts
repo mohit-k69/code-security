@@ -56,8 +56,11 @@ export class CheckpointRouter {
       const patternsToUse = isPasteCode ? rule.contentMatchPatterns : rule.fileMatchPatterns;
 
       for (const input of loweredInputs) {
+        // Strip JS comments so explanatory text doesn't trigger routing
+        const contentToMatch = isPasteCode ? input.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "") : input;
+
         for (const pattern of patternsToUse) {
-          if (input.includes(pattern.toLowerCase())) {
+          if (contentToMatch.includes(pattern.toLowerCase())) {
             matchedInputs.push(input);
             break; // one pattern match per input is sufficient
           }

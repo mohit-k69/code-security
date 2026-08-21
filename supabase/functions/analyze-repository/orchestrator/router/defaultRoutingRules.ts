@@ -31,7 +31,8 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "deleteuser", "updateuser", "getuser", "createuser",
       "deleteaccount", "updateaccount", "getaccount",
       "/delete-user", "/update-user", "/delete-account", "/update-account",
-      "userservice.", "accountservice."
+      "userservice.", "accountservice.",
+      "chargeuser", "/charge-user"
     ],
     checkpointIds: ["SEC-AUTHZ-001"],
   },

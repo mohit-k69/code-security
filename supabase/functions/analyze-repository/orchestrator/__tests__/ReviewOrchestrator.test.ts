@@ -107,6 +107,27 @@ class FailingProvider implements ILLMProvider {
 }
 
 /**
+ * A mock LLM provider that tracks which model was requested.
+ */
+class ModelTrackingProvider implements ILLMProvider {
+  public readonly name = "tracker";
+  public requestedModels: string[] = [];
+
+  public async generateContent(systemPrompt: string, userPrompt: string, model?: string): Promise<any> {
+    this.requestedModels.push(model || "none");
+    return {
+      text: JSON.stringify({
+        verdict: "PASS",
+        confidence: 0.95,
+        summary: "Tracked.",
+        findings: []
+      }),
+      usage: { promptTokens: 10, completionTokens: 10, totalTokens: 20 }
+    };
+  }
+}
+
+/**
  * A mock provider that fails on the Nth call.
  */
 class PartiallyFailingProvider implements ILLMProvider {
@@ -206,7 +227,7 @@ console.log("\n── Test 5: Duplicate findings across checkpoints ──");
   // Use custom routing to trigger 2+ checkpoints that will both return
   // findings with the same vulnerabilityClass + file + line
   const customRules: RoutingRule[] = [
-    { name: "A", matchPatterns: ["app"], checkpointIds: ["SEC-AUTH-001", "SEC-XSS-001"] },
+    { name: "A", fileMatchPatterns: ["app"], checkpointIds: ["SEC-AUTH-001", "SEC-XSS-001"], contentMatchPatterns: [] },
   ];
   const orchestrator = new ReviewOrchestrator({ provider, routingRules: customRules });
   const pkg = makeSanitizedPackage(["src/app.ts"]);
@@ -278,6 +299,34 @@ console.log("\n── Test 9: Partial failures preserve successful results ─�
   assert(completed.length > 0, "Some checkpoints completed successfully");
   assert(errors.length > 0, "Some checkpoints errored");
   assert(completed.length + errors.length === report.checkpoints.length, "Total = completed + errors");
+}
+
+// ── Test 10: Per-checkpoint model selection ───────────────────────
+console.log("\n── Test 10: Per-checkpoint model selection ──");
+{
+  const provider = new ModelTrackingProvider();
+  
+  // Custom router to run one major and one standard checkpoint
+  const customRules: RoutingRule[] = [
+    { name: "Major", fileMatchPatterns: ["auth.js"], contentMatchPatterns: [], checkpointIds: ["SEC-AUTH-001"] },
+    { name: "Standard", fileMatchPatterns: ["utils.js"], contentMatchPatterns: [], checkpointIds: ["SEC-XSS-001"] },
+  ];
+  
+  const orchestrator = new ReviewOrchestrator({ 
+    provider, 
+    routingRules: customRules,
+    models: {
+      standard: "google/gemini-3.1-flash-lite",
+      major: "openai/gpt-5.6-luna"
+    }
+  });
+  
+  const pkg = makeSanitizedPackage(["src/auth.js", "src/utils.js"]);
+  const result = await orchestrator.review(pkg);
+  
+  assert(provider.requestedModels.length === 2, "Both checkpoints executed");
+  assert(provider.requestedModels.includes("openai/gpt-5.6-luna"), "Major checkpoint used openai/gpt-5.6-luna");
+  assert(provider.requestedModels.includes("google/gemini-3.1-flash-lite"), "Standard checkpoint used google/gemini-3.1-flash-lite");
 }
 
 // ─── Summary ────────────────────────────────────────────────────

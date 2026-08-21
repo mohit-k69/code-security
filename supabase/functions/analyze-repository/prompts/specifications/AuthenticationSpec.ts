@@ -32,20 +32,14 @@ export const AuthenticationSpec: ReviewSpecification = {
     // ────────────────────────────────────────────────────────────────
     {
       id: "AUTH-C1",
-      name: "Password Storage & Hashing",
+      name: "Password Storage",
       description:
         "Passwords must never be stored, compared, or persisted in plaintext, " +
         "Base64, or reversible encryption. " +
-        "Acceptable hashing algorithms: bcrypt (cost ≥ 10), scrypt (N ≥ 16384), " +
-        "Argon2id (memory ≥ 64 MB, iterations ≥ 3). " +
-        "Reject MD5, SHA-1, SHA-256, and any unsalted hash for password storage. " +
-        "Each password must use a unique, cryptographically random salt.\n\n" +
-        "PASS: Passwords are hashed with an approved adaptive algorithm and unique salts. " +
-        "No plaintext or weak-hash storage paths exist.\n" +
-        "FAIL: Plaintext storage, reversible encryption, weak hashing (MD5/SHA), " +
-        "missing salts, or insufficient work factors detected.\n" +
-        "NOT_VERIFIED: No password storage logic is present in the changed files, " +
-        "or the hashing implementation is in a dependency not included in the context.",
+        "Note: Cryptographic hashing algorithms (like bcrypt, Argon2) and salts are explicitly evaluated by SEC-CRYPTO-001.\n\n" +
+        "PASS: No plaintext or reversibly encrypted password storage paths exist.\n" +
+        "FAIL: Plaintext password storage or reversible encryption detected.\n" +
+        "NOT_VERIFIED: No password storage logic is present in the changed files.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -76,18 +70,12 @@ export const AuthenticationSpec: ReviewSpecification = {
       id: "AUTH-C3",
       name: "Login Flow Security",
       description:
-        "The login flow must use constant-time comparison for credentials " +
-        "to prevent timing attacks. " +
-        "Login endpoints must validate all inputs (email format, password presence) " +
-        "before processing. " +
         "The authentication decision must be made server-side; client-side checks " +
         "alone are insufficient. " +
         "OAuth/OIDC flows must validate the state parameter to prevent CSRF and " +
         "must verify the redirect URI against a whitelist.\n\n" +
-        "PASS: Login flow performs server-side authentication with proper input " +
-        "validation and timing-safe comparisons.\n" +
-        "FAIL: Client-only authentication checks, missing input validation, " +
-        "timing-vulnerable comparisons, or OAuth state/redirect not validated.\n" +
+        "PASS: Login flow performs server-side authentication securely.\n" +
+        "FAIL: Client-only authentication checks, or OAuth state/redirect not validated.\n" +
         "NOT_VERIFIED: Login flow logic is not present in the changed files.",
     },
 
@@ -191,14 +179,13 @@ export const AuthenticationSpec: ReviewSpecification = {
         "Session tokens must be cryptographically random and at least 128 bits. " +
         "Cookies carrying session tokens must set HttpOnly, Secure, and SameSite " +
         "flags (SameSite=Lax or Strict). " +
-        "If JWT is used: signature validation must be enforced, the 'none' algorithm " +
-        "must be explicitly rejected, tokens must have reasonable expiration (≤ 24h " +
-        "for access tokens, ≤ 7d for refresh tokens), and signing secrets must not " +
-        "be hardcoded or weak.\n\n" +
-        "PASS: Sessions are regenerated post-auth; tokens are random, properly " +
-        "flagged, and have appropriate expiration. Fetching secrets via `process.env.VAR` is secure.\n" +
-        "FAIL: No session regeneration, predictable tokens, missing cookie flags, " +
-        "JWT 'none' algorithm accepted, excessive token lifetimes, or explicitly weak/hardcoded secrets. Do NOT FAIL `process.env.JWT_SECRET` merely because runtime entropy/length is not checked in code.\n" +
+        "If JWT is used: signature validation must be enforced, and the 'none' algorithm " +
+        "must be explicitly rejected. " +
+        "(Note: JWT expiration checks belong to SEC-SESSION-001, and secret storage belongs to SEC-SECRET-001. Do not flag them here.)\n\n" +
+        "PASS: Sessions are regenerated post-auth; tokens are random and properly flagged. " +
+        "Fetching secrets via `process.env.VAR` is secure.\n" +
+        "FAIL: No session regeneration, predictable tokens, missing cookie flags, or " +
+        "JWT 'none' algorithm accepted.\n" +
         "NOT_VERIFIED: Session/token creation logic is handled by a framework or " +
         "library not visible in the changed files.",
     },
@@ -270,7 +257,11 @@ export const AuthenticationSpec: ReviewSpecification = {
     "configuration, dependency code) is missing, use NOT_VERIFIED rather than making assumptions.\n" +
     "- Never infer vulnerabilities without sufficient code evidence. If you suspect an issue " +
     "but lack evidence, flag it as NOT_VERIFIED with an explanation, not as FAIL.\n" +
-    "- **CRITICAL**: You MUST use an exact string from the allowed `vulnerabilityClass` list (e.g., `AUTH_BYPASS`, `BUSINESS_LOGIC_FLAW`, `INSECURE_CONFIGURATION`). Do NOT invent new classes like `INFORMATION_DISCLOSURE` or `SESSION_MANAGEMENT`. Map enumeration/disclosure issues to `BUSINESS_LOGIC_FLAW` or `AUTH_BYPASS`.\n\n" +
+    "- **CRITICAL**: You MUST use an exact string from the allowed `vulnerabilityClass` list (e.g., `AUTH_BYPASS`, `BUSINESS_LOGIC_FLAW`, `INSECURE_CONFIGURATION`). Do NOT invent new classes like `INFORMATION_DISCLOSURE` or `SESSION_MANAGEMENT`. Map enumeration/disclosure issues to `BUSINESS_LOGIC_FLAW` or `AUTH_BYPASS`.\n" +
+    "- **CRITICAL**: Do NOT flag hardcoded secrets or passwords here. Secret exposure is strictly evaluated by SEC-SECRET-001.\n" +
+    "- **CRITICAL**: Do NOT flag missing JWT/token expirations here. Token expiration is strictly evaluated by SEC-SESSION-001.\n" +
+    "- **CRITICAL**: Do NOT flag generic input validation or missing request-body validation here. Input validation is strictly evaluated by SEC-INPUT-001.\n" +
+    "- **CRITICAL**: Do NOT flag cryptographic failures like timing-attacks or password hashing algorithms here. Cryptography is strictly evaluated by SEC-CRYPTO-001.\n\n" +
 
     "### Analysis Priorities\n\n" +
     "- Prioritize findings by exploitability: critical > warning > info.\n" +

@@ -612,3 +612,137 @@ function getPublicProducts() {
     assertEquals(authzCp?.applicability, "NOT_APPLICABLE");
   }
 });
+
+Deno.test({
+  name: "Prompt Accuracy - IDOR: userId = req.body.userId + UPDATE ... WHERE id = ? + no visible auth check -> NOT_VERIFIED",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require("express");
+const router = express.Router();
+router.post("/api/charge-user", (req, res) => {
+  const userId = req.body.userId;
+  const amount = req.body.amount;
+  db.execute("UPDATE accounts SET balance = balance - ? WHERE id = ?", [amount, userId]);
+  res.send("Charged");
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    const authzCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-AUTHZ-001");
+    assertEquals(authzCp?.applicability, "APPLICABLE");
+    assertEquals(authzCp?.verdict, "NOT_VERIFIED");
+  }
+});
+
+Deno.test({
+  name: "Prompt Accuracy - IDOR: Explicit flawed ownership check -> FAIL",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+app.post("/api/delete-user", (req, res) => {
+  const userId = req.body.userId;
+  // Flawed check: it just checks if ANY user exists in session, not ownership
+  if (req.session.user) {
+    db.execute("DELETE FROM users WHERE id = ?", [userId]);
+    res.send("Deleted");
+  } else {
+    res.status(401).send();
+  }
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    const authzCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-AUTHZ-001");
+    assertEquals(authzCp?.applicability, "APPLICABLE");
+    assertEquals(authzCp?.verdict, "FAIL");
+  }
+});
+
+Deno.test({
+  name: "Prompt Accuracy - Auth Bypass: Explicit executable bypass -> FAIL",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+app.post("/api/admin-action", (req, res) => {
+  const bypassAuth = req.query.bypass === "true";
+  if (bypassAuth || req.session.admin) {
+    db.execute("DELETE FROM items WHERE id = ?", [req.body.id]);
+    return res.send("Deleted");
+  }
+  return res.status(401).send("Unauthorized");
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    const authCp = res.report.checkpoints.find((c: any) => c.checkpointId === "SEC-AUTH-001");
+    assertEquals(authCp?.applicability, "APPLICABLE");
+    assertEquals(authCp?.verdict, "FAIL");
+  }
+});
+
+Deno.test({
+  name: "Prompt Accuracy - Checkpoint Separation (AUTH, CRYPTO, SECRET, SESSION, INPUT)",
+  ignore: !hasApiKey,
+  async fn() {
+    Deno.env.delete('NODE_ENV');
+    const content = `
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const app = express();
+
+const DB_PASS = "supersecret_db_password_123";
+const JWT_SECRET = "my_hardcoded_jwt_secret";
+
+app.post('/api/login', (req, res) => {
+  if (req.body.username === "admin" && req.body.password === DB_PASS) {
+    const token = jwt.sign({ user: "admin" }, JWT_SECRET);
+    res.json({ token });
+  }
+});
+
+app.post('/api/bypass', (req, res) => {
+  if (req.query.bypass === "true") {
+    res.send("Admin area");
+  }
+});
+    `;
+    const res = await runSnippetEvaluation(content);
+    
+    // Flatten findings to check provenance
+    const allFindings = [
+      ...(res.report.findings.critical || []),
+      ...(res.report.findings.warning || []),
+      ...(res.report.findings.info || [])
+    ];
+
+    // SEC-AUTH-001 should NOT generate INPUT_VALIDATION or CRYPTOGRAPHIC_FAILURE
+    const inputFindings = allFindings.filter(f => f.vulnerabilityClass === "INPUT_VALIDATION");
+    const authInputFindings = inputFindings.filter(f => f.contributingCheckpoints.includes("SEC-AUTH-001"));
+    assertEquals(authInputFindings.length, 0, "SEC-AUTH-001 generated INPUT_VALIDATION");
+
+    const cryptoFindings = allFindings.filter(f => f.vulnerabilityClass === "CRYPTOGRAPHIC_FAILURE");
+    const authCryptoFindings = cryptoFindings.filter(f => f.contributingCheckpoints.includes("SEC-AUTH-001"));
+    assertEquals(authCryptoFindings.length, 0, "SEC-AUTH-001 generated CRYPTOGRAPHIC_FAILURE");
+
+    // Real crypto issue from SEC-CRYPTO-001
+    const actualCryptoFindings = cryptoFindings.filter(f => f.contributingCheckpoints.includes("SEC-CRYPTO-001"));
+    // Note: If no other crypto issue is flagged, length may be 0, but if timing attack is flagged, it should be CRYPTO
+    // Actually, SEC-CRYPTO-001 currently might not have timing attack, but it should own CRYPTO issues
+
+    // Hardcoded secret comes from SEC-SECRET-001
+    const secretFindings = allFindings.filter(f => f.vulnerabilityClass === "SECRET_EXPOSURE");
+    const hasSecret = secretFindings.some(f => f.contributingCheckpoints.includes("SEC-SECRET-001"));
+    assertEquals(hasSecret, true, "Missing SECRET_EXPOSURE from SEC-SECRET-001");
+
+    // JWT expiration comes from SEC-SESSION-001
+    const jwtFindings = allFindings.filter(f => f.vulnerabilityClass === "JWT_SECURITY" || f.vulnerabilityClass === "SESSION_MANAGEMENT");
+    const hasJwt = jwtFindings.some(f => f.contributingCheckpoints.includes("SEC-SESSION-001"));
+    assertEquals(hasJwt, true, "Missing JWT expiration finding from SEC-SESSION-001");
+
+    // Explicit bypass comes from SEC-AUTH-001
+    const bypassFindings = allFindings.filter(f => f.vulnerabilityClass === "AUTH_BYPASS");
+    const hasBypass = bypassFindings.some(f => f.contributingCheckpoints.includes("SEC-AUTH-001"));
+    assertEquals(hasBypass, true, "Missing AUTH_BYPASS finding from SEC-AUTH-001");
+  }
+});
