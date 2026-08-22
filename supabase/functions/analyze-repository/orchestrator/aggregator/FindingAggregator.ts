@@ -77,6 +77,16 @@ export class FindingAggregator {
         const sameCwe = Boolean(f1.cwes?.length > 0 && f2.cwes?.length > 0 && f1.cwes.some(c => f2.cwes?.includes(c)));
 
         const sameVulnerabilityClass = f1.vulnerabilityClass === f2.vulnerabilityClass;
+        
+        if (
+          sameVulnerabilityClass &&
+          f1.vulnerabilityClass === "SECRET_EXPOSURE" &&
+          f1.primaryLocation.line !== f2.primaryLocation.line &&
+          !hasSnippetOverlap
+        ) {
+          continue;
+        }
+        
         let definitiveClassMatch = false;
 
         if (sameVulnerabilityClass) {

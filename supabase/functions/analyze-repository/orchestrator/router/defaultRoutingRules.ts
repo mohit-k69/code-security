@@ -108,7 +108,8 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "dangerouslysetinnerhtml", "innerhtml",
     ],
     contentMatchPatterns: [
-      "innerhtml", "dangerouslysetinnerhtml", "res.send(html)"
+      "innerhtml", "dangerouslysetinnerhtml", "res.send(html)",
+      ".send(\"<", ".send('<", ".send(`<"
     ],
     checkpointIds: ["SEC-XSS-001"],
   },

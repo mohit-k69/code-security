@@ -205,20 +205,53 @@ Deno.test("FindingAggregator - Test Case 9: SQL_INJECTION vs SECRET_EXPOSURE on 
   assertEquals(aggregated.length, 2, "Should NOT merge different vulnerability classes on same line");
 });
 
-Deno.test("FindingAggregator - Test Case 10: SECRET_EXPOSURE distinct secrets on nearby lines", () => {
+Deno.test("FindingAggregator - Test Case 10: SECRET_EXPOSURE distinct secrets on nearby lines (Realistic LLM Text)", () => {
   const aggregator = new FindingAggregator();
   
+  // Real LLM text has high semantic overlap
   const f1 = createFinding(
-    "1", "SECRET_EXPOSURE", "DB Password", "Hardcoded DB pass.", 
+    "1", "SECRET_EXPOSURE", "Hardcoded Database Credentials", "The database password is hardcoded directly in the source code. This exposes the credential to anyone with access to the repository.", 
     "snippet.js", 10, "const DB_PASS = 'db_secret';"
   );
   const f2 = createFinding(
-    "2", "SECRET_EXPOSURE", "JWT Secret", "Hardcoded JWT secret.", 
+    "2", "SECRET_EXPOSURE", "Hardcoded JWT Secret", "The JWT secret is defined as a string literal in the source code. This exposes the credential to anyone with access to the repository.", 
     "snippet.js", 11, "const JWT_SECRET = 'jwt_secret';"
   );
 
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
-  assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on nearby lines");
+  assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on nearby lines even if text is highly similar");
+});
+
+Deno.test("FindingAggregator - Test Case 11: SECRET_EXPOSURE distinct secrets far apart", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Database Credentials", "The database password is hardcoded directly in the source code.", 
+    "snippet.js", 10, "const DB_PASS = 'db_secret';"
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Hardcoded API Key", "The API key is defined as a string literal in the source code.", 
+    "snippet.js", 100, "const API_KEY = 'api_key';"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets far apart");
+});
+
+Deno.test("FindingAggregator - Test Case 12: SECRET_EXPOSURE same secret / same evidence", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Secret Exposed", "A secret is in the code.", 
+    "snippet.js", 10, "const DB_PASS = 'db_secret';"
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Hardcoded Secret", "A password is in the code.", 
+    "snippet.js", 10, "const DB_PASS = 'db_secret';"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge identical secrets on the same line with same evidence");
 });
 
 Deno.test("Aggregator: Merges identical class with overlapping evidence despite large line distance", () => {

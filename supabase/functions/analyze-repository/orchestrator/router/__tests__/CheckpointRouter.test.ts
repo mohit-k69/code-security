@@ -206,7 +206,16 @@ console.log("\n── Test 17: Paste Code with XSS sink ──");
 {
   const router = new CheckpointRouter(ALL_IDS);
   const decision = router.route(["res.send(html);"], true);
-  assert(decision.selectedCheckpointIds.includes("SEC-XSS-001"), "XSS selected");
+  assert(decision.selectedCheckpointIds.includes("SEC-XSS-001"), "XSS selected for res.send(html)");
+  
+  const d2 = router.route(["res.send(\"<h1>\" + req.query.name + \"</h1>\")"], true);
+  assert(d2.selectedCheckpointIds.includes("SEC-XSS-001"), "XSS selected for res.send(\"<h1>...\")");
+  
+  const d3 = router.route(["res.send(`<h1>${req.query.name}</h1>`)"], true);
+  assert(d3.selectedCheckpointIds.includes("SEC-XSS-001"), "XSS selected for res.send(`<h1>...`)");
+  
+  const d4 = router.route(["res.send(\"hello\")"], true);
+  assert(!d4.selectedCheckpointIds.includes("SEC-XSS-001"), "XSS NOT selected for generic res.send(\"hello\")");
 }
 
 // ── Test 18: Paste Code with helmet() / CORS / TLS ──
