@@ -5,8 +5,8 @@
 //   GEMINI_API_KEY=<key> deno run --allow-net --allow-env supabase/functions/analyze-repository/evals/run_eval.ts
 
 import { EvalRunner } from "./EvalRunner.ts";
-import { AuthenticationEvalDataset } from "./datasets/AuthenticationEvalDataset.ts";
-import { AuthenticationSpec } from "../prompts/specifications/AuthenticationSpec.ts";
+import { SecretsManagementEvalDataset } from "./datasets/SecretsManagementEvalDataset.ts";
+import { SecretsManagementSpec } from "../prompts/specifications/SecretsManagementSpec.ts";
 import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../prompts/SecurityReviewFramework.ts";
 import { GeminiProvider } from "../orchestrator/providers/GeminiProvider.ts";
 
@@ -24,16 +24,16 @@ async function main() {
   const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash";
   console.log(`🔧 Model:     ${model}`);
   console.log(`📋 Framework: v${FRAMEWORK_VERSION}`);
-  console.log(`📊 Dataset:   ${AuthenticationEvalDataset.checkpointId} (v${AuthenticationEvalDataset.version})`);
-  console.log(`📝 Scenarios: ${AuthenticationEvalDataset.scenarios.length}`);
+  console.log(`📊 Dataset:   ${SecretsManagementEvalDataset.checkpointId} (v${SecretsManagementEvalDataset.version})`);
+  console.log(`📝 Scenarios: ${SecretsManagementEvalDataset.scenarios.length}`);
   console.log("\n⏳ Starting evaluation run...\n");
 
   const provider = new GeminiProvider(model);
   const runner = new EvalRunner(provider);
   const report = await runner.runEvaluation(
-    AuthenticationEvalDataset,
+    SecretsManagementEvalDataset,
     SECURITY_REVIEW_FRAMEWORK,
-    AuthenticationSpec
+    SecretsManagementSpec
   );
 
   console.log("\n═══════════════════════════════════════════════════");

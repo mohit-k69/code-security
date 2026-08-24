@@ -676,6 +676,87 @@ CREATE INDEX idx_users_email ON users(email);
       ],
       expectedVerdict: "NOT_VERIFIED",
       rationale: "No session or JWT management logic is present in the PR."
+    },
+    {
+      id: "SESSION-NV-03",
+      description: "Snippet with no visible token creation/signing context",
+      tags: ["expiration", "not-applicable"],
+      criteriaTargeted: ["SESSION-C3"],
+      changedFiles: [
+        {
+          path: "src/auth/middleware.ts",
+          content: `
+export function checkAuth(req, res, next) {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).send();
+  // Validates token but does not create/sign it here.
+  // Missing context on whether it expires or not.
+  next();
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "NOT_VERIFIED",
+      rationale: "There is no JWT signing or session creation logic visible, so expiration cannot be verified."
+    },
+    {
+      id: "SESSION-NV-04",
+      description: "JWT generation delegated to an unseen external function",
+      tags: ["delegated", "hidden-implementation"],
+      criteriaTargeted: ["SESSION-C1", "SESSION-C3"],
+      changedFiles: [
+        {
+          path: "src/auth/login.ts",
+          content: `
+import { createAuthToken } from '@company/internal-auth-lib';
+
+export function login(user) {
+  // We cannot verify if createAuthToken sets an expiration or uses a secure algorithm
+  return createAuthToken(user.id);
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "NOT_VERIFIED",
+      rationale: "The actual security implementation is completely hidden inside an imported external library function, preventing verification."
+    },
+    {
+      id: "SESSION-PASS-09",
+      description: "tc_004 style secure JWT creation",
+      tags: ["jwt", "secure"],
+      criteriaTargeted: ["SESSION-C1", "SESSION-C3"],
+      changedFiles: [
+        {
+          path: "src/auth/token.js",
+          content: `
+const jwt = require('jsonwebtoken');
+function generateToken(user) {
+  return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "PASS",
+      rationale: "The visible code demonstrates safe implementation of JWT creation with expiration and algorithm. Do not return NOT_VERIFIED simply because it is only one phase of the lifecycle."
+    },
+    {
+      id: "SESSION-NV-05",
+      description: "tc_023 style opaque nativeAuth.verify wrapper",
+      tags: ["delegated", "hidden-implementation"],
+      criteriaTargeted: ["SESSION-C1"],
+      changedFiles: [
+        {
+          path: "src/auth/verify.js",
+          content: `
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "NOT_VERIFIED",
+      rationale: "The core security mechanism is entirely delegated to an opaque nativeAuth.verify function, leaving no concrete security logic to evaluate."
     }
   ]
 };

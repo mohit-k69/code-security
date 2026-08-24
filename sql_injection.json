@@ -1,0 +1,14 @@
+{
+  "repository": {
+    "owner": "local_user",
+    "name": "paste_snippet",
+    "prNumber": 0,
+    "commitSha": "local"
+  },
+  "changedFiles": [
+    {
+      "path": "snippet.js",
+      "content": "const express = require('express');\nconst app = express();\nconst db = require('./db');\n\napp.post('/user', (req, res) => {\n  const id = req.body.id;\n  db.query(`SELECT * FROM users WHERE id = ${id}`);\n  res.send('ok');\n});"
+    }
+  ]
+}

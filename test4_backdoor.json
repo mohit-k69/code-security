@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "name": "snippet.js",
+      "content": "const express = require('express');\nconst router = express.Router();\n// The user intentionally bypassed auth for testing\nrouter.post('/api/delete-user', (req, res) => {\n  if (req.query.bypass_auth === 'true') {\n    const { userId } = req.body;\n    userService.deleteUser(userId);\n    res.send(\"Deleted with bypass\");\n  } else {\n    res.status(401).send(\"Unauthorized\");\n  }\n});"
+    }
+  ]
+}

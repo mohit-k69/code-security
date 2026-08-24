@@ -304,7 +304,15 @@ Examples:
 - express.Router() alone -> not Authentication/Session applicable.
 - A database query alone -> not Authorization applicable unless authorization-related logic is actually present.
 - Explicit CORS/security headers/TLS/cookie security/auth middleware/JWT/session logic -> potentially applicable.
-If relevant security logic is explicitly present but cannot be fully verified because important context is missing, return "APPLICABLE" and verdict "NOT_VERIFIED".
+Evaluate only the security behavior explicitly visible in the snippet.
+
+1. FAIL: If the visible code contains unsafe implementation (for example missing expirations, trusting client-controlled identities, missing credential checks, or other explicitly unsafe behavior), flag it. Do not assume unseen code provides protection against a visible flaw.
+
+2. PASS: If the visible code demonstrates a security control that is safe and sufficiently verifiable from the shown implementation, return PASS. Do not return NOT_VERIFIED merely because the snippet covers only one phase of a larger lifecycle.
+
+3. NOT_VERIFIED: Return NOT_VERIFIED only when there is no visible unsafe behavior AND the core security property being evaluated is entirely delegated to an opaque or unseen implementation, leaving no concrete security behavior to verify.
+
+Do not treat ordinary use of a known library/API as automatically opaque when the security-relevant behavior and parameters are visible.
 If no relevant security-sensitive logic is explicitly present, return "NOT_APPLICABLE".
 `.trim();
 

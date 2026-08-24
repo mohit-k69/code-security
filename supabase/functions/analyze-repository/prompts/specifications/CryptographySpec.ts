@@ -137,6 +137,11 @@ export const CryptographySpec: ReviewSpecification = {
     "4. **remediation** — A concrete, implementable fix (e.g., 'Replace SHA-256 with " +
     "bcrypt using a work factor of at least 10').\n\n" +
 
+    "### NON-SECURITY HASHING EXCEPTION (CRITICAL)\n\n" +
+    "- Do NOT flag MD5 or SHA-1 when the code clearly uses them for non-security purposes such as HTTP ETags, cache keys, object/content identifiers, or non-security checksums.\n" +
+    "- The exception applies only when the surrounding code clearly establishes that cryptographic integrity, authenticity, password protection, signature security, or security-sensitive collision resistance is NOT required.\n" +
+    "- Do NOT suppress a finding merely because a variable is named 'checksum', 'etag', or similar if the surrounding logic is security-sensitive.\n\n" +
+
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +
     "- If general-purpose hashing (MD5, SHA-1, SHA-256, SHA-512) is used to hash a " +

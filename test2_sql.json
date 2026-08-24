@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "name": "snippet.js",
+      "content": "const express = require('express');\nconst app = express();\nconst db = require('./db');\napp.get('/user', (req, res) => {\n  const query = `SELECT * FROM users WHERE id = ${req.query.id}`;\n  db.query(query, (err, result) => res.json(result));\n});"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
-import { Eval } from "braintrust";
+import { Eval, initDataset } from "braintrust";
+import { findingCountAccuracy, findingClassAccuracy, severityAccuracy, deduplicationAccuracy, verdictAccuracy } from "./braintrust_scorers.ts";
 
-export async function codeVibeTask(input: { snippet: string }) {
+export async function codeVibeTask(input: any) {
+  const snippet = typeof input === 'string' ? input : input.snippet;
   const API_URL = "https://riqjsppvihvcyihuhkzg.supabase.co/functions/v1/analyze-snippet";
   
   const res = await fetch(API_URL, {
@@ -11,7 +13,7 @@ export async function codeVibeTask(input: { snippet: string }) {
       'x-test-bypass': 'true'
     },
     body: JSON.stringify({
-      files: [{ name: "snippet.js", content: input.snippet }]
+      files: [{ name: "snippet.js", content: snippet }]
     })
   });
   
@@ -31,7 +33,9 @@ export async function codeVibeTask(input: { snippet: string }) {
 // Braintrust Eval definition linking to the existing remote dataset
 Eval("Code Vibe Formal Evaluation", {
   // Uses the existing Braintrust dataset by name rather than hardcoding local cases
-  data: "Eval Braintrust 30 Cases Direct",
+  data: (() => initDataset("Code Vibe", { dataset: "Eval Braintrust 30 Cases Direct" })) as any,
   task: codeVibeTask,
-  scores: [], // Deterministic scorers can be added here
+  scores: [verdictAccuracy, findingClassAccuracy, findingCountAccuracy, severityAccuracy, deduplicationAccuracy],
+  // Limit concurrency to avoid 503 BOOT_ERROR (Worker memory exhaustion) on Supabase Edge Functions
+  maxConcurrency: 2,
 });

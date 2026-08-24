@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "name": "snippet.js",
+      "content": "const express = require('express');\nconst app = express();\napp.get('/health', (req, res) => {\n  res.send({ status: 'ok', time: Date.now() });\n});\napp.listen(3000);"
+    }
+  ]
+}

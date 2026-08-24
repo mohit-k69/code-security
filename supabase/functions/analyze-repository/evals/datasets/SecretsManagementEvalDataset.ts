@@ -4,6 +4,70 @@ export const SecretsManagementEvalDataset: EvalDataset = {
   checkpointId: "SEC-SECRET-001",
   version: "1.0",
   scenarios: [
+    {
+      id: "SECRET-PASS-SYNTHETIC-01",
+      description: "AWS EXAMPLE credentials (tc_010 style)",
+      tags: ["synthetic", "aws", "secrets"],
+      criteriaTargeted: ["SECRET-C1"],
+      changedFiles: [
+        {
+          path: "src/s3.ts",
+          content: `
+const AWS = require('aws-sdk');
+AWS.config.update({
+  accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+  secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+});
+`.trim()
+        }
+      ],
+      expectedVerdict: "PASS",
+      rationale: "Credentials containing embedded markers like CYEXAMPLEKEY must not be flagged."
+    },
+    {
+      id: "SECRET-PASS-SYNTHETIC-02",
+      description: "Explicit FAKE/TEST credentials (tc_017 style)",
+      tags: ["synthetic", "mock", "secrets"],
+      criteriaTargeted: ["SECRET-C1"],
+      changedFiles: [
+        {
+          path: "tests/mock_data.test.js",
+          content: `
+const MOCK_AWS_KEY = 'AKIA-FAKE-TEST-KEY-DO-NOT-USE';
+const MOCK_AWS_SECRET = 'FAKE-TEST-SECRET-STRING-FOR-MOCKS-DO-NOT-USE-999';
+`.trim()
+        }
+      ],
+      expectedVerdict: "PASS",
+      rationale: "Credentials clearly marked as FAKE, TEST, DO-NOT-USE must not be flagged."
+    },
+    {
+      id: "SECRET-FAIL-REALISTIC-01",
+      description: "Realistic hardcoded credential without synthetic markers",
+      tags: ["hardcoded", "aws", "secrets"],
+      criteriaTargeted: ["SECRET-C1"],
+      changedFiles: [
+        {
+          path: "src/s3.ts",
+          content: `
+const AWS = require('aws-sdk');
+AWS.config.update({
+  accessKeyId: 'AKIAIOSFODNN7U4Y3T2Q',
+  secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCY1234567890'
+});
+`.trim()
+        }
+      ],
+      expectedVerdict: "FAIL",
+      expectedFindings: [
+        {
+          criterionId: "SECRET-C1",
+          expectedEvidence: [{ file: "src/s3.ts", snippetSubstr: "'***REDACTED***'" }]
+        }
+      ],
+      rationale: "Real-looking credentials without synthetic markers must be flagged."
+    },
+
     // ═══════════════════════════════════════════════════════════════════
     // SECRET-C1: Hardcoded Secrets
     // ═══════════════════════════════════════════════════════════════════

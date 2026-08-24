@@ -142,6 +142,11 @@ export const SecretsManagementSpec: ReviewSpecification = {
     "be extracted from version control and abused by attackers').\n" +
     "4. **remediation** — A concrete, implementable fix (e.g., 'Move the Stripe secret key " +
     "to an environment variable and access it via process.env.STRIPE_SECRET_KEY').\n\n" +
+    "### Primary Location and Deduplication (CRITICAL)\n\n" +
+    "- Each finding MUST have `primaryLocation.file` and `primaryLocation.line` corresponding to the EXACT source line containing the specific secret being reported.\n" +
+    "- If multiple distinct secrets exist on different lines, produce SEPARATE finding objects with DISTINCT `primaryLocation.line` values.\n" +
+    "- DO NOT reuse the first finding's location for subsequent findings.\n" +
+    "- Evidence line(s) for a finding MUST correspond to that finding's `primaryLocation`.\n\n" +
 
     "### THE REDACTION RULE (CRITICAL)\n\n" +
     "You MUST NEVER reveal actual secret values in your findings, risk explanations, " +
@@ -152,6 +157,13 @@ export const SecretsManagementSpec: ReviewSpecification = {
     "if the code is `const key = 'sk_live_12345';`, your evidence snippet MUST be " +
     "`const key = '***REDACTED***';` or `const key = 'sk_live_...'`.\n" +
     "- Failure to redact secrets constitutes a severe security violation of the review platform.\n\n" +
+
+    "### SYNTHETIC CREDENTIALS EXCEPTION (CRITICAL)\n\n" +
+    "- Do NOT flag credentials that are explicitly and unambiguously marked as example, fake, mock, test, dummy, placeholder, or redacted values.\n" +
+    "- Examples include values containing substrings such as: EXAMPLE, FAKE, MOCK, DUMMY, PLACEHOLDER, TEST-ONLY, DO-NOT-USE, ***REDACTED*** (even if embedded directly inside a longer credential-like value, e.g., `...CYEXAMPLEKEY`).\n" +
+    "- A variable name alone (e.g., `MOCK_AWS_KEY` or `TEST_SECRET`) is NOT sufficient evidence to suppress a finding if the value otherwise appears to be a real credential.\n" +
+    "- Real-looking hardcoded credentials must still be reported unless the code clearly establishes that they are synthetic.\n" +
+    "- Preserve all existing redaction requirements for evidence when reporting real credentials.\n\n" +
 
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +

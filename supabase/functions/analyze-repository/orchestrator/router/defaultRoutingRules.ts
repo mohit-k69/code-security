@@ -44,7 +44,8 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "form", "input", "parser", "deserializ",
     ],
     contentMatchPatterns: [
-      "select ", "select * from", "insert into", "update ", "delete from", "db.query", "db.execute"
+      "select ", "select * from", "insert into", "update ", "delete from", "db.query", "db.execute",
+      "exec(", "child_process", "spawn(", "eval("
     ],
     checkpointIds: ["SEC-INPUT-001"],
   },

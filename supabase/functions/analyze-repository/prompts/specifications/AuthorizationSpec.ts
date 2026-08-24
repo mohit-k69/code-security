@@ -42,7 +42,7 @@ export const AuthorizationSpec: ReviewSpecification = {
         "(e.g., WHERE id = ? AND user_id = ?, or an explicit permission check " +
         "before returning data). No user-controlled IDs are used for lookups " +
         "without ownership filtering.\n" +
-        "FAIL: The snippet explicitly demonstrates broken access control logic (e.g., a flawed `if` check) or an explicit authorization bypass in the executable code. Do NOT FAIL simply because ownership filtering or authorization logic is absent from a partial snippet, even if a dangerous database operation (like UPDATE ... WHERE id = ?) is shown. If the check is absent, assume it might be handled in middleware and use NOT_VERIFIED.\n" +
+        "FAIL: The snippet explicitly demonstrates broken access control logic, an explicit authorization bypass, or a dangerous database operation using client-supplied IDs where the route definition (e.g., app.post) is visible and clearly lacks authorization middleware. Do NOT FAIL if the snippet is merely a partial function body where middleware might handle it; instead use NOT_VERIFIED.\n" +
         "NOT_VERIFIED: Resource ownership logic is delegated to a data access " +
         "layer, ORM policy, or missing downstream database authorization logic not included in the provided context, or authorization is simply not visible in the snippet.",
     },
@@ -203,7 +203,8 @@ export const AuthorizationSpec: ReviewSpecification = {
     "- Client-only enforcement (AUTHZ-C2) is **warning** if no server check is visible, " +
     "**critical** if the API endpoint is confirmed to lack authorization.\n" +
     "- Missing authorization on non-destructive read operations is typically **warning**; " +
-    "missing authorization on write/delete operations is typically **critical**.\n\n" +
+    "missing authorization on write/delete operations is typically **critical**.\n" +
+    "- For authorization failures caused by client-controlled object identifiers, missing ownership checks, or IDOR-style access to another user's resources, use BUSINESS_LOGIC_FLAW. Reserve AUTH_BYPASS for cases where authentication or an existing authorization control is directly bypassed or circumvented.\n\n" +
 
     "### Authorization vs Authentication\n\n" +
     "This checkpoint evaluates AUTHORIZATION (what an authenticated user can do), " +

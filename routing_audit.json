@@ -1,0 +1,243 @@
+[
+  {
+    "id": "tc_001",
+    "expectedVulns": [],
+    "executed": []
+  },
+  {
+    "id": "tc_002",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-CRYPTO-001"
+    ]
+  },
+  {
+    "id": "tc_003",
+    "expectedVulns": [],
+    "executed": []
+  },
+  {
+    "id": "tc_004",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-SECRET-001",
+      "SEC-SESSION-001"
+    ]
+  },
+  {
+    "id": "tc_005",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-AUTHZ-001"
+    ]
+  },
+  {
+    "id": "tc_006",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-INPUT-001"
+    ]
+  },
+  {
+    "id": "tc_007",
+    "expectedVulns": [
+      "SQL_INJECTION"
+    ],
+    "executed": [
+      "SEC-INPUT-001"
+    ]
+  },
+  {
+    "id": "tc_008",
+    "expectedVulns": [
+      "XSS"
+    ],
+    "executed": [
+      "SEC-XSS-001"
+    ]
+  },
+  {
+    "id": "tc_009",
+    "expectedVulns": [
+      "PATH_TRAVERSAL"
+    ],
+    "executed": [
+      "SEC-FILE-001"
+    ]
+  },
+  {
+    "id": "tc_010",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-SECRET-001"
+    ]
+  },
+  {
+    "id": "tc_011",
+    "expectedVulns": [
+      "AUTH_BYPASS"
+    ],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-SESSION-001"
+    ]
+  },
+  {
+    "id": "tc_012",
+    "expectedVulns": [
+      "AUTHORIZATION_FAILURE"
+    ],
+    "executed": [
+      "SEC-AUTHZ-001"
+    ]
+  },
+  {
+    "id": "tc_013",
+    "expectedVulns": [
+      "JWT_SECURITY",
+      "SECRET_EXPOSURE"
+    ],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-SECRET-001",
+      "SEC-SESSION-001"
+    ]
+  },
+  {
+    "id": "tc_014",
+    "expectedVulns": [
+      "CRYPTOGRAPHIC_FAILURE"
+    ],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-CRYPTO-001"
+    ]
+  },
+  {
+    "id": "tc_015",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-CONFIG-001"
+    ]
+  },
+  {
+    "id": "tc_016",
+    "expectedVulns": [
+      "INPUT_VALIDATION"
+    ],
+    "executed": []
+  },
+  {
+    "id": "tc_017",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-SECRET-001"
+    ]
+  },
+  {
+    "id": "tc_018",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-XSS-001"
+    ]
+  },
+  {
+    "id": "tc_019",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-INPUT-001"
+    ]
+  },
+  {
+    "id": "tc_020",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-CRYPTO-001"
+    ]
+  },
+  {
+    "id": "tc_021",
+    "expectedVulns": [],
+    "executed": []
+  },
+  {
+    "id": "tc_022",
+    "expectedVulns": [],
+    "executed": []
+  },
+  {
+    "id": "tc_023",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-SECRET-001"
+    ]
+  },
+  {
+    "id": "tc_024",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-FILE-001"
+    ]
+  },
+  {
+    "id": "tc_025",
+    "expectedVulns": [],
+    "executed": []
+  },
+  {
+    "id": "tc_026",
+    "expectedVulns": [],
+    "executed": [
+      "SEC-CRYPTO-001"
+    ]
+  },
+  {
+    "id": "tc_027",
+    "expectedVulns": [
+      "AUTH_BYPASS"
+    ],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-SESSION-001"
+    ]
+  },
+  {
+    "id": "tc_028",
+    "expectedVulns": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-SECRET-001"
+    ]
+  },
+  {
+    "id": "tc_029",
+    "expectedVulns": [
+      "SQL_INJECTION",
+      "XSS"
+    ],
+    "executed": [
+      "SEC-INPUT-001",
+      "SEC-XSS-001"
+    ]
+  },
+  {
+    "id": "tc_030",
+    "expectedVulns": [
+      "CRYPTOGRAPHIC_FAILURE",
+      "AUTH_BYPASS",
+      "JWT_SECURITY",
+      "SECRET_EXPOSURE"
+    ],
+    "executed": [
+      "SEC-AUTH-001",
+      "SEC-SECRET-001",
+      "SEC-SESSION-001",
+      "SEC-CRYPTO-001"
+    ]
+  }
+]

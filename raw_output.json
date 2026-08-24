@@ -1,0 +1,754 @@
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13252 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    11238 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    9034 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    9045 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    7781 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    7549 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    7599 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-XSS-001 — Cross-Site Scripting (XSS) Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    7551 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    7873 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SUPPLY-001 — Dependency & Supply Chain Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    7835 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const app = express();
+const db = require('./db');
+
+app.post('/user', (req, res) => {
+  const id = req.body.id;
+  db.query(`SELECT * FROM users WHERE id = ${id}`);
+  res.send('ok');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON
+════════════════════════════════════════════════════════════════════════════════
+
+{
+  "rawResults": [
+    {
+      "checkpointId": "SEC-AUTH-001",
+      "checkpointName": "Authentication Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 7,
+        "llmDurationMs": 8,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.119Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-AUTHZ-001",
+      "checkpointName": "Authorization Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 11,
+        "llmDurationMs": 11,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-INPUT-001",
+      "checkpointName": "Input Validation Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 11,
+        "llmDurationMs": 11,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-SECRET-001",
+      "checkpointName": "Secrets Management Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 11,
+        "llmDurationMs": 11,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-SESSION-001",
+      "checkpointName": "Session & JWT Security Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 10,
+        "llmDurationMs": 10,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-CRYPTO-001",
+      "checkpointName": "Cryptography Security Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 10,
+        "llmDurationMs": 10,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-CONFIG-001",
+      "checkpointName": "Security Configuration Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 10,
+        "llmDurationMs": 10,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-XSS-001",
+      "checkpointName": "Cross-Site Scripting (XSS) Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 10,
+        "llmDurationMs": 10,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-FILE-001",
+      "checkpointName": "File & Path Security Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 10,
+        "llmDurationMs": 10,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    },
+    {
+      "checkpointId": "SEC-SUPPLY-001",
+      "checkpointName": "Dependency & Supply Chain Security Review",
+      "verdict": "NOT_VERIFIED",
+      "confidence": 0,
+      "summary": "Checkpoint failed: ${message}",
+      "findings": [],
+      "status": "error",
+      "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set.",
+      "execution": {
+        "executionTimeMs": 10,
+        "llmDurationMs": 10,
+        "model": "openrouter",
+        "timestamp": "2026-08-20T10:04:04.127Z"
+      }
+    }
+  ],
+  "report": {
+    "scanId": "scan_local_user_paste_snippet_pr0_1787220244128",
+    "repository": {
+      "owner": "local_user",
+      "name": "paste_snippet",
+      "prNumber": 0,
+      "commitSha": "local"
+    },
+    "verdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 7,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 11,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 11,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 11,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 10,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-CRYPTO-001",
+        "checkpointName": "Cryptography Security Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 10,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-CONFIG-001",
+        "checkpointName": "Security Configuration Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 10,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-XSS-001",
+        "checkpointName": "Cross-Site Scripting (XSS) Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 10,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-FILE-001",
+        "checkpointName": "File & Path Security Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 10,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      },
+      {
+        "checkpointId": "SEC-SUPPLY-001",
+        "checkpointName": "Dependency & Supply Chain Security Review",
+        "verdict": "NOT_VERIFIED",
+        "confidence": 0,
+        "executionTimeMs": 10,
+        "findingCount": 0,
+        "status": "error",
+        "error": "[openrouter] AUTH_FAILURE: OPENROUTER_API_KEY environment variable is not set."
+      }
+    ],
+    "findings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "coverage": {
+      "totalCheckpoints": 10,
+      "executedCheckpoints": 10,
+      "skippedCheckpoints": 0,
+      "notVerifiedCheckpoints": 10
+    },
+    "totalFindings": 0,
+    "generatedAt": "2026-08-20T10:04:04.128Z"
+  },
+  "metrics": {
+    "totalExecutionTimeMs": 20,
+    "routerDecisions": {
+      "selectedCheckpoints": 10,
+      "skippedCheckpoints": 0
+    },
+    "totalTokenUsage": {
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "totalTokens": 0
+    },
+    "rawFindingsCount": 0,
+    "aggregatedFindingsCount": 0,
+    "providerDurationMs": 101
+  }
+}

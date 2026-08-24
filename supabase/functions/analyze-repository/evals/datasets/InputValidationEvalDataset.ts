@@ -1030,6 +1030,24 @@ This module handles validation.
       ],
       expectedVerdict: "NOT_VERIFIED", // or PASS depending on strictness, but NV fits better for no logic
       rationale: "No code related to input validation is present in the PR."
+    },
+    {
+      id: "INPUT-NV-04",
+      description: "tc_025 style opaque paymentGateway.charge wrapper",
+      tags: ["delegated", "hidden-implementation"],
+      criteriaTargeted: ["INPUT-C1"],
+      changedFiles: [
+        {
+          path: "src/services/payment.ts",
+          content: `
+export const processPayment = async (amount: number, card: string) => {
+  return await paymentGateway.charge(amount, card);
+};
+`.trim()
+        }
+      ],
+      expectedVerdict: "NOT_VERIFIED",
+      rationale: "The handling of sensitive card data is entirely delegated to an opaque paymentGateway implementation. There is no concrete security behavior to evaluate here."
     }
   ]
 };

@@ -60,7 +60,7 @@ function createMockResult(findings: CheckpointFinding[]): CheckpointResult {
   };
 }
 
-Deno.test("FindingAggregator - Test Case 1: Same Underlying Secret, Different Vulnerability Classes", () => {
+Deno.test("FindingAggregator - Test Case 1: SECRET_EXPOSURE and JWT_SECURITY on same line", () => {
   const aggregator = new FindingAggregator();
   
   const f1 = createFinding(
@@ -68,13 +68,12 @@ Deno.test("FindingAggregator - Test Case 1: Same Underlying Secret, Different Vu
     "auth.ts", 9, "const JWT_SECRET = 'my_secret';"
   );
   const f2 = createFinding(
-    "2", "JWT_SECURITY", "Hardcoded JWT", "JWT secret is hardcoded directly in the source.", 
+    "2", "JWT_SECURITY", "Missing Expiration", "JWT is missing an expiration time.", 
     "auth.ts", 9, "const JWT_SECRET = 'my_secret';"
   );
 
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
-  assertEquals(aggregated.length, 1, "Should merge overlapping secret findings");
-  assertEquals(aggregated[0].contributingCheckpoints.length, 2);
+  assertEquals(aggregated.length, 2, "Should NOT merge SECRET_EXPOSURE and JWT_SECURITY on the same line");
 });
 
 Deno.test("FindingAggregator - Test Case 2: Different Secrets on Nearby Lines", () => {
@@ -238,20 +237,34 @@ Deno.test("FindingAggregator - Test Case 11: SECRET_EXPOSURE distinct secrets fa
   assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets far apart");
 });
 
-Deno.test("FindingAggregator - Test Case 12: SECRET_EXPOSURE same secret / same evidence", () => {
+Deno.test("FindingAggregator - Test Case 12: SECRET_EXPOSURE exact duplicate secret finding", () => {
   const aggregator = new FindingAggregator();
   
   const f1 = createFinding(
     "1", "SECRET_EXPOSURE", "Secret Exposed", "A secret is in the code.", 
     "snippet.js", 10, "const DB_PASS = 'db_secret';"
   );
+  // f2 is an exact duplicate (same findingId)
+  const f2 = { ...f1 };
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge exact duplicate secret finding");
+});
+
+Deno.test("FindingAggregator - Test Case 13: SECRET_EXPOSURE same secret reported by multiple checkpoints", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Secret Exposed (Tool A)", "A secret is in the code.", 
+    "snippet.js", 10, "const DB_PASS = 'db_secret';"
+  );
   const f2 = createFinding(
-    "2", "SECRET_EXPOSURE", "Hardcoded Secret", "A password is in the code.", 
+    "2", "SECRET_EXPOSURE", "Hardcoded Secret (Tool B)", "A password is in the code.", 
     "snippet.js", 10, "const DB_PASS = 'db_secret';"
   );
 
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
-  assertEquals(aggregated.length, 1, "Should merge identical secrets on the same line with same evidence");
+  assertEquals(aggregated.length, 1, "Should merge same secret on the same line reported by multiple checkpoints");
 });
 
 Deno.test("Aggregator: Merges identical class with overlapping evidence despite large line distance", () => {
@@ -301,4 +314,62 @@ Deno.test("Aggregator: Does not merge different classes far apart even with same
   // text2: "JWT_SECURITY Weak JWT JWT uses weak signing key."
   // Overlap is minimal, similarity < 0.15, so they remain separate.
   assertEquals(aggregated.length, 2, "Different classes should remain separate even if evidence overlaps, if text similarity is low");
+});
+
+Deno.test("FindingAggregator - Test Case 14: Duplicate JWT_SECURITY merging", () => {
+  const aggregator = new FindingAggregator();
+  
+  const f1 = createFinding(
+    "1", "JWT_SECURITY", "Missing Expiration", "The JWT lacks an expiration time.", 
+    "auth.ts", 9, "jwt.sign(payload, secret);"
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "Missing Expiration Time", "The JWT does not have an expiration time set.", 
+    "auth.ts", 9, "jwt.sign(payload, secret);"
+  );
+
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge duplicate JWT_SECURITY findings describing the same issue");
+});
+
+Deno.test("FindingAggregator - tc_030 regression: SECRET_EXPOSURE and JWT_SECURITY (hardcoded key) merge if describing same secret", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Secret", "The JWT signing secret is hardcoded directly in the source code.", 
+    "snippet.js", 5, "const token = jwt.sign({ user }, 'super_secret_jwt_key');", ["CWE-798"]
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "JWT Hardcoded Key", "JWTs are signed using the hardcoded value 'super_secret_jwt_key'.", 
+    "snippet.js", 5, "const token = jwt.sign({ user }, 'super_secret_jwt_key');", ["CWE-321", "CWE-798"]
+  );
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge since they describe the exact same hardcoded key and share high similarity and CWEs");
+});
+
+Deno.test("FindingAggregator - tc_013 regression: SECRET_EXPOSURE and JWT_SECURITY (missing expiration) do NOT merge", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Secret", "The JWT signing secret is hardcoded directly in the source code.", 
+    "snippet.js", 5, "const token = jwt.sign({ user }, 'super_secret_jwt_key');", ["CWE-798"]
+  );
+  const f2 = createFinding(
+    "2", "JWT_SECURITY", "Missing Expiration", "The JWT signing call does not specify an expiresIn value.", 
+    "snippet.js", 5, "const token = jwt.sign({ user }, 'super_secret_jwt_key');", ["CWE-613"]
+  );
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge because text similarity is low and CWEs differ");
+});
+
+Deno.test("FindingAggregator - tc_028 regression: different-line secrets do NOT merge", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded API Key", "API key is hardcoded.", 
+    "snippet.js", 10, "const key = 'api_key_123';", ["CWE-798"]
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Hardcoded DB Pass", "Database password is hardcoded.", 
+    "snippet.js", 12, "const pass = 'db_pass_456';", ["CWE-798"]
+  );
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on different lines");
 });

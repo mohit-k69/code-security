@@ -606,6 +606,76 @@ export function encryptPayload(data, keyBuffer) {
       rationale: "Uses AES-GCM (C1, C5) with a securely generated IV (C4) and expects the key to be provided dynamically (C3)."
     },
     {
+      id: "CRYPTO-FAIL-TC014",
+      description: "Password hashing using MD5 (tc_014 style)",
+      tags: ["password", "md5"],
+      criteriaTargeted: ["CRYPTO-C2"],
+      changedFiles: [
+        {
+          path: "src/auth.ts",
+          content: `
+const crypto = require('crypto');
+function storePassword(pass) {
+  const hash = crypto.createHash('md5').update(pass).digest('hex');
+  db.save(hash);
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "FAIL",
+      expectedFindings: [
+        {
+          criterionId: "CRYPTO-C2",
+          expectedEvidence: [{ file: "src/auth.ts", snippetSubstr: "crypto.createHash('md5')" }]
+        }
+      ],
+      rationale: "MD5 used for password storage must be a critical failure."
+    },
+    {
+      id: "CRYPTO-PASS-TC020",
+      description: "MD5 used for ETag (tc_020 style)",
+      tags: ["etag", "md5", "false-positive-check"],
+      criteriaTargeted: ["CRYPTO-C6"],
+      changedFiles: [
+        {
+          path: "src/cache.ts",
+          content: `
+const crypto = require('crypto');
+function generateETag(content) {
+  return crypto.createHash('md5').update(content).digest('hex');
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "PASS",
+      rationale: "MD5 used for non-security ETags should bypass the C6 block."
+    },
+    {
+      id: "CRYPTO-FAIL-GENERIC-MD5",
+      description: "Generic security-sensitive MD5 use",
+      tags: ["signature", "md5"],
+      criteriaTargeted: ["CRYPTO-C6"],
+      changedFiles: [
+        {
+          path: "src/signature.ts",
+          content: `
+const crypto = require('crypto');
+function signPayload(content, secret) {
+  return crypto.createHash('md5').update(content + secret).digest('hex');
+}
+`.trim()
+        }
+      ],
+      expectedVerdict: "FAIL",
+      expectedFindings: [
+        {
+          criterionId: "CRYPTO-C6",
+          expectedEvidence: [{ file: "src/signature.ts", snippetSubstr: "crypto.createHash('md5')" }]
+        }
+      ],
+      rationale: "MD5 used for payload signature must still fail."
+    },
+    {
       id: "CRYPTO-NV-02",
       description: "PR modifies generic text utilities",
       tags: ["unrelated", "utils"],

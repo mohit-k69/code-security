@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "name": "snippet.js",
+      "content": "const express = require('express');\nconst router = express.Router();\n// The actual database query and user authentication logic are missing from this snippet\nrouter.post('/api/delete-user', (req, res) => {\n  const { userId } = req.body;\n  userService.deleteUser(userId);\n  res.send(\"Deleted\");\n});"
+    }
+  ]
+}

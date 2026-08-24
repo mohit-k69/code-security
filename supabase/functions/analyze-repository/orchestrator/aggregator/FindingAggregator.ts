@@ -50,6 +50,26 @@ export class FindingAggregator {
         const isSameFile = f1.primaryLocation.file === f2.primaryLocation.file;
         if (!isSameFile) continue;
 
+        // -------------------------------------------------------------
+        // NEW STRICT RULE FOR SECRET_EXPOSURE
+        // -------------------------------------------------------------
+        if (f1.vulnerabilityClass === "SECRET_EXPOSURE" || f2.vulnerabilityClass === "SECRET_EXPOSURE") {
+          // If both are SECRET_EXPOSURE, they must be on the same line to merge
+          if (f1.vulnerabilityClass === f2.vulnerabilityClass) {
+             if (f1.primaryLocation.line === f2.primaryLocation.line || f1.findingId === f2.findingId) {
+                matchedCluster = cluster;
+                break;
+             }
+             // Distinct secrets (different lines) must remain separate.
+             continue;
+          }
+          
+          // If they are different classes (e.g., SECRET_EXPOSURE vs JWT_SECURITY),
+          // DO NOT block them from falling through to the semantic similarity checks below!
+          // We simply let them pass through.
+        }
+        // -------------------------------------------------------------
+
         const isNearby = Math.abs(f1.primaryLocation.line - f2.primaryLocation.line) <= 3;
         
         const snippet1 = f1.evidence?.[0]?.snippet || "";
@@ -78,23 +98,10 @@ export class FindingAggregator {
 
         const sameVulnerabilityClass = f1.vulnerabilityClass === f2.vulnerabilityClass;
         
-        if (
-          sameVulnerabilityClass &&
-          f1.vulnerabilityClass === "SECRET_EXPOSURE" &&
-          f1.primaryLocation.line !== f2.primaryLocation.line &&
-          !hasSnippetOverlap
-        ) {
-          continue;
-        }
-        
         let definitiveClassMatch = false;
 
         if (sameVulnerabilityClass) {
-          if (f1.vulnerabilityClass === "SECRET_EXPOSURE") {
-             if (f1.primaryLocation.line === f2.primaryLocation.line || hasSnippetOverlap) {
-                definitiveClassMatch = true;
-             }
-          } else if (f1.vulnerabilityClass === "JWT_SECURITY") {
+          if (f1.vulnerabilityClass === "JWT_SECURITY") {
              // JWT_SECURITY can encompass distinct issues on the exact same line (e.g. missing expiration vs weak secret)
              // So we do not force a definitive class match here; we let it rely on semantic similarity.
              definitiveClassMatch = false;

@@ -100,8 +100,8 @@ export class ReviewOrchestrator {
       routingInputs = sanitizedPackage.changedFiles.map((f) => f.path);
     }
 
-    const router = new CheckpointRouter(allCheckpointIds, this.routingRules);
-    const routingDecision = router.route(routingInputs, isPasteCode);
+    const router = new CheckpointRouter(allCheckpointIds, this.routingRules, this.provider);
+    const routingDecision = await router.route(routingInputs, isPasteCode);
 
     // 3. Resolve selected checkpoint implementations
     const selectedCheckpoints = allCheckpoints.filter((cp) =>

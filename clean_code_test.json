@@ -1,0 +1,6 @@
+{
+  "files": [{
+    "name": "clean.js",
+    "content": "const express = require('express');\nconst jwt = require('jsonwebtoken');\nconst helmet = require('helmet');\n\nconst app = express();\napp.use(helmet());\napp.use(express.json());\n\napp.post('/api/profile', (req, res) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  if (!token) return res.status(401).send('Unauthorized');\n  \n  try {\n    const secret = process.env.JWT_SECRET;\n    if (!secret) return res.status(500).send('Server Error');\n\n    const decoded = jwt.verify(token, secret, { algorithms: [\"HS256\"] });\n    \n    const { email, description } = req.body;\n    if (typeof email !== \"string\" || !email.includes(\"@\") || email.length > 255) {\n      return res.status(400).send(\"Invalid email\");\n    }\n    \n    if (description !== undefined && typeof description !== \"string\") {\n      return res.status(400).send(\"Invalid description\");\n    }\n    \n    // Assume database update happens here safely\n    res.send('Profile updated');\n  } catch (err) {\n    res.status(403).send('Forbidden');\n  }\n});\n\napp.listen(3000, () => {\n  console.log('Listening on port 3000');\n});"
+  }]
+}

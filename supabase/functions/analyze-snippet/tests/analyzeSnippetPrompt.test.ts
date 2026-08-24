@@ -14,7 +14,8 @@ async function runSnippetEvaluation(content: string) {
     })
   });
   const res = await handleRequest(req);
-  return await res.json();
+  const json = await res.json();
+  return json;
 }
 
 // Only run these tests if the API key is present
@@ -76,7 +77,7 @@ Deno.test({
   async fn() {
     Deno.env.delete('NODE_ENV');
     const content = `
-const AWS_KEY = "AKIAIOSFODNN7EXAMPLE";
+const AWS_KEY = "AKIAIOSFODNN7U4Y3T2Q";
 const s3 = new AWS.S3({ accessKeyId: AWS_KEY });
     `;
     const res = await runSnippetEvaluation(content);

@@ -62,8 +62,8 @@ export const SessionJwtSpec: ReviewSpecification = {
         "enforce absolute and/or idle timeouts.\n\n" +
         "PASS: Access tokens are created with short expiration times (e.g., '15m'), " +
         "and session configurations define explicit timeouts.\n" +
-        "FAIL: Access tokens are explicitly configured to never expire (e.g., infinite lifetimes), or sessions explicitly disable timeout mechanisms.\n" +
-        "NOT_VERIFIED: Expiration policies are defined in an external Identity Provider, or the snippet simply lacks the expiration configuration context.",
+        "FAIL: Access tokens are explicitly configured to never expire, sessions explicitly disable timeout mechanisms, or a JWT signing operation (e.g., jwt.sign) omits the expiration option, causing it to default to a non-expiring token.\n" +
+        "NOT_VERIFIED: Expiration policies are defined in an external Identity Provider, or the snippet lacks the token creation or signing context entirely.",
     },
 
     // ────────────────────────────────────────────────────────────────

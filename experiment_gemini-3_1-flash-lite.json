@@ -1,0 +1,631 @@
+{
+  "experiment": "gemini-3.1-flash-lite",
+  "timestamp": "2026-08-24T08:57:49.370Z",
+  "summary": {
+    "overall": 76.67,
+    "verdict": 83.33,
+    "findingClass": 70,
+    "findingCount": 76.67,
+    "severity": 76.67,
+    "deduplication": 76.67,
+    "totalInputTokens": 151956,
+    "totalOutputTokens": 12196,
+    "avgLatencyMs": 2816,
+    "timeouts": 0
+  },
+  "cases": [
+    {
+      "id": "tc_001",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 4393,
+      "inputTokens": 0,
+      "outputTokens": 0
+    },
+    {
+      "id": "tc_002",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 1553,
+      "inputTokens": 7729,
+      "outputTokens": 172
+    },
+    {
+      "id": "tc_003",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 6067,
+      "inputTokens": 3310,
+      "outputTokens": 398
+    },
+    {
+      "id": "tc_004",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2673,
+      "inputTokens": 11475,
+      "outputTokens": 255
+    },
+    {
+      "id": "tc_005",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 1729,
+      "inputTokens": 3953,
+      "outputTokens": 96
+    },
+    {
+      "id": "tc_006",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2275,
+      "inputTokens": 3677,
+      "outputTokens": 95
+    },
+    {
+      "id": "tc_007",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "SQL_INJECTION"
+      ],
+      "actualClasses": [
+        "SQL_INJECTION"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 4383,
+      "inputTokens": 3679,
+      "outputTokens": 316
+    },
+    {
+      "id": "tc_008",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "XSS"
+      ],
+      "actualClasses": [
+        "XSS"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2846,
+      "inputTokens": 3318,
+      "outputTokens": 400
+    },
+    {
+      "id": "tc_009",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "PATH_TRAVERSAL"
+      ],
+      "actualClasses": [
+        "PATH_TRAVERSAL"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 1978,
+      "inputTokens": 3261,
+      "outputTokens": 364
+    },
+    {
+      "id": "tc_010",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 2222,
+      "inputTokens": 3851,
+      "outputTokens": 294
+    },
+    {
+      "id": "tc_011",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "AUTH_BYPASS"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2764,
+      "inputTokens": 7660,
+      "outputTokens": 828
+    },
+    {
+      "id": "tc_012",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "AUTHORIZATION_FAILURE"
+      ],
+      "actualClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 2196,
+      "inputTokens": 3927,
+      "outputTokens": 378
+    },
+    {
+      "id": "tc_013",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "AUTH_BYPASS",
+        "SECRET_EXPOSURE",
+        "JWT_SECURITY"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS",
+        "JWT_SECURITY",
+        "JWT_SECURITY"
+      ],
+      "expectedCount": 3,
+      "actualCount": 3,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 6302,
+      "inputTokens": 11454,
+      "outputTokens": 1284
+    },
+    {
+      "id": "tc_014",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 4403,
+      "inputTokens": 7731,
+      "outputTokens": 759
+    },
+    {
+      "id": "tc_015",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 2149,
+      "inputTokens": 3177,
+      "outputTokens": 294
+    },
+    {
+      "id": "tc_016",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "actualClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 1922,
+      "inputTokens": 3683,
+      "outputTokens": 338
+    },
+    {
+      "id": "tc_017",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2587,
+      "inputTokens": 3851,
+      "outputTokens": 90
+    },
+    {
+      "id": "tc_018",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 994,
+      "inputTokens": 3338,
+      "outputTokens": 78
+    },
+    {
+      "id": "tc_019",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 1259,
+      "inputTokens": 3677,
+      "outputTokens": 93
+    },
+    {
+      "id": "tc_020",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 1123,
+      "inputTokens": 3431,
+      "outputTokens": 91
+    },
+    {
+      "id": "tc_021",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 1947,
+      "inputTokens": 3280,
+      "outputTokens": 85
+    },
+    {
+      "id": "tc_022",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 904,
+      "inputTokens": 0,
+      "outputTokens": 0
+    },
+    {
+      "id": "tc_023",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2632,
+      "inputTokens": 3815,
+      "outputTokens": 113
+    },
+    {
+      "id": "tc_024",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0.2,
+      "latencyMs": 1865,
+      "inputTokens": 3251,
+      "outputTokens": 341
+    },
+    {
+      "id": "tc_025",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0.2,
+      "latencyMs": 3916,
+      "inputTokens": 3897,
+      "outputTokens": 344
+    },
+    {
+      "id": "tc_026",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 1845,
+      "inputTokens": 3423,
+      "outputTokens": 321
+    },
+    {
+      "id": "tc_027",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "AUTH_BYPASS"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 4609,
+      "inputTokens": 7874,
+      "outputTokens": 807
+    },
+    {
+      "id": "tc_028",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "expectedCount": 2,
+      "actualCount": 2,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2046,
+      "inputTokens": 8116,
+      "outputTokens": 598
+    },
+    {
+      "id": "tc_029",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "SQL_INJECTION",
+        "XSS"
+      ],
+      "actualClasses": [
+        "SQL_INJECTION",
+        "XSS"
+      ],
+      "expectedCount": 2,
+      "actualCount": 2,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 1,
+      "latencyMs": 2868,
+      "inputTokens": 7043,
+      "outputTokens": 1023
+    },
+    {
+      "id": "tc_030",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE",
+        "AUTH_BYPASS",
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE",
+        "AUTH_BYPASS",
+        "SECRET_EXPOSURE"
+      ],
+      "expectedCount": 4,
+      "actualCount": 3,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0.2,
+      "latencyMs": 6043,
+      "inputTokens": 15075,
+      "outputTokens": 1941
+    }
+  ]
+}
