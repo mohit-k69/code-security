@@ -38,7 +38,7 @@ Follow these rules strictly:
 
 ## Severity Definitions
 
-- **critical**: Exploitable vulnerability that could lead to unauthorized access, data breach, remote code execution, or complete system compromise. Requires immediate remediation before merge. Do not inflate severity. Do not mark an issue as CRITICAL unless there is concrete evidence in the snippet that the data flows directly into a dangerous sink (like SQL, exec, or innerHTML) resulting in a serious security impact.
+- **critical**: Exploitable vulnerability that could lead to unauthorized access, data breach, remote code execution, or complete system compromise. Requires immediate remediation before merge. Do not inflate severity. Do not mark an issue as CRITICAL unless there is concrete evidence of direct exploitability, or the checkpoint's specific Analysis Priorities dictate that the identified issue is critical.
 
 - **warning**: Security weakness that increases attack surface or violates defense-in-depth principles but is not directly exploitable in isolation. Should be addressed before or shortly after merge.
 

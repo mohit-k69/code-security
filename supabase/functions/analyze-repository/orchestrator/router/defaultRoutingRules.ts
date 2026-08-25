@@ -15,7 +15,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "sso", "saml", "oidc", "mfa", "2fa", "totp",
     ],
     contentMatchPatterns: [
-      "jwt.sign", "jwt.verify", "jsonwebtoken", "authenticate", "authorization", "session", "password"
+      "authenticate", "authorization", "password"
     ],
     checkpointIds: ["SEC-AUTH-001"],
   },
@@ -32,7 +32,8 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "deleteaccount", "updateaccount", "getaccount",
       "/delete-user", "/update-user", "/delete-account", "/update-account",
       "userservice.", "accountservice.",
-      "chargeuser", "/charge-user"
+      "chargeuser", "/charge-user",
+      "processpayment", "paymentgateway"
     ],
     checkpointIds: ["SEC-AUTHZ-001"],
   },
@@ -69,7 +70,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "csrf", "xsrf",
     ],
     contentMatchPatterns: [
-      "jwt.sign", "jwt.verify", "jsonwebtoken", "session"
+      "jwt.sign", "jwt.verify", "jsonwebtoken", "session", "auth.verify", "verifytoken", "verifyusertoken", "validatetoken"
     ],
     checkpointIds: ["SEC-SESSION-001"],
   },

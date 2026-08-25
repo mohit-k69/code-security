@@ -134,6 +134,7 @@ export const FilePathSecuritySpec: ReviewSpecification = {
     "- Distinguish between trusted server-controlled paths (e.g., `require('./config/' + env)`) and " +
     "user-controlled paths (`req.query.file`). Only flag user-controlled paths.\n" +
     "- Unsafe path concatenation leading to Path Traversal (FILE-C1) is a **FAIL** and a critical vulnerability.\n" +
+    "- If a concrete path-traversal defense (e.g., `path.basename()`) safely validates a user-controlled path, evaluate as **PASS**. Do not downgrade to NOT_VERIFIED due to missing authorization logic if the path handling itself is visibly secure.\n" +
     "- Archive extraction lacking path boundary checks (Zip Slip, FILE-C5) is a **FAIL**.\n" +
     "- Trusting user-provided filenames during upload/save operations without sanitization or randomization " +
     "risks file overwrites (FILE-C4) and is a **FAIL**.\n" +

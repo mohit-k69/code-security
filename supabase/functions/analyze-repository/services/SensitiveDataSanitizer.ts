@@ -61,7 +61,7 @@ export class SensitiveDataSanitizer {
             continue; // Already mutated this section
           }
 
-          const placeholder = this.registry.getPlaceholder(finding.category);
+          let placeholder = this.registry.getPlaceholder(finding.category);
 
           if (!placeholder) {
             ignoredReplacements++;
@@ -73,6 +73,18 @@ export class SensitiveDataSanitizer {
           if (actualValue !== finding.matchedValue) {
             console.error(`Mismatch: actual='${actualValue}', matched='${finding.matchedValue}'`);
           }
+          
+          // Check for synthetic markers
+          const syntheticMarkers = ["EXAMPLE", "FAKE", "MOCK", "DUMMY", "PLACEHOLDER", "TEST-ONLY", "DO-NOT-USE", "***REDACTED***"];
+          const upperValue = finding.matchedValue.toUpperCase();
+          for (const marker of syntheticMarkers) {
+            if (upperValue.includes(marker)) {
+              // Append the marker to the placeholder, e.g. <REDACTED_CLOUD_CREDENTIAL> -> <REDACTED_CLOUD_CREDENTIAL_EXAMPLE>
+              placeholder = placeholder.replace('>', `_${marker}>`);
+              break;
+            }
+          }
+
           if (actualValue === finding.matchedValue) {
             currentLine = currentLine.substring(0, startIdx) + placeholder + currentLine.substring(endIdx);
             

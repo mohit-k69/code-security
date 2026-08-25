@@ -216,3 +216,84 @@ Deno.test("CheckpointRunner - Regression Test: partial function body IDOR -> sup
   assertEquals(result.verdict, "NOT_VERIFIED", "Should be suppressed to NOT_VERIFIED due to missing explicit auth logic in partial snippet");
   assertEquals(result.findings.length, 0, "Finding should be dropped");
 });
+
+Deno.test("CheckpointRunner - Regression Test: safe JWT creation (tc_004) -> PASS", async () => {
+  const mockLLMResponse = `{
+    "verdict": "PASS",
+    "applicability": "APPLICABLE",
+    "confidence": 0.95,
+    "summary": "JWT creation uses secure algorithm and expiration",
+    "findings": []
+  }`;
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(mockContext, "framework", mockSpec);
+  
+  assertEquals(result.verdict, "PASS", "Should remain PASS when LLM determines visible code is safe");
+});
+
+Deno.test("CheckpointRunner - Regression Test: genuinely unseen security property -> NOT_VERIFIED", async () => {
+  const mockLLMResponse = `{
+    "verdict": "NOT_VERIFIED",
+    "applicability": "UNKNOWN",
+    "confidence": 0.8,
+    "summary": "Cannot determine if auth middleware exists",
+    "findings": []
+  }`;
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(mockContext, "framework", mockSpec);
+  
+  assertEquals(result.verdict, "NOT_VERIFIED", "Should preserve NOT_VERIFIED when LLM correctly identifies missing context");
+});
+
+Deno.test("CheckpointRunner - Regression Test: partial file-upload delegation (tc_024) -> NOT_VERIFIED with 0 findings", async () => {
+  const partialContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "snippet.js",
+        content: "export const upload = async (req, res) => { return fileProcessor.handleUpload(req.file); };",
+        deleted: false
+      }
+    ]
+  };
+
+  const mockLLMResponse = `{
+    "verdict": "NOT_VERIFIED",
+    "applicability": "UNKNOWN",
+    "confidence": 0.8,
+    "summary": "Cannot determine if fileProcessor validates extensions",
+    "findings": []
+  }`;
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(partialContext, "framework", mockSpec);
+  
+  assertEquals(result.verdict, "NOT_VERIFIED", "Should preserve NOT_VERIFIED for delegated file upload");
+  assertEquals(result.findings.length, 0, "Should have 0 findings for unseen controls");
+});
+
+Deno.test("CheckpointRunner - Regression Test: vulnerable JWT -> FAIL", async () => {
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.9,
+    "summary": "JWT uses none algorithm",
+    "findings": [
+      {
+        "criterionId": "SESSION-C1",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "primaryLocation": { "file": "snippet.js", "line": 2 },
+        "title": "Insecure JWT",
+        "severity": "critical",
+        "description": "Uses none algorithm",
+        "suggestion": "Fix it",
+        "evidence": [
+          { "file": "snippet.js", "line": 2, "snippet": "jwt.sign({ id }, secret, { algorithm: 'none' })", "explanation": "none algo" }
+        ]
+      }
+    ]
+  }`;
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(mockContext, "framework", mockSpec);
+  
+  assertEquals(result.verdict, "FAIL", "Should remain FAIL when concrete vulnerability is found");
+});

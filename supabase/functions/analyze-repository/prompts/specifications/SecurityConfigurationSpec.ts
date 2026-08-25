@@ -131,6 +131,9 @@ export const SecurityConfigurationSpec: ReviewSpecification = {
     "endpoints allows malicious sites to perform Cross-Site Request Forgery (CSRF)').\n" +
     "4. **remediation** — A concrete, implementable fix.\n\n" +
 
+    "### Analysis Priorities\n\n" +
+    "- Setting CORS `origin: '*'` (CONFIG-C2) is **critical** severity, regardless of whether credentials are explicitly enabled.\n\n" +
+
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +
     "- Setting CORS `origin: '*'` with `credentials: true` (CONFIG-C2) is a **FAIL** and " +

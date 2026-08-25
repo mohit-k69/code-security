@@ -218,13 +218,13 @@ console.log("\n── Test 14: File upload changes ──");
   assert(decision.selectedCheckpointIds.includes("SEC-FILE-001"), "File security checkpoint selected");
 }
 
-// ── Test 15: Paste Code with jwt.verify() routes to Session/Auth ──
+// ── Test 15: Paste Code with jwt.verify() routes to Session ──
 console.log("\n── Test 15: Paste Code with jwt.verify() ──");
 {
   const router = new CheckpointRouter(ALL_IDS);
   const decision = await router.route(["const token = jwt.verify(t, 'secret');"], true);
   assert(decision.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session & JWT selected");
-  assert(decision.selectedCheckpointIds.includes("SEC-AUTH-001"), "Auth selected");
+  assert(!decision.selectedCheckpointIds.includes("SEC-AUTH-001"), "Auth NOT selected");
 }
 
 // ── Test 16: Paste Code with concrete SQL query ──
@@ -354,6 +354,96 @@ console.log("\\n── Test 24: Tier-2 Integration (Policy D) ──");
   assert(d7.selectedCheckpointIds.includes("SEC-INPUT-001"), "Tier-1 matched");
   assert(!d7.selectedCheckpointIds.includes("SEC-FILE-001"), "Tier-2 not called");
 }
+// ── Test 25: tc_004 pure JWT helper routes to SEC-SESSION-001 but NOT SEC-AUTH-001 ──
+console.log("\n── Test 25: tc_004 pure JWT helper ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = await router.route(["function generateToken(user) { return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' }); }"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session & JWT selected for jwt.sign");
+  assert(decision.selectedCheckpointIds.includes("SEC-SECRET-001"), "Secrets selected due to JWT_SECRET");
+  assert(!decision.selectedCheckpointIds.includes("SEC-AUTH-001"), "Auth NOT selected for pure token helper");
+}
+
+// ── Test 26: tc_030 genuine authentication routes to SEC-AUTH-001 ──
+console.log("\n── Test 26: tc_030 genuine authentication ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const decision = await router.route(["app.post('/login', (req, res) => { const pass = req.body.password; jwt.sign({ user: 'admin' }, 'secret'); });"], true);
+  assert(decision.selectedCheckpointIds.includes("SEC-AUTH-001"), "Auth selected due to login/password keywords");
+  assert(decision.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session & JWT selected due to jwt.sign");
+}
+
+// ── Test 27: Session/JWT selected for generic token verification wrappers ──
+console.log("\n── Test 27: Session/JWT selected for generic token verification wrappers ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const cases = [
+    "function verifyToken(token) { return true; }",
+    "function validateToken(token) { return true; }",
+    "function verifyUserToken(token) { return true; }",
+    "const isValid = nativeAuth.verify(token);",
+    "const isValid = auth.verify(token);"
+  ];
+
+  for (const snippet of cases) {
+    const decision = await router.route([snippet], true);
+    assert(decision.selectedCheckpointIds.includes("SEC-SESSION-001"), `Session selected for wrapper: ${snippet}`);
+  }
+}
+
+// ── Test 28: Session/JWT NOT selected for generic token or verify usage ──
+console.log("\n── Test 28: Session/JWT NOT selected for generic token or verify usage ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  
+  // Generic token string
+  const d1 = await router.route(["const stripeToken = 'tok_12345';"], true);
+  assert(!d1.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session NOT selected for generic token string");
+  
+  // Generic verification method
+  const d2 = await router.route(["function verifyEmail(email) { return db.emails.check(email); }"], true);
+  assert(!d2.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session NOT selected for generic verify method");
+  
+  // Authentication login
+  const d3 = await router.route(["const user = auth.login({ username, password });"], true);
+  assert(d3.selectedCheckpointIds.includes("SEC-AUTH-001"), "SEC-AUTH-001 selected for auth.login");
+  assert(!d3.selectedCheckpointIds.includes("SEC-SESSION-001"), "Session NOT selected for auth.login");
+}
+
+// ── Test 29: AuthZ selected for high-confidence payment logic ──
+console.log("\n── Test 29: AuthZ selected for high-confidence payment logic ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  const positiveCases = [
+    "export const processPayment = async (amount: number, card: string) => { return await paymentGateway.charge(amount, card); };",
+    "function processPayment(data) { return true; }",
+    "paymentGateway.charge(amount, card);"
+  ];
+
+  for (const snippet of positiveCases) {
+    const decision = await router.route([snippet], true);
+    assert(decision.selectedCheckpointIds.includes("SEC-AUTHZ-001"), `AuthZ selected for payment wrapper: ${snippet}`);
+  }
+}
+
+// ── Test 30: AuthZ NOT selected for generic payment/card terms ──
+console.log("\n── Test 30: AuthZ NOT selected for generic payment/card terms ──");
+{
+  const router = new CheckpointRouter(ALL_IDS);
+  
+  const negativeCases = [
+    "import { Card } from 'ui-components';\nexport const MyCard = () => <Card>Hello</Card>;",
+    "const paymentMethod = 'credit_card';",
+    "const payment = { amount: 10 };",
+    "function chargeBattery() { return true; }"
+  ];
+
+  for (const snippet of negativeCases) {
+    const decision = await router.route([snippet], true);
+    assert(!decision.selectedCheckpointIds.includes("SEC-AUTHZ-001"), `AuthZ NOT selected for generic snippet: ${snippet}`);
+  }
+}
+
 // ─── Summary ────────────────────────────────────────────────────
 
 console.log("\n═══════════════════════════════════════════════════");

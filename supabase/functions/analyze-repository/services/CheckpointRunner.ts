@@ -296,7 +296,7 @@ You MUST respond with valid JSON matching this exact schema. Do not include any 
 }
 
 If no issues are found, return verdict "PASS" with an empty findings array.
-If you cannot determine the result due to insufficient context, return verdict "NOT_VERIFIED".
+If you cannot determine the result due to missing/unseen code, return verdict "NOT_VERIFIED" with an empty findings array. Do not generate speculative or informational findings for security controls that are simply not visible.
 Determine applicability from explicit security-sensitive logic present in the supplied code.
 Merely using Express, defining generic routes, creating a router, starting an HTTP server, or importing a framework does not make a security domain applicable.
 Examples:
@@ -308,7 +308,7 @@ Evaluate only the security behavior explicitly visible in the snippet.
 
 1. FAIL: If the visible code contains unsafe implementation (for example missing expirations, trusting client-controlled identities, missing credential checks, or other explicitly unsafe behavior), flag it. Do not assume unseen code provides protection against a visible flaw.
 
-2. PASS: If the visible code demonstrates a security control that is safe and sufficiently verifiable from the shown implementation, return PASS. Do not return NOT_VERIFIED merely because the snippet covers only one phase of a larger lifecycle.
+2. PASS: If the visible code demonstrates a security control that is safe and sufficiently verifiable from the shown implementation, return PASS. Do not return NOT_VERIFIED merely because the snippet covers only one phase of a larger lifecycle. When a checkpoint contains multiple criteria, evaluate only criteria for which the snippet contains relevant code. If every applicable criterion can be positively verified as PASS and no applicable criterion is FAIL or NOT_VERIFIED, the checkpoint verdict MUST be PASS. Treat a criterion as applicable only if the snippet explicitly demonstrates behavior or functionality relevant to it. Do not require unrelated lifecycle phases to be verified if they are not represented in the snippet. However, if a criterion is directly relevant to the visible behavior, and its correctness genuinely depends on unseen code, you must evaluate that criterion as NOT_VERIFIED. Never convert an actual FAIL into PASS.
 
 3. NOT_VERIFIED: Return NOT_VERIFIED only when there is no visible unsafe behavior AND the core security property being evaluated is entirely delegated to an opaque or unseen implementation, leaving no concrete security behavior to verify.
 

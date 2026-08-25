@@ -1,12 +1,25 @@
-import { localCodeVibeTask } from "./braintrust_eval_local.ts";
+import { localCodeVibeTask } from "./local_eval_task.ts";
 import fs from "fs";
 
 async function main() {
   const data = JSON.parse(fs.readFileSync("./eval_braintrust_30_cases.json", "utf8"));
-  const tc = data.find((t: any) => t.id === 'tc_001');
-  console.log("Executing tc_001...");
+  const testCase = data.find((c: any) => c.id === "tc_030");
+  if (!testCase) {
+    console.error("Test case tc_030 not found");
+    process.exit(1);
+  }
+
+  console.log("Executing tc_030...");
   try {
-    await localCodeVibeTask(tc);
+    const result = await localCodeVibeTask(testCase);
+    console.log("\nTop-level keys:", Object.keys(result));
+    console.log("Overall Verdict:", result?.verdict);
+    console.log("Checkpoints:");
+    result?.checkpoints?.forEach((cp: any) => {
+       console.log(`- ${cp.checkpointId}: ${cp.verdict}`);
+    });
+    console.log("Total Findings:", result?.totalFindings);
+    console.log("Findings:", JSON.stringify(result?.findings, null, 2));
   } catch (err: any) {
     console.error("Local Task Failed Loudly!");
     console.error(err);

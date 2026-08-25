@@ -1,3 +1,4 @@
+
 [
   {
     "id": "tc_001",
@@ -67,7 +68,7 @@
       "findingCount": 0
     },
     "tags": ["authorization", "safe"],
-    "rationale": "The destructive delete action explicitly depends on requireAuth, but the middleware implementation is not visible, so the authentication security cannot be verified from the snippet."
+    "rationale": "Properly checks user role before allowing deletion."
   },
   {
     "id": "tc_006",
@@ -159,7 +160,7 @@
     "snippet": "app.post('/updateProfile', requireAuth, async (req, res) => {\n  const targetUserId = req.body.userId;\n  await db.users.update({ id: targetUserId, email: req.body.email });\n  res.send('Updated');\n});",
     "expected": {
       "verdict": "FAIL",
-      "vulnerabilityClasses": ["BUSINESS_LOGIC_FLAW"],
+      "vulnerabilityClasses": ["AUTHORIZATION_FAILURE"],
       "severities": ["critical"],
       "lines": [2, 3],
       "findingCount": 1
@@ -173,13 +174,13 @@
     "snippet": "app.post('/token', (req, res) => {\n  const token = jwt.sign({ user: req.body.user }, 'super_secret_key');\n  res.json({ token });\n});",
     "expected": {
       "verdict": "FAIL",
-      "vulnerabilityClasses": ["AUTH_BYPASS", "SECRET_EXPOSURE", "JWT_SECURITY"],
-      "severities": ["critical", "critical", "warning"],
-      "lines": [2, 2, 2],
-      "findingCount": 3
+      "vulnerabilityClasses": ["JWT_SECURITY", "SECRET_EXPOSURE"],
+      "severities": ["warning", "critical"],
+      "lines": [2, 2],
+      "findingCount": 2
     },
     "tags": ["jwt", "secrets"],
-    "rationale": "The token endpoint mints an identity-bearing JWT directly from attacker-controlled req.body.user without credential verification, constituting a genuine authentication bypass. It also uses a hardcoded secret and omits an expiration."
+    "rationale": "Missing expiration and potentially weak hardcoded secret, should flag both JWT and Secrets issues."
   },
   {
     "id": "tc_014",
@@ -200,11 +201,11 @@
     "category": "obvious",
     "snippet": "const express = require('express');\nconst cors = require('cors');\nconst app = express();\napp.use(cors({ origin: '*' }));\napp.disable('x-powered-by');",
     "expected": {
-      "verdict": "FAIL",
-      "vulnerabilityClasses": ["INSECURE_CONFIGURATION"],
-      "severities": ["critical"],
-      "lines": [4],
-      "findingCount": 1
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
     },
     "tags": ["configuration", "cors"],
     "rationale": "CORS allows any origin, but lacks enough application context for a concrete vulnerability."

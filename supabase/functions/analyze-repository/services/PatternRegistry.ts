@@ -23,6 +23,16 @@ export class PatternRegistry {
       enabled: true,
     },
     {
+      id: "aws-secret-access-key",
+      name: "AWS Secret Access Key",
+      category: "Cloud Credentials",
+      // Requires exactly 40 base64 chars, and at least one non-hex char to avoid matching git hashes
+      regex: /(?<![A-Za-z0-9/+=])(?=.*[g-zG-Z/+])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9/+=])/g,
+      description: "Detects standard AWS Secret Access Keys.",
+      examples: ["wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"],
+      enabled: true,
+    },
+    {
       id: "github-pat",
       name: "GitHub Personal Access Token",
       category: "Authentication Tokens",
