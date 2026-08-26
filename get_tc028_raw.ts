@@ -28,9 +28,12 @@ async function run() {
     if (res.findings && res.findings.length > 0) {
       res.findings.forEach((f: any, idx: number) => {
         console.log(` Finding ${idx + 1}: ${f.findingId}`);
-        console.log(`   Lines: ${f.evidence?.map((e: any) => e.line).join(", ")}`);
+        console.log(`   Title: ${f.title}`);
+        console.log(`   Class: ${f.vulnerabilityClass}`);
+        console.log(`   Severity: ${f.severity}`);
+        console.log(`   Primary Location: ${f.primaryLocation?.file}:${f.primaryLocation?.line}`);
         console.log(`   Evidence Snippets:`);
-        f.evidence?.forEach((e: any) => console.log(`      - ${e.snippet}`));
+        f.evidence?.forEach((e: any) => console.log(`      - Line ${e.line}: ${e.snippet}`));
       });
     } else {
       console.log(`  No findings returned.`);

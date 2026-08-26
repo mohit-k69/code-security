@@ -2,14 +2,14 @@ import { localCodeVibeTask } from "./local_eval_task.ts";
 import fs from "fs";
 
 async function main() {
-  const data = JSON.parse(fs.readFileSync("./eval_braintrust_30_cases.json", "utf8"));
-  const testCase = data.find((c: any) => c.id === "tc_030");
+  const data = JSON.parse(fs.readFileSync("./eval_braintrust_100_cases.json", "utf8"));
+  const testCase = data.find((c: any) => c.id === "tc_013");
   if (!testCase) {
-    console.error("Test case tc_030 not found");
+    console.error("Test case tc_013 not found");
     process.exit(1);
   }
 
-  console.log("Executing tc_030...");
+  console.log("Executing tc_013...");
   try {
     const result = await localCodeVibeTask(testCase);
     console.log("\nTop-level keys:", Object.keys(result));

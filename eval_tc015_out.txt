@@ -1,0 +1,10 @@
+Executing tc_015...
+Local Task Failed Loudly!
+Error: Missing OPENROUTER_API_KEY environment variable. Cannot run local evaluation.
+    at localCodeVibeTask (/Users/mohitkaushal/Desktop/code-security/local_eval_task.ts:47:11)
+    at main (/Users/mohitkaushal/Desktop/code-security/run_eval_node.ts:14:26)
+    at <anonymous> (/Users/mohitkaushal/Desktop/code-security/run_eval_node.ts:30:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:702:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Done

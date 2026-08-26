@@ -1,0 +1,214 @@
+{
+  "id": "tc_003",
+  "expected": {
+    "findingCount": 0,
+    "lines": [],
+    "severities": [],
+    "verdict": "PASS",
+    "vulnerabilityClasses": []
+  },
+  "metadata": {
+    "category": "clean",
+    "rationale": "Strictly uses path.basename() to strip directory traversal sequences.",
+    "tags": [
+      "file-security",
+      "path-traversal",
+      "safe"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-FILE-001",
+        "checkpointName": "File & Path Security Review",
+        "confidence": 0.9,
+        "executionTimeMs": 2044,
+        "findingCount": 1,
+        "status": "completed",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 1,
+      "notVerifiedCheckpoints": 1,
+      "skippedCheckpoints": 9,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-FILE-001"
+          ],
+          "cwes": [
+            "CWE-285",
+            "CWE-639"
+          ],
+          "description": "The /download endpoint accepts a filename and serves the file from the filesystem without verifying if the authenticated user is authorized to access that specific file. This allows any user to download any file within the /var/www/downloads directory.",
+          "evidence": [
+            {
+              "explanation": "The route handler does not contain any authentication or authorization middleware or logic to validate user access rights.",
+              "file": "snippet.js",
+              "line": 3,
+              "snippet": "app.get('/download', (req, res) => {"
+            }
+          ],
+          "findingId": "9a81c3884b0e7cb6",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 3
+          },
+          "severity": "critical",
+          "suggestion": "Implement an authorization check that verifies the user's identity and their permission to access the requested file (e.g., by checking a database record mapping users to files) before calling res.sendFile().",
+          "title": "BUSINESS_LOGIC_FLAW: snippet.js:3",
+          "vulnerabilityClass": "BUSINESS_LOGIC_FLAW"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T07:27:23.613Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787642843613",
+    "totalFindings": 1,
+    "verdict": "NOT_VERIFIED"
+  }
+}
+{
+  "id": "tc_010",
+  "expected": {
+    "findingCount": 0,
+    "lines": [],
+    "severities": [],
+    "verdict": "PASS",
+    "vulnerabilityClasses": []
+  },
+  "metadata": {
+    "category": "obvious",
+    "rationale": "AWS values are explicitly example/test credentials, not production secrets.",
+    "tags": [
+      "secrets"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 2309,
+        "findingCount": 1,
+        "status": "completed",
+        "verdict": "FAIL"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 1,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 9,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ],
+          "cwes": [
+            "CWE-798"
+          ],
+          "description": "The AWS secret access key is hardcoded directly in the source code. Hardcoded credentials can be easily extracted from version control systems and lead to unauthorized access to cloud infrastructure.",
+          "evidence": [
+            {
+              "explanation": "The code explicitly assigns a plaintext AWS secret access key to the AWS configuration object.",
+              "file": "snippet.js",
+              "line": 4,
+              "snippet": "secretAccessKey: '***REDACTED***'"
+            }
+          ],
+          "findingId": "68de89116d2c3461",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 4
+          },
+          "severity": "critical",
+          "suggestion": "Remove the hardcoded secret from the source code. Use environment variables (e.g., process.env.AWS_SECRET_ACCESS_KEY) or a secure secret management service like AWS Secrets Manager or HashiCorp Vault to inject credentials at runtime.",
+          "title": "SECRET_EXPOSURE: snippet.js:4",
+          "vulnerabilityClass": "SECRET_EXPOSURE"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T07:27:07.877Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787642827877",
+    "totalFindings": 1,
+    "verdict": "FAIL"
+  }
+}
+{
+  "id": "tc_023",
+  "expected": {
+    "findingCount": 0,
+    "lines": [],
+    "severities": [],
+    "verdict": "NOT_VERIFIED",
+    "vulnerabilityClasses": []
+  },
+  "metadata": {
+    "category": "partial-context",
+    "rationale": "Security-sensitive function (token verification) but the actual logic is entirely hidden in an unknown external module. Should return NOT_VERIFIED instead of hallucinating a flaw.",
+    "tags": [
+      "partial",
+      "auth"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "NOT_APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 3508,
+        "findingCount": 0,
+        "status": "completed",
+        "verdict": "PASS"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 1,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 9,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T07:26:41.19Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787642801190",
+    "totalFindings": 0,
+    "verdict": "PASS"
+  }
+}

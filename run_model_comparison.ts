@@ -6,8 +6,10 @@ import {
   verdictAccuracy 
 } from "./braintrust_scorers.ts";
 
+import fs from "fs";
+
 const API_URL = "https://riqjsppvihvcyihuhkzg.supabase.co/functions/v1/analyze-snippet";
-const EXPERIMENT_NAME = Deno.args[0] || "unknown";
+const EXPERIMENT_NAME = process.argv[2] || "unknown";
 
 interface CaseResult {
   id: string;
@@ -50,7 +52,7 @@ async function codeVibeTask(input: string): Promise<{ report: any; metrics: any 
   return { report: data.report, metrics: data.metrics };
 }
 
-const data = JSON.parse(await Deno.readTextFile("./eval_braintrust_30_cases.json"));
+const data = JSON.parse(await fs.promises.readFile("./eval_braintrust_100_cases.json", "utf8"));
 
 const caseResults: CaseResult[] = [];
 let totalInputTokens = 0;
@@ -169,6 +171,6 @@ const report = {
 };
 
 const filename = `experiment_${EXPERIMENT_NAME.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
-await Deno.writeTextFile(filename, JSON.stringify(report, null, 2));
+await fs.promises.writeFile(filename, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report.summary, null, 2));
 console.error(`\nFull results saved to ${filename}`);

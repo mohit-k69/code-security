@@ -1,380 +1,330 @@
-{
-  "tc_012": {
-    "actual": {
-      "checkpoints": [
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-AUTHZ-001",
-          "checkpointName": "Authorization Review",
-          "confidence": 0.98,
-          "executionTimeMs": 8174,
-          "findingCount": 1,
-          "status": "completed",
-          "verdict": "FAIL"
-        }
-      ],
-      "coverage": {
-        "executedCheckpoints": 1,
-        "notVerifiedCheckpoints": 0,
-        "skippedCheckpoints": 9,
-        "totalCheckpoints": 10
-      },
-      "findings": {
-        "critical": [
-          {
-            "contributingCheckpoints": [
-              "SEC-AUTHZ-001"
-            ],
-            "cwes": [
-              "CWE-639",
-              "CWE-862"
-            ],
-            "description": "The endpoint requires authentication but takes targetUserId directly from req.body.userId and uses it in the database update filter. No ownership or explicit permission check is visible between authentication and the update, allowing an authenticated user to target another user's profile by changing the supplied userId.",
-            "evidence": [
-              {
-                "explanation": "The route authenticates the caller, but authentication alone does not establish authorization to modify the selected target account.",
-                "file": "snippet.js",
-                "line": 1,
-                "snippet": "app.post('/updateProfile', requireAuth, async (req, res) => {"
-              },
-              {
-                "explanation": "The resource identifier determining which user is modified is taken directly from attacker-controlled request data.",
-                "file": "snippet.js",
-                "line": 2,
-                "snippet": "const targetUserId = req.body.userId;"
-              },
-              {
-                "explanation": "The update selects the user solely by the client-provided ID and contains no visible ownership or permission constraint.",
-                "file": "snippet.js",
-                "line": 3,
-                "snippet": "await db.users.update({ id: targetUserId, email: req.body.email });"
-              }
-            ],
-            "findingId": "dfea8a44c5dca892",
-            "primaryLocation": {
-              "file": "snippet.js",
-              "line": 3
-            },
-            "severity": "critical",
-            "suggestion": "Do not accept the target account identity from the request body for self-service profile updates. Derive the user ID from the authenticated principal, such as req.user.id, and update using that value. If administrators must update other users, require a separate endpoint with an explicit administrator or profile-management permission check before performing the update.",
-            "title": "AUTH_BYPASS: snippet.js:3",
-            "vulnerabilityClass": "AUTH_BYPASS"
-          }
-        ],
-        "info": [],
-        "warning": []
-      },
-      "generatedAt": "2026-08-24T15:59:39.229Z",
-      "repository": {
-        "commitSha": "local",
-        "name": "paste_snippet",
-        "owner": "local_user",
-        "prNumber": 0
-      },
-      "scanId": "scan_local_user_paste_snippet_pr0_1787587179229",
-      "totalFindings": 1,
-      "verdict": "FAIL"
-    }
+[
+  {
+    "id": "tc_001",
+    "category": "clean",
+    "rationale": "Simple HTTP server returning static JSON. No inputs taken, completely safe.",
+    "tags": [
+      "baseline",
+      "express"
+    ],
+    "vClasses": []
   },
-  "tc_013": {
-    "actual": {
-      "checkpoints": [
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-AUTH-001",
-          "checkpointName": "Authentication Review",
-          "confidence": 0.98,
-          "executionTimeMs": 7495,
-          "findingCount": 1,
-          "status": "completed",
-          "verdict": "FAIL"
-        },
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-SECRET-001",
-          "checkpointName": "Secrets Management Review",
-          "confidence": 1,
-          "executionTimeMs": 3509,
-          "findingCount": 1,
-          "status": "completed",
-          "verdict": "FAIL"
-        },
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-SESSION-001",
-          "checkpointName": "Session & JWT Security Review",
-          "confidence": 0.98,
-          "executionTimeMs": 12338,
-          "findingCount": 2,
-          "status": "completed",
-          "verdict": "FAIL"
-        }
-      ],
-      "coverage": {
-        "executedCheckpoints": 3,
-        "notVerifiedCheckpoints": 0,
-        "skippedCheckpoints": 7,
-        "totalCheckpoints": 10
-      },
-      "findings": {
-        "critical": [
-          {
-            "contributingCheckpoints": [
-              "SEC-AUTH-001",
-              "SEC-SESSION-001"
-            ],
-            "cwes": [
-              "CWE-287"
-            ],
-            "description": "The endpoint creates a JWT directly from req.body.user and does not visibly authenticate the caller or verify that the caller is authorized to obtain a token for that identity. An attacker can submit another user's identifier and receive a validly signed token containing that identity, potentially gaining unauthorized access wherever the token is trusted.",
-            "evidence": [
-              {
-                "explanation": "The JWT identity claim is taken directly from attacker-controlled request data and is signed without any visible credential check or authorization decision.",
-                "file": "snippet.js",
-                "line": 2,
-                "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');"
-              }
-            ],
-            "findingId": "6a50bd2c112b0aa5",
-            "primaryLocation": {
-              "file": "snippet.js",
-              "line": 2
-            },
-            "severity": "critical",
-            "suggestion": "Require server-side authentication of the caller before issuing a token, verify submitted credentials against the account, and derive the JWT subject from the authenticated account rather than accepting an arbitrary req.body.user value. Reject token issuance when authentication fails and ensure all protected routes validate the resulting token and its claims.",
-            "title": "AUTH_BYPASS: snippet.js:2",
-            "vulnerabilityClass": "AUTH_BYPASS"
-          },
-          {
-            "contributingCheckpoints": [
-              "SEC-SECRET-001",
-              "SEC-SESSION-001"
-            ],
-            "cwes": [
-              "CWE-798",
-              "CWE-613"
-            ],
-            "description": "The application uses a hardcoded string literal as the secret key for signing JSON Web Tokens. Hardcoded secrets are easily discoverable in version control and can be used by attackers to forge tokens.",
-            "evidence": [
-              {
-                "explanation": "The second argument to jwt.sign is a hardcoded string literal used as the signing key.",
-                "file": "snippet.js",
-                "line": 2,
-                "snippet": "const token = jwt.sign({ user: req.body.user }, '***REDACTED***');"
-              },
-              {
-                "explanation": "The JWT signing operation contains no expiration option, so the generated token is not configured with a finite lifetime in the shown code.",
-                "file": "snippet.js",
-                "line": 2,
-                "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');"
-              }
-            ],
-            "findingId": "28e4a13c6d66bc12",
-            "primaryLocation": {
-              "file": "snippet.js",
-              "line": 2
-            },
-            "severity": "critical",
-            "suggestion": "Remove the hardcoded secret and load the value from a secure environment variable (e.g., process.env.JWT_SECRET) that is managed by a secrets management system.",
-            "title": "SECRET_EXPOSURE: snippet.js:2",
-            "vulnerabilityClass": "SECRET_EXPOSURE"
-          }
-        ],
-        "info": [],
-        "warning": []
-      },
-      "generatedAt": "2026-08-24T15:59:36.764Z",
-      "repository": {
-        "commitSha": "local",
-        "name": "paste_snippet",
-        "owner": "local_user",
-        "prNumber": 0
-      },
-      "scanId": "scan_local_user_paste_snippet_pr0_1787587176764",
-      "totalFindings": 2,
-      "verdict": "FAIL"
-    }
+  {
+    "id": "tc_002",
+    "category": "clean",
+    "rationale": "Uses bcrypt with a secure work factor (12) to hash passwords.",
+    "tags": [
+      "cryptography",
+      "passwords"
+    ],
+    "vClasses": []
   },
-  "tc_030": {
-    "actual": {
-      "checkpoints": [
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-AUTH-001",
-          "checkpointName": "Authentication Review",
-          "confidence": 0.99,
-          "executionTimeMs": 17017,
-          "findingCount": 1,
-          "status": "completed",
-          "verdict": "FAIL"
-        },
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-SECRET-001",
-          "checkpointName": "Secrets Management Review",
-          "confidence": 1,
-          "executionTimeMs": 1798,
-          "findingCount": 1,
-          "status": "completed",
-          "verdict": "FAIL"
-        },
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-SESSION-001",
-          "checkpointName": "Session & JWT Security Review",
-          "confidence": 0.98,
-          "executionTimeMs": 14028,
-          "findingCount": 2,
-          "status": "completed",
-          "verdict": "FAIL"
-        },
-        {
-          "applicability": "APPLICABLE",
-          "checkpointId": "SEC-CRYPTO-001",
-          "checkpointName": "Cryptography Security Review",
-          "confidence": 0.99,
-          "executionTimeMs": 19089,
-          "findingCount": 2,
-          "status": "completed",
-          "verdict": "FAIL"
-        }
-      ],
-      "coverage": {
-        "executedCheckpoints": 4,
-        "notVerifiedCheckpoints": 0,
-        "skippedCheckpoints": 6,
-        "totalCheckpoints": 10
-      },
-      "findings": {
-        "critical": [
-          {
-            "contributingCheckpoints": [
-              "SEC-AUTH-001",
-              "SEC-SESSION-001"
-            ],
-            "cwes": [
-              "CWE-287"
-            ],
-            "description": "The authentication decision checks only whether the submitted username equals admin. The password is hashed but never compared with a stored password hash or otherwise validated. Consequently, an attacker can submit username=admin with any password and receive a signed authentication token.",
-            "evidence": [
-              {
-                "explanation": "The submitted password is transformed, but this value is not used in any authentication comparison.",
-                "file": "snippet.js",
-                "line": 2,
-                "snippet": "const pass = crypto.createHash('md5').update(req.body.password).digest('hex');"
-              },
-              {
-                "explanation": "The only visible authentication condition is a username equality check.",
-                "file": "snippet.js",
-                "line": 4,
-                "snippet": "if (user === 'admin') {"
-              },
-              {
-                "explanation": "A JWT is issued immediately after the username-only condition succeeds, without password verification.",
-                "file": "snippet.js",
-                "line": 5,
-                "snippet": "const token = jwt.sign({ user }, 'super_secret_jwt_key');"
-              },
-              {
-                "explanation": "A password-derived value is computed, but the code does not use it in any authentication comparison.",
-                "file": "snippet.js",
-                "line": 3,
-                "snippet": "const pass = crypto.createHash('md5').update(req.body.password).digest('hex');"
-              }
-            ],
-            "findingId": "773b832a3a5b2e30",
-            "primaryLocation": {
-              "file": "snippet.js",
-              "line": 4
-            },
-            "severity": "critical",
-            "suggestion": "Retrieve the user record by username, compare the submitted password against the stored password hash using a password-verification function such as bcrypt.compare or Argon2 verification, and issue the JWT only after successful verification. Return a generic authentication failure for missing users or incorrect passwords.",
-            "title": "AUTH_BYPASS: snippet.js:4",
-            "vulnerabilityClass": "AUTH_BYPASS"
-          },
-          {
-            "contributingCheckpoints": [
-              "SEC-SECRET-001",
-              "SEC-SESSION-001",
-              "SEC-CRYPTO-001"
-            ],
-            "cwes": [
-              "CWE-798",
-              "CWE-613",
-              "CWE-321"
-            ],
-            "description": "The JWT signing key is hardcoded directly in the source code. Hardcoded secrets can be easily extracted from version control and used by unauthorized parties to forge authentication tokens.",
-            "evidence": [
-              {
-                "explanation": "The JWT signing key is provided as a plaintext string literal in the jwt.sign function call.",
-                "file": "snippet.js",
-                "line": 5,
-                "snippet": "const token = jwt.sign({ user }, '***REDACTED***');"
-              },
-              {
-                "explanation": "The JWT is signed without an explicit expiration option or exp claim.",
-                "file": "snippet.js",
-                "line": 5,
-                "snippet": "const token = jwt.sign({ user }, 'super_secret_jwt_key');"
-              },
-              {
-                "explanation": "The JWT signing secret is supplied as a literal string in application source code.",
-                "file": "snippet.js",
-                "line": 5,
-                "snippet": "const token = jwt.sign({ user }, '[REDACTED_HARDCODED_SECRET]');"
-              }
-            ],
-            "findingId": "4ec87020e326ccdf",
-            "primaryLocation": {
-              "file": "snippet.js",
-              "line": 5
-            },
-            "severity": "critical",
-            "suggestion": "Remove the hardcoded string and load the secret from a secure environment variable (e.g., process.env.JWT_SECRET) or a dedicated secrets management service.",
-            "title": "SECRET_EXPOSURE: snippet.js:5",
-            "vulnerabilityClass": "SECRET_EXPOSURE"
-          }
-        ],
-        "info": [],
-        "warning": [
-          {
-            "contributingCheckpoints": [
-              "SEC-CRYPTO-001"
-            ],
-            "cwes": [
-              "CWE-328"
-            ],
-            "description": "The supplied password is processed with MD5. MD5 is a fast, deprecated general-purpose hash and is unsuitable for password storage or verification because attackers can perform high-speed offline guessing if the resulting digest is exposed. The code also does not visibly compare this value against a stored password hash.",
-            "evidence": [
-              {
-                "explanation": "The password is explicitly hashed with the deprecated MD5 algorithm.",
-                "file": "snippet.js",
-                "line": 3,
-                "snippet": "const pass = crypto.createHash('md5').update(req.body.password).digest('hex');"
-              }
-            ],
-            "findingId": "c8ea855c058a7422",
-            "primaryLocation": {
-              "file": "snippet.js",
-              "line": 3
-            },
-            "severity": "warning",
-            "suggestion": "Use a password-specific password hashing function such as Argon2id, bcrypt, scrypt, or PBKDF2 with a unique salt and an appropriate work factor. Verify the submitted password using the library's constant-time verification function rather than comparing or generating a raw MD5 digest.",
-            "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:3",
-            "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE"
-          }
-        ]
-      },
-      "generatedAt": "2026-08-24T15:59:04.406Z",
-      "repository": {
-        "commitSha": "local",
-        "name": "paste_snippet",
-        "owner": "local_user",
-        "prNumber": 0
-      },
-      "scanId": "scan_local_user_paste_snippet_pr0_1787587144406",
-      "totalFindings": 3,
-      "verdict": "FAIL"
-    }
+  {
+    "id": "tc_003",
+    "category": "clean",
+    "rationale": "Strictly uses path.basename() to strip directory traversal sequences.",
+    "tags": [
+      "file-security",
+      "path-traversal",
+      "safe"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_004",
+    "category": "clean",
+    "rationale": "JWT generation uses environment variable for secret, has explicit expiration, and secure algorithm.",
+    "tags": [
+      "jwt",
+      "session",
+      "safe"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_005",
+    "category": "clean",
+    "rationale": "Properly checks user role before allowing deletion.",
+    "tags": [
+      "authorization",
+      "safe"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_006",
+    "category": "clean",
+    "rationale": "Uses parameterized queries ($1) protecting against SQL injection.",
+    "tags": [
+      "sql-injection",
+      "safe"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_007",
+    "category": "obvious",
+    "rationale": "Direct string concatenation of untrusted user input into SQL query.",
+    "tags": [
+      "sql-injection"
+    ],
+    "vClasses": [
+      "SQL_INJECTION"
+    ]
+  },
+  {
+    "id": "tc_008",
+    "category": "obvious",
+    "rationale": "Reflects untrusted input directly into HTML output.",
+    "tags": [
+      "xss"
+    ],
+    "vClasses": [
+      "XSS"
+    ]
+  },
+  {
+    "id": "tc_009",
+    "category": "obvious",
+    "rationale": "Concatenates user input directly into file path allowing directory traversal.",
+    "tags": [
+      "path-traversal"
+    ],
+    "vClasses": [
+      "PATH_TRAVERSAL"
+    ]
+  },
+  {
+    "id": "tc_010",
+    "category": "obvious",
+    "rationale": "AWS values are explicitly example/test credentials, not production secrets.",
+    "tags": [
+      "secrets"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_011",
+    "category": "obvious",
+    "rationale": "Authentication logic bypass via magic query parameter.",
+    "tags": [
+      "authentication"
+    ],
+    "vClasses": [
+      "AUTH_BYPASS"
+    ]
+  },
+  {
+    "id": "tc_012",
+    "category": "obvious",
+    "rationale": "Trusts client-provided userId for updating profiles instead of authenticated token.",
+    "tags": [
+      "authorization",
+      "idor"
+    ],
+    "vClasses": [
+      "AUTHORIZATION_FAILURE"
+    ]
+  },
+  {
+    "id": "tc_013",
+    "category": "obvious",
+    "rationale": "Missing expiration and potentially weak hardcoded secret, should flag both JWT and Secrets issues.",
+    "tags": [
+      "jwt",
+      "secrets"
+    ],
+    "vClasses": [
+      "JWT_SECURITY",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  {
+    "id": "tc_014",
+    "category": "obvious",
+    "rationale": "Using broken MD5 algorithm for password hashing.",
+    "tags": [
+      "cryptography"
+    ],
+    "vClasses": [
+      "CRYPTOGRAPHIC_FAILURE"
+    ]
+  },
+  {
+    "id": "tc_015",
+    "category": "obvious",
+    "rationale": "CORS allows any origin, but lacks enough application context for a concrete vulnerability.",
+    "tags": [
+      "configuration",
+      "cors"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_016",
+    "category": "obvious",
+    "rationale": "Command injection via exec() with unsanitized body parameter.",
+    "tags": [
+      "command-injection",
+      "input-validation"
+    ],
+    "vClasses": [
+      "INPUT_VALIDATION"
+    ]
+  },
+  {
+    "id": "tc_017",
+    "category": "safe-equivalent",
+    "rationale": "Variables are unmistakably synthetic fake test keys.",
+    "tags": [
+      "secrets",
+      "false-positive-check"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_018",
+    "category": "safe-equivalent",
+    "rationale": "HTML output is properly sanitized using a recognized library before reflection.",
+    "tags": [
+      "xss",
+      "false-positive-check"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_019",
+    "category": "safe-equivalent",
+    "rationale": "Prisma's tagged template literal safely parameterizes the query automatically.",
+    "tags": [
+      "sql-injection",
+      "false-positive-check"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_020",
+    "category": "safe-equivalent",
+    "rationale": "MD5 used for ETag/caching (non-security), which is a safe and standard use case.",
+    "tags": [
+      "cryptography",
+      "false-positive-check"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_021",
+    "category": "safe-equivalent",
+    "rationale": "Input is strictly whitelisted before being passed to file APIs.",
+    "tags": [
+      "path-traversal",
+      "false-positive-check"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_022",
+    "category": "safe-equivalent",
+    "rationale": "These are public identifiers/keys intended to be shipped to the client, not secrets.",
+    "tags": [
+      "secrets",
+      "false-positive-check"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_023",
+    "category": "partial-context",
+    "rationale": "Security-sensitive function (token verification) but the actual logic is entirely hidden in an unknown external module. Should return NOT_VERIFIED instead of hallucinating a flaw.",
+    "tags": [
+      "partial",
+      "auth"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_024",
+    "category": "partial-context",
+    "rationale": "File upload route, but the actual validation, storage, and processing logic is missing. Cannot verify safety.",
+    "tags": [
+      "partial",
+      "file-security"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_025",
+    "category": "partial-context",
+    "rationale": "Payment processing function that delegates entirely to an external gateway. No cryptographic or input logic visible.",
+    "tags": [
+      "partial",
+      "crypto"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_026",
+    "category": "partial-context",
+    "rationale": "Cryptographic wrapper where the actual hashing algorithm is defined in another file. Cannot verify if it's secure or broken.",
+    "tags": [
+      "partial",
+      "cryptography"
+    ],
+    "vClasses": []
+  },
+  {
+    "id": "tc_027",
+    "category": "multi-vulnerability",
+    "rationale": "Same identical bypass logic skips the explicit requireAuth boundary on distant lines and should be merged into 1 finding.",
+    "tags": [
+      "deduplication",
+      "auth-bypass"
+    ],
+    "vClasses": [
+      "AUTH_BYPASS"
+    ]
+  },
+  {
+    "id": "tc_028",
+    "category": "multi-vulnerability",
+    "rationale": "Distinct hardcoded secrets on adjacent lines must NOT be merged; should produce 2 findings.",
+    "tags": [
+      "deduplication",
+      "secrets"
+    ],
+    "vClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  {
+    "id": "tc_029",
+    "category": "multi-vulnerability",
+    "rationale": "Two different vulnerability classes on nearby lines must remain separate findings.",
+    "tags": [
+      "sql-injection",
+      "xss",
+      "multi"
+    ],
+    "vClasses": [
+      "SQL_INJECTION",
+      "XSS"
+    ]
+  },
+  {
+    "id": "tc_030",
+    "category": "multi-vulnerability",
+    "rationale": "Complex login snippet with multiple distinct flaws. Tests that SEC-AUTH-001 only flags AUTH_BYPASS, while specialized checkpoints independently flag MD5 (Crypto), hardcoded secret (Secrets), and missing expiration (JWT).",
+    "tags": [
+      "checkpoint-boundaries",
+      "deduplication",
+      "multi"
+    ],
+    "vClasses": [
+      "CRYPTOGRAPHIC_FAILURE",
+      "AUTH_BYPASS",
+      "JWT_SECURITY",
+      "SECRET_EXPOSURE"
+    ]
   }
-}
+]

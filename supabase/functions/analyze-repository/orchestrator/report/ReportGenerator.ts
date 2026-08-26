@@ -69,6 +69,10 @@ export class ReportGenerator {
   ): RepositoryVerdict {
     const isPasteCode = repositoryContext.commitSha === "local";
 
+    if (findings.length > 0) {
+      return "FAIL";
+    }
+
     if (results.length === 0) {
       return isPasteCode ? "PASS" : "NOT_VERIFIED";
     }

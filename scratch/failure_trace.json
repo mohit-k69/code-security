@@ -1,0 +1,2847 @@
+[
+  {
+    "id": "tc_003",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-FILE-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "9a81c3884b0e7cb6",
+        "title": "BUSINESS_LOGIC_FLAW: snippet.js:3",
+        "description": "The download endpoint serves files based on a user-provided filename without verifying if the user is authorized to access the requested file. This could lead to an Insecure Direct Object Reference (IDOR) vulnerability if sensitive files are stored in the target directory.",
+        "severity": "warning",
+        "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 3
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 3,
+            "snippet": "app.get('/download', (req, res) => {",
+            "explanation": "The route handler accepts a file request but does not show any middleware or logic to verify user authorization before serving the file."
+          }
+        ],
+        "suggestion": "Implement an authorization check before calling res.sendFile(). Verify the user's session or identity and ensure they have explicit permission to access the requested file record in your database or access control system.",
+        "cwes": [
+          "CWE-285"
+        ],
+        "contributingCheckpoints": [
+          "SEC-FILE-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_003",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 5767,
+      "inputTokens": 3310,
+      "outputTokens": 369
+    }
+  },
+  {
+    "id": "tc_004",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "NOT_VERIFIED"
+      },
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "PASS"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_004",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 7548,
+      "inputTokens": 11058,
+      "outputTokens": 872
+    }
+  },
+  {
+    "id": "tc_010",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "68de89116d2c3461",
+        "title": "SECRET_EXPOSURE: snippet.js:4",
+        "description": "The AWS secret access key is hardcoded directly in the source code. Hardcoded credentials can be extracted from version control and abused by unauthorized parties.",
+        "severity": "critical",
+        "vulnerabilityClass": "SECRET_EXPOSURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 4
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 4,
+            "snippet": "secretAccessKey: '***REDACTED***'",
+            "explanation": "The code explicitly assigns a plaintext secret access key to the AWS configuration object."
+          }
+        ],
+        "suggestion": "Remove the hardcoded secret from the source code. Use environment variables (e.g., process.env.AWS_SECRET_ACCESS_KEY) or a secure secrets management service like AWS Secrets Manager or HashiCorp Vault to inject credentials at runtime.",
+        "cwes": [
+          "CWE-798"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SECRET-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_010",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 3265,
+      "inputTokens": 3849,
+      "outputTokens": 326
+    }
+  },
+  {
+    "id": "tc_012",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTHORIZATION_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2,
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTHZ-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "9a81c3884b0e7cb6",
+        "title": "BUSINESS_LOGIC_FLAW: snippet.js:3",
+        "description": "The endpoint obtains targetUserId from req.body.userId and uses it as the database selector for the update. requireAuth only establishes that the caller is authenticated; the shown code does not verify that targetUserId belongs to the authenticated user or that the caller has an administrative permission. An authenticated attacker could submit another user's ID and change that user's email.",
+        "severity": "critical",
+        "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 3
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "const targetUserId = req.body.userId;",
+            "explanation": "The resource identifier controlling which user is modified is supplied directly by the client."
+          },
+          {
+            "file": "snippet.js",
+            "line": 3,
+            "snippet": "await db.users.update({ id: targetUserId, email: req.body.email });",
+            "explanation": "The client-controlled identifier is used to select the record for a write operation, with no visible ownership or permission check."
+          }
+        ],
+        "suggestion": "Do not accept the target user identity from the request body for self-service profile updates. Derive it from the authenticated session, for example by updating with a selector such as { id: req.user.id } and only accepting explicitly permitted profile fields. If administrators may update other users, require an explicit server-side administrative permission and separately authorize the requested target before performing the update.",
+        "cwes": [
+          "CWE-639"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTHZ-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_012",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "AUTHORIZATION_FAILURE"
+      ],
+      "actualClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 11103,
+      "inputTokens": 3770,
+      "outputTokens": 942
+    }
+  },
+  {
+    "id": "tc_013",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "warning",
+        "critical"
+      ],
+      "lines": [
+        2,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "6a50bd2c112b0aa5",
+        "title": "AUTH_BYPASS: snippet.js:2",
+        "description": "The endpoint signs a JWT using `req.body.user` directly, with no visible credential verification or server-side authentication decision. A caller can submit an arbitrary username or user identifier and receive a signed token representing that identity, enabling authentication bypass and account impersonation wherever the token is trusted.",
+        "severity": "critical",
+        "vulnerabilityClass": "AUTH_BYPASS",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');",
+            "explanation": "The JWT identity claim is populated directly from attacker-controlled request data, and the snippet shows no credential verification before signing."
+          }
+        ],
+        "suggestion": "Require authentication credentials on the token endpoint and verify them server-side against the account record before issuing a token. Derive the JWT subject and claims exclusively from the authenticated account, not from an untrusted request body value. Reject requests that lack valid credentials or attempt to specify an identity different from the authenticated account.",
+        "cwes": [
+          "CWE-287",
+          "CWE-306"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTH-001",
+          "SEC-SESSION-001"
+        ]
+      },
+      {
+        "findingId": "28e4a13c6d66bc12",
+        "title": "SECRET_EXPOSURE: snippet.js:2",
+        "description": "The JWT signing secret is hardcoded directly in the source code. Hardcoded secrets can be easily extracted from version control and used to forge authentication tokens.",
+        "severity": "critical",
+        "vulnerabilityClass": "SECRET_EXPOSURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "const token = jwt.sign({ user: req.body.user }, '***REDACTED***');",
+            "explanation": "The second argument to jwt.sign is a hardcoded string used as the secret key."
+          }
+        ],
+        "suggestion": "Remove the hardcoded string and load the secret from a secure environment variable (e.g., process.env.JWT_SECRET) that is managed by a secrets management system.",
+        "cwes": [
+          "CWE-798"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SECRET-001"
+        ]
+      },
+      {
+        "findingId": "84dc94c4df1130dd",
+        "title": "JWT_SECURITY: snippet.js:2",
+        "description": "The jwt.sign call does not provide an expiresIn option or an exp claim. Consequently, the generated access token does not expire by default and may remain usable indefinitely.",
+        "severity": "warning",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');",
+            "explanation": "The signing options omit an expiration, so no token lifetime is established in the visible implementation."
+          }
+        ],
+        "suggestion": "Set a short explicit lifetime when signing the access token, for example jwt.sign(payload, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '15m' }), and implement a separate controlled refresh-token flow if longer-lived sessions are required.",
+        "cwes": [
+          "CWE-613"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SESSION-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_013",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS",
+        "SECRET_EXPOSURE"
+      ],
+      "expectedCount": 2,
+      "actualCount": 2,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 0,
+      "dedupScore": 1,
+      "caseScore": 0.6,
+      "latencyMs": 14252,
+      "inputTokens": 11037,
+      "outputTokens": 2294
+    }
+  },
+  {
+    "id": "tc_015",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-CONFIG-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "6e7869b39025f8c3",
+        "title": "INSECURE_CONFIGURATION: snippet.js:4",
+        "description": "The CORS configuration uses a wildcard origin ('*'), which permits any website to interact with the application's resources. This can lead to unauthorized data access if the application relies on browser-based security for sensitive operations.",
+        "severity": "warning",
+        "vulnerabilityClass": "INSECURE_CONFIGURATION",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 4
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 4,
+            "snippet": "app.use(cors({ origin: '*' }));",
+            "explanation": "The 'origin' property is explicitly set to '*', which is an insecure default for production environments."
+          }
+        ],
+        "suggestion": "Replace the wildcard '*' with a specific allowlist of trusted domains. If the application requires credentials, ensure that the origin is explicitly defined and not a wildcard.",
+        "cwes": [
+          "CWE-942"
+        ],
+        "contributingCheckpoints": [
+          "SEC-CONFIG-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_015",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 4119,
+      "inputTokens": 3175,
+      "outputTokens": 374
+    }
+  },
+  {
+    "id": "tc_023",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_023",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 1228,
+      "inputTokens": 3817,
+      "outputTokens": 86
+    }
+  },
+  {
+    "id": "tc_024",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-FILE-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_024",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0.2,
+      "latencyMs": 2163,
+      "inputTokens": 3251,
+      "outputTokens": 358
+    }
+  },
+  {
+    "id": "tc_030",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE",
+        "AUTH_BYPASS",
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical",
+        "warning",
+        "critical"
+      ],
+      "lines": [
+        3,
+        4,
+        5,
+        5
+      ],
+      "findingCount": 4
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-CRYPTO-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "773b832a3a5b2e30",
+        "title": "AUTH_BYPASS: snippet.js:4",
+        "description": "The authentication decision checks only whether the client-supplied username equals 'admin'. Although the password is hashed on line 3, the resulting value is never compared with a stored password hash or used in any authentication check. Consequently, an attacker can submit any password, including an empty or arbitrary value, with username 'admin' and receive a valid JWT.",
+        "severity": "critical",
+        "vulnerabilityClass": "AUTH_BYPASS",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 4
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 3,
+            "snippet": "const pass = crypto.createHash('md5').update(req.body.password).digest('hex');",
+            "explanation": "The submitted password is transformed into a hash, but the resulting 'pass' value is never used in the authentication decision."
+          },
+          {
+            "file": "snippet.js",
+            "line": 4,
+            "snippet": "if (user === 'admin') {",
+            "explanation": "Access is granted solely based on the client-controlled username, with no password verification."
+          },
+          {
+            "file": "snippet.js",
+            "line": 5,
+            "snippet": "const token = jwt.sign({ user }, 'super_secret_jwt_key');",
+            "explanation": "A JWT is issued after only the username check, allowing unauthenticated callers to obtain an authentication token for the admin identity."
+          }
+        ],
+        "suggestion": "Look up the user by username, verify the submitted password against the stored password hash using an approved password-verification function, and issue the JWT only after successful verification. Return a generic authentication failure for missing users or incorrect passwords.",
+        "cwes": [
+          "CWE-287"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTH-001",
+          "SEC-SESSION-001"
+        ]
+      },
+      {
+        "findingId": "4ec87020e326ccdf",
+        "title": "SECRET_EXPOSURE: snippet.js:5",
+        "description": "The JWT signing key is hardcoded directly in the source code. Hardcoded secrets can be easily extracted from version control and used by unauthorized parties to forge authentication tokens.",
+        "severity": "critical",
+        "vulnerabilityClass": "SECRET_EXPOSURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 5
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 5,
+            "snippet": "const token = jwt.sign({ user }, '***REDACTED***');",
+            "explanation": "The JWT signing key is provided as a plaintext string literal in the jwt.sign function call."
+          },
+          {
+            "file": "snippet.js",
+            "line": 5,
+            "snippet": "const token = jwt.sign({ user }, 'super_secret_jwt_key');",
+            "explanation": "The JWT signing key is embedded directly as a source-code string rather than being securely provisioned at runtime."
+          }
+        ],
+        "suggestion": "Remove the hardcoded secret and load it from a secure environment variable (e.g., process.env.JWT_SECRET) or a dedicated secrets management service.",
+        "cwes": [
+          "CWE-798",
+          "CWE-321"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SECRET-001",
+          "SEC-CRYPTO-001"
+        ]
+      },
+      {
+        "findingId": "c8ea855c058a7422",
+        "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:3",
+        "description": "The login handler hashes the submitted password with MD5. MD5 is a fast, deprecated general-purpose hash and is unsuitable for password protection because an attacker with a recovered hash can perform large-scale offline cracking attempts efficiently. The computed value is also not visibly compared with a stored password hash in this snippet.",
+        "severity": "warning",
+        "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 3
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 3,
+            "snippet": "const pass = crypto.createHash('md5').update(req.body.password).digest('hex');",
+            "explanation": "The user-supplied password is processed directly with the deprecated MD5 hash function."
+          }
+        ],
+        "suggestion": "Replace MD5 with a dedicated password-hashing algorithm such as Argon2id, bcrypt, scrypt, or PBKDF2 using a unique salt and an appropriate work factor. Verify the submitted password with the algorithm's constant-time verification function against the stored hash.",
+        "cwes": [
+          "CWE-328",
+          "CWE-916"
+        ],
+        "contributingCheckpoints": [
+          "SEC-CRYPTO-001"
+        ]
+      },
+      {
+        "findingId": "c51e4483ff2c1bfd",
+        "title": "JWT_SECURITY: snippet.js:5",
+        "description": "The jwt.sign call does not provide an expiresIn option or an exp claim. Unless expiration is added elsewhere, the issued access token remains valid indefinitely, allowing a stolen token to be used without a time limit.",
+        "severity": "warning",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 5
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 5,
+            "snippet": "const token = jwt.sign({ user }, 'super_secret_jwt_key');",
+            "explanation": "The JWT signing operation contains no expiration option or explicit exp claim."
+          }
+        ],
+        "suggestion": "Set a short explicit access-token lifetime, for example jwt.sign({ user }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '15m' }), and implement a separate securely managed refresh-token flow if longer-lived sessions are required.",
+        "cwes": [
+          "CWE-613"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SESSION-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_030",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE",
+        "AUTH_BYPASS",
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS",
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE",
+        "CRYPTOGRAPHIC_FAILURE",
+        "JWT_SECURITY"
+      ],
+      "expectedCount": 4,
+      "actualCount": 5,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0.4,
+      "latencyMs": 19317,
+      "inputTokens": 14436,
+      "outputTokens": 4234
+    }
+  },
+  {
+    "id": "tc_031",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        5
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "4ec87020e326ccdf",
+        "title": "SECRET_EXPOSURE: snippet.js:5",
+        "description": "A hardcoded AWS secret access key was found in the source code. Hardcoded secrets are easily discoverable in version control systems and can be exploited by unauthorized parties to gain access to cloud resources.",
+        "severity": "critical",
+        "vulnerabilityClass": "SECRET_EXPOSURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 5
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 5,
+            "snippet": "secretAccessKey: '***REDACTED***'",
+            "explanation": "The code explicitly defines a sensitive AWS secret access key as a string literal."
+          }
+        ],
+        "suggestion": "Remove the hardcoded secret from the source code. Use environment variables (e.g., process.env.AWS_SECRET_ACCESS_KEY) or a dedicated secrets management service like AWS Secrets Manager or HashiCorp Vault to inject credentials at runtime.",
+        "cwes": [
+          "CWE-798"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SECRET-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_031",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 6067,
+      "inputTokens": 3853,
+      "outputTokens": 90
+    }
+  },
+  {
+    "id": "tc_032",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_032",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 1730,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_033",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_033",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 2973,
+      "inputTokens": 3840,
+      "outputTokens": 84
+    }
+  },
+  {
+    "id": "tc_037",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_037",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 6932,
+      "inputTokens": 4045,
+      "outputTokens": 271
+    }
+  },
+  {
+    "id": "tc_038",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "34941b185de08f24",
+        "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+        "description": "The login function sends the raw user-supplied password as the value for `pass` in the database query. This explicitly performs authentication by comparing plaintext password values, which requires passwords to be stored or otherwise available in plaintext. If the database is exposed, user passwords can be recovered directly, and password reuse may expose accounts on other services.",
+        "severity": "critical",
+        "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);",
+            "explanation": "The raw `userPassword` value is used directly as the database comparison value for the `pass` column, demonstrating plaintext password comparison."
+          }
+        ],
+        "suggestion": "Change the login flow to locate the user by a non-secret identifier such as username or email, retrieve a salted password hash, and verify the supplied password using a dedicated password-hashing verification function such as Argon2id or bcrypt. Migrate any existing plaintext passwords to hashes and ensure raw passwords are never persisted or logged.",
+        "cwes": [
+          "CWE-256",
+          "CWE-522"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTH-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_038",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 5413,
+      "inputTokens": 7701,
+      "outputTokens": 781
+    }
+  },
+  {
+    "id": "tc_040",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_040",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 4623,
+      "inputTokens": 4038,
+      "outputTokens": 289
+    }
+  },
+  {
+    "id": "tc_041",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_041",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 3582,
+      "inputTokens": 3664,
+      "outputTokens": 121
+    }
+  },
+  {
+    "id": "tc_042",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTHZ-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "76168f64b850fbc1",
+        "title": "BUSINESS_LOGIC_FLAW: snippet.js:1",
+        "description": "The route is explicitly administrative and performs user deletion, but the supplied route definition does not show an administrator-role or permission check before the operation. The operation also accepts req.body.userId and deletes that user directly. If no global authorization middleware protects this route, an authenticated non-administrator could delete arbitrary users. The provided context does not establish whether such middleware exists elsewhere.",
+        "severity": "critical",
+        "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 1
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 1,
+            "snippet": "app.post('/api/admin/delete_user', (req, res) => {",
+            "explanation": "This exposes an administrative endpoint, but no administrator-role or permission guard is visible in the route definition."
+          },
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "  db.users.delete(req.body.userId);",
+            "explanation": "A destructive user-management operation is executed using a client-controlled identifier, with no visible authorization check before deletion."
+          }
+        ],
+        "suggestion": "Protect the route with explicit server-side authorization middleware such as requireRole('admin') or a dedicated user-management permission check before invoking db.users.delete. Also enforce authorization for the target userId in the data-access layer, and reject unauthorized or nonexistent targets without performing the deletion.",
+        "cwes": [
+          "CWE-862"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTHZ-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_042",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [
+        "AUTH_BYPASS"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 9663,
+      "inputTokens": 3748,
+      "outputTokens": 353
+    }
+  },
+  {
+    "id": "tc_043",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "dfea8a44c5dca892",
+        "title": "AUTH_BYPASS: snippet.js:3",
+        "description": "The route applies every property from req.body to req.session.user without restricting which fields may be updated. Because req.session.user represents the authenticated identity, a client can submit fields such as an account identifier, role, privilege, or status and overwrite them in the session object before the object is saved. If downstream authentication or authorization logic relies on any of these properties, this can enable privilege escalation or access to another user's account.",
+        "severity": "warning",
+        "vulnerabilityClass": "AUTH_BYPASS",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 3
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 3,
+            "snippet": "Object.assign(user, req.body);",
+            "explanation": "All client-supplied request-body properties are copied into the authenticated session user object, including any security-sensitive properties present on that object."
+          },
+          {
+            "file": "snippet.js",
+            "line": 4,
+            "snippet": "db.save(user);",
+            "explanation": "The modified identity object is persisted after the unrestricted client-controlled assignment, allowing overwritten properties to affect stored account state."
+          }
+        ],
+        "suggestion": "Replace Object.assign with an explicit allowlist of profile fields, such as displayName or avatar, and reject or ignore identity and authorization fields including user ID, role, permissions, account status, and authentication state. Derive the target user identifier from the authenticated server-side session, re-fetch the record server-side, authorize the update, and persist only permitted fields.",
+        "cwes": [
+          "CWE-915"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTH-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_043",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 11638,
+      "inputTokens": 7199,
+      "outputTokens": 2461
+    }
+  },
+  {
+    "id": "tc_044",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_044",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [
+        "AUTH_BYPASS"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 6347,
+      "inputTokens": 4060,
+      "outputTokens": 808
+    }
+  },
+  {
+    "id": "tc_047",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTHZ-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_047",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 4944,
+      "inputTokens": 3749,
+      "outputTokens": 191
+    }
+  },
+  {
+    "id": "tc_048",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "NOT_VERIFIED"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_048",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 4672,
+      "inputTokens": 7205,
+      "outputTokens": 669
+    }
+  },
+  {
+    "id": "tc_049",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "6a50bd2c112b0aa5",
+        "title": "AUTH_BYPASS: snippet.js:2",
+        "description": "The middleware bypasses authentication whenever req.path.match('/public/') succeeds. Since this pattern matches /public/ anywhere in the path, not only an explicitly defined public route, requests such as /account/public/details or other protected paths containing that substring will skip requireAuth. This creates an authentication bypass if such paths are routed to sensitive handlers.",
+        "severity": "warning",
+        "vulnerabilityClass": "AUTH_BYPASS",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "if (req.path.match('/public/')) return next();",
+            "explanation": "This condition calls next() without authentication for every request whose path contains the /public/ substring, regardless of whether the endpoint is actually intended to be public."
+          },
+          {
+            "file": "snippet.js",
+            "line": 3,
+            "snippet": "requireAuth(req, res, next);",
+            "explanation": "Authentication is only invoked when the broad /public/ condition does not match, so matching paths bypass the authentication middleware entirely."
+          }
+        ],
+        "suggestion": "Use an exact allowlist or an anchored route check for public endpoints, such as checking req.path against specific public paths or using a boundary-aware condition like /^\\/public(?:\\/|$)/. Keep requireAuth as the default for every other request and add tests confirming that protected paths containing the word public remain authenticated.",
+        "cwes": [
+          "CWE-862"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTH-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_049",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "AUTH_BYPASS"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 0,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 8989,
+      "inputTokens": 4058,
+      "outputTokens": 856
+    }
+  },
+  {
+    "id": "tc_051",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "FAIL"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "8d574d29bd6db572",
+        "title": "JWT_SECURITY: snippet.js:1",
+        "description": "The application uses the 'none' algorithm when signing a JWT. This algorithm does not require a signature, allowing an attacker to modify the payload of the token without the server detecting the tampering.",
+        "severity": "critical",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 1
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 1,
+            "snippet": "const token = jwt.sign(payload, secret, { algorithm: 'none' });",
+            "explanation": "The explicit `algorithm: 'none'` parameter disables JWT signing and produces an unsigned authentication token."
+          }
+        ],
+        "suggestion": "Always use a secure, asymmetric (e.g., RS256) or symmetric (e.g., HS256) algorithm for signing JWTs. Never use 'none' in production environments.",
+        "cwes": [
+          "CWE-347",
+          "CWE-327"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTH-001",
+          "SEC-SECRET-001",
+          "SEC-SESSION-001"
+        ]
+      },
+      {
+        "findingId": "8d574d29bd6db572",
+        "title": "JWT_SECURITY: snippet.js:1",
+        "description": "The `jwt.sign` call does not specify an `expiresIn` option or an equivalent expiration claim. Tokens generated by this operation therefore default to having no expiration, allowing them to remain usable indefinitely unless another mechanism invalidates them.",
+        "severity": "warning",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 1
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 1,
+            "snippet": "const token = jwt.sign(payload, secret, { algorithm: 'none' });",
+            "explanation": "The visible JWT creation options contain no expiration configuration."
+          }
+        ],
+        "suggestion": "Specify a short, explicit access-token lifetime in the signing options, such as `expiresIn: '15m'`, and enforce expiration during verification.",
+        "cwes": [
+          "CWE-613"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SESSION-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_051",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "JWT_SECURITY"
+      ],
+      "actualClasses": [
+        "JWT_SECURITY",
+        "JWT_SECURITY"
+      ],
+      "expectedCount": 1,
+      "actualCount": 2,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0.4,
+      "latencyMs": 9234,
+      "inputTokens": 10966,
+      "outputTokens": 1638
+    }
+  },
+  {
+    "id": "tc_055",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "NOT_VERIFIED"
+      },
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "PASS"
+      },
+      {
+        "id": "SEC-SESSION-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_055",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 6014,
+      "inputTokens": 11018,
+      "outputTokens": 672
+    }
+  },
+  {
+    "id": "tc_063",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-FILE-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "b6a345a404948b2e",
+        "title": "BUSINESS_LOGIC_FLAW: snippet.js:2",
+        "description": "The code retrieves a file record based on a user-provided ID and serves the file without explicit authorization checks to ensure the requesting user has permission to access that specific file.",
+        "severity": "warning",
+        "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "const record = await db.files.findById(req.params.id);",
+            "explanation": "The code fetches a file record based on user input (req.params.id) without verifying if the user is authorized to access this specific record."
+          }
+        ],
+        "suggestion": "Implement an authorization check after fetching the file record to verify that the current user has the necessary permissions to access the file (e.g., check if the user ID matches the file owner ID or if the user has appropriate roles).",
+        "cwes": [
+          "CWE-639"
+        ],
+        "contributingCheckpoints": [
+          "SEC-FILE-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_063",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 5144,
+      "inputTokens": 3245,
+      "outputTokens": 417
+    }
+  },
+  {
+    "id": "tc_064",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "PASS"
+      },
+      {
+        "id": "SEC-CRYPTO-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "34941b185de08f24",
+        "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+        "description": "The hashPassword function uses crypto.createHash('sha256') directly on the supplied password. SHA-256 is a fast general-purpose hash and no salt or password-specific work factor is applied, allowing attackers who obtain password hashes to perform high-speed dictionary and brute-force attacks.",
+        "severity": "warning",
+        "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "return crypto.createHash('sha256').update(password).digest('hex');",
+            "explanation": "This line applies unsalted SHA-256 directly to a password, violating the requirement to use a deliberately slow password-hashing algorithm with salt."
+          }
+        ],
+        "suggestion": "Replace SHA-256 with a password-hashing function such as Argon2id, bcrypt, scrypt, or PBKDF2 using a unique randomly generated salt and an appropriately configured work factor. Verify passwords with the corresponding library's comparison function.",
+        "cwes": [
+          "CWE-916",
+          "CWE-327"
+        ],
+        "contributingCheckpoints": [
+          "SEC-CRYPTO-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_064",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 0,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 6552,
+      "inputTokens": 7276,
+      "outputTokens": 742
+    }
+  },
+  {
+    "id": "tc_065",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-CRYPTO-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "34941b185de08f24",
+        "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+        "description": "The function creates a cipher using the DES algorithm via `crypto.createCipher('des', key)`. DES has an insufficient key size and is cryptographically broken, making encrypted data vulnerable to practical brute-force attacks. The use of the legacy `createCipher` API also indicates a non-modern encryption construction.",
+        "severity": "warning",
+        "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [],
+        "suggestion": "Replace DES with a modern authenticated-encryption scheme such as AES-256-GCM. Generate a unique nonce for each encryption operation, obtain the encryption key from secure runtime key management, and store/transmit the authentication tag with the ciphertext so tampering can be detected.",
+        "cwes": [
+          "CWE-327"
+        ],
+        "contributingCheckpoints": [
+          "SEC-CRYPTO-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_065",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 0,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 5653,
+      "inputTokens": 3246,
+      "outputTokens": 540
+    }
+  },
+  {
+    "id": "tc_066",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-SECRET-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "34941b185de08f24",
+        "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+        "description": "The application uses 'Math.random()' to generate reset tokens. This function is not cryptographically secure and produces predictable outputs, which can allow an attacker to guess valid reset tokens and hijack user accounts.",
+        "severity": "critical",
+        "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "return Math.random().toString(36).substring(2);",
+            "explanation": "The use of Math.random() for security-sensitive token generation is insecure."
+          }
+        ],
+        "suggestion": "Use the built-in 'crypto' module to generate cryptographically secure random values. Replace 'Math.random().toString(36).substring(2)' with 'crypto.randomBytes(32).toString('hex')'.",
+        "cwes": [
+          "CWE-338"
+        ],
+        "contributingCheckpoints": [
+          "SEC-SECRET-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_066",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 3624,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_069",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-CRYPTO-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_069",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 5134,
+      "inputTokens": 3229,
+      "outputTokens": 282
+    }
+  },
+  {
+    "id": "tc_071",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-CONFIG-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "3bc0b30eda4d504c",
+        "title": "INSECURE_CONFIGURATION: snippet.js:1",
+        "description": "The CORS configuration uses a wildcard origin ('*'), which permits any website to interact with the application's resources. This can lead to unauthorized data access if the application relies on browser-based security for sensitive operations.",
+        "severity": "warning",
+        "vulnerabilityClass": "INSECURE_CONFIGURATION",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 1
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 1,
+            "snippet": "app.use(cors({ origin: '*' }));",
+            "explanation": "The 'origin' property is set to '*', which is an overly permissive CORS configuration."
+          }
+        ],
+        "suggestion": "Replace the wildcard '*' with a specific allowlist of trusted domains. If the application requires cross-origin access, explicitly define the allowed origins in the CORS configuration.",
+        "cwes": [
+          "CWE-942"
+        ],
+        "contributingCheckpoints": [
+          "SEC-CONFIG-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_071",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "actualClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 0,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 2246,
+      "inputTokens": 3144,
+      "outputTokens": 305
+    }
+  },
+  {
+    "id": "tc_074",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "dabf11839233392e",
+        "title": "INPUT_VALIDATION: snippet.js:2",
+        "description": "The application parses user-supplied XML using 'libxmljs' with the 'noent: true' option. This setting instructs the parser to substitute entities, which allows an attacker to define external entities that the parser will resolve, leading to potential file disclosure or SSRF.",
+        "severity": "critical",
+        "vulnerabilityClass": "INPUT_VALIDATION",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "const xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });",
+            "explanation": "The 'noent: true' flag explicitly enables external entity resolution, which is the root cause of the XXE vulnerability."
+          }
+        ],
+        "suggestion": "Disable entity substitution by setting 'noent' to 'false' (or omitting it, as it defaults to false) and explicitly disable DTD loading if not required. Use 'libxmljs.parseXmlString(xml, { noent: false, nonet: true })' to prevent external entity resolution and network access.",
+        "cwes": [
+          "CWE-611"
+        ],
+        "contributingCheckpoints": [
+          "SEC-INPUT-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_074",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "actualClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 4726,
+      "inputTokens": 3655,
+      "outputTokens": 411
+    }
+  },
+  {
+    "id": "tc_075",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "e64287212780a8b1",
+        "title": "INPUT_VALIDATION: snippet.js:1",
+        "description": "The xml2js parser is configured with 'explicitEntity: true' and 'noent: true'. These settings instruct the parser to expand external entities, making the application vulnerable to XXE attacks if it processes untrusted XML input.",
+        "severity": "critical",
+        "vulnerabilityClass": "INPUT_VALIDATION",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 1
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 1,
+            "snippet": "const parser = new xml2js.Parser({ explicitEntity: true, noent: true });",
+            "explanation": "The configuration explicitly enables the resolution of external entities, which is the root cause of the XXE vulnerability."
+          }
+        ],
+        "suggestion": "Disable entity expansion by setting 'explicitEntity' to false and 'noent' to false (or removing these options, as they are false by default). If entity processing is required, use a secure parser that explicitly disables external entity resolution.",
+        "cwes": [
+          "CWE-611"
+        ],
+        "contributingCheckpoints": [
+          "SEC-INPUT-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_075",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "actualClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 4301,
+      "inputTokens": 3641,
+      "outputTokens": 425
+    }
+  },
+  {
+    "id": "tc_076",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_076",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 977,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_077",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_077",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 1005,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_079",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "NOT_VERIFIED"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_079",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 3026,
+      "inputTokens": 3639,
+      "outputTokens": 134
+    }
+  },
+  {
+    "id": "tc_080",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "dabf11839233392e",
+        "title": "INPUT_VALIDATION: snippet.js:2",
+        "description": "The application uses 'req.query.dir' directly in a 'spawn' call. Because the input is not validated or restricted, an attacker can provide malicious input to execute arbitrary commands on the server.",
+        "severity": "critical",
+        "vulnerabilityClass": "INPUT_VALIDATION",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "spawn('ls', ['-l', req.query.dir]);",
+            "explanation": "The 'req.query.dir' variable is passed directly as an argument to the 'spawn' function, which executes the 'ls' command. This is a classic command injection sink."
+          }
+        ],
+        "suggestion": "Avoid using user input directly in system commands. If necessary, use an allowlist of permitted directory paths or validate the input against a strict regex that only allows expected characters (e.g., alphanumeric). Alternatively, use built-in Node.js 'fs' module functions like 'fs.readdir' instead of spawning a shell process.",
+        "cwes": [
+          "CWE-78"
+        ],
+        "contributingCheckpoints": [
+          "SEC-INPUT-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_080",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 3223,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_083",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_083",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 4096,
+      "inputTokens": 3656,
+      "outputTokens": 89
+    }
+  },
+  {
+    "id": "tc_085",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_085",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 2254,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_086",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_086",
+      "expectedVerdict": "NOT_VERIFIED",
+      "actualVerdict": "PASS",
+      "expectedClasses": [],
+      "actualClasses": [],
+      "expectedCount": 0,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 1051,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_089",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "lines": [
+        1,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_089",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 2,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 2049,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_091",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_091",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 4428,
+      "inputTokens": 4036,
+      "outputTokens": 250
+    }
+  },
+  {
+    "id": "tc_092",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTHZ-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "b6a345a404948b2e",
+        "title": "BUSINESS_LOGIC_FLAW: snippet.js:2",
+        "description": "The AdminPanel grants access based on localStorage.getItem('isAdmin'). localStorage is fully writable by the user, so an attacker can set isAdmin to a truthy value and render AdminDashboard without demonstrating administrator privileges. The snippet does not show server-side permission checks for the administrative functionality; client-side gating must not be the sole authorization control.",
+        "severity": "warning",
+        "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "if (!localStorage.getItem('isAdmin')) {",
+            "explanation": "The authorization decision is based on a browser-local value that the user can freely modify."
+          },
+          {
+            "file": "snippet.js",
+            "line": 5,
+            "snippet": "return <AdminDashboard />;",
+            "explanation": "A truthy client-controlled value is sufficient to render the administrative dashboard."
+          }
+        ],
+        "suggestion": "Enforce administrator authorization on every backend endpoint and sensitive operation used by AdminDashboard using a server-validated session or token and an explicit administrator role/permission check. Treat the localStorage value only as optional UI state, or remove it entirely; never use it to authorize access to administrative data or actions.",
+        "cwes": [
+          "CWE-602"
+        ],
+        "contributingCheckpoints": [
+          "SEC-AUTHZ-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_092",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "actualClasses": [
+        "AUTH_BYPASS"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 0,
+      "countScore": 1,
+      "severityScore": 1,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 8282,
+      "inputTokens": 3754,
+      "outputTokens": 640
+    }
+  },
+  {
+    "id": "tc_093",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_093",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "PASS",
+      "expectedClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 939,
+      "inputTokens": 0,
+      "outputTokens": 0
+    }
+  },
+  {
+    "id": "tc_097",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "PASS"
+      },
+      {
+        "id": "SEC-CRYPTO-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "34941b185de08f24",
+        "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+        "description": "The password is processed with crypto.createHash('md5') and stored as a hexadecimal digest. MD5 is a fast, deprecated general-purpose hash and is not designed to resist password cracking. If the resulting hash is exposed, attackers can efficiently perform dictionary and brute-force attacks, particularly because no password-hashing work factor is shown.",
+        "severity": "warning",
+        "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [],
+        "suggestion": "Replace MD5 with a password-specific hashing algorithm such as Argon2id, bcrypt with an appropriate cost factor, scrypt, or PBKDF2. Generate a unique cryptographically secure salt per password and store the algorithm parameters alongside the resulting hash.",
+        "cwes": [
+          "CWE-916",
+          "CWE-328"
+        ],
+        "contributingCheckpoints": [
+          "SEC-CRYPTO-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_097",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "actualClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "expectedCount": 1,
+      "actualCount": 1,
+      "verdictScore": 1,
+      "classScore": 1,
+      "countScore": 1,
+      "severityScore": 0,
+      "dedupScore": 1,
+      "caseScore": 0.8,
+      "latencyMs": 8307,
+      "inputTokens": 7276,
+      "outputTokens": 941
+    }
+  },
+  {
+    "id": "tc_098",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "checkpoints": [
+      {
+        "id": "SEC-INPUT-001",
+        "verdict": "FAIL"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [
+      {
+        "findingId": "dabf11839233392e",
+        "title": "INPUT_VALIDATION: snippet.js:2",
+        "description": "The application uses the 'eval' function to execute a string constructed from user-provided input ('req.query.input'). An attacker can inject malicious JavaScript code into the 'input' query parameter, which will be executed by the server with the privileges of the application process.",
+        "severity": "critical",
+        "vulnerabilityClass": "INPUT_VALIDATION",
+        "primaryLocation": {
+          "file": "snippet.js",
+          "line": 2
+        },
+        "evidence": [
+          {
+            "file": "snippet.js",
+            "line": 2,
+            "snippet": "eval('var state = ' + JSON.stringify(safeData));",
+            "explanation": "The code explicitly concatenates user-controlled data into a string and passes it to 'eval()', which is a dangerous sink for code injection."
+          }
+        ],
+        "suggestion": "Remove the use of 'eval' entirely. If you need to parse JSON, use the built-in 'JSON.parse()' method, which does not execute code. If you need to set state, assign the values directly to the object properties instead of using string concatenation and evaluation.",
+        "cwes": [
+          "CWE-95"
+        ],
+        "contributingCheckpoints": [
+          "SEC-INPUT-001"
+        ]
+      }
+    ],
+    "expMetrics": {
+      "id": "tc_098",
+      "expectedVerdict": "PASS",
+      "actualVerdict": "FAIL",
+      "expectedClasses": [],
+      "actualClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "expectedCount": 0,
+      "actualCount": 1,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 3274,
+      "inputTokens": 3647,
+      "outputTokens": 362
+    }
+  },
+  {
+    "id": "tc_100",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "checkpoints": [
+      {
+        "id": "SEC-AUTH-001",
+        "verdict": "PASS"
+      }
+    ],
+    "rawFindings": [],
+    "finalFindings": [],
+    "expMetrics": {
+      "id": "tc_100",
+      "expectedVerdict": "FAIL",
+      "actualVerdict": "NOT_VERIFIED",
+      "expectedClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "actualClasses": [],
+      "expectedCount": 1,
+      "actualCount": 0,
+      "verdictScore": 0,
+      "classScore": 0,
+      "countScore": 0,
+      "severityScore": 0,
+      "dedupScore": 0,
+      "caseScore": 0,
+      "latencyMs": 7335,
+      "inputTokens": 4057,
+      "outputTokens": 426
+    }
+  }
+]

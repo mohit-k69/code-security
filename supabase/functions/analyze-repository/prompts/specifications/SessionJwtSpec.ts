@@ -141,5 +141,9 @@ export const SessionJwtSpec: ReviewSpecification = {
     "token backend state (SESSION-C6) is a **FAIL**.\n" +
     "- Treat `process.env.JWT_SECRET` or equivalent runtime secret retrieval as secure by default.\n" +
     "- **CRITICAL**: Do NOT flag hardcoded JWT secrets or keys here. Secret exposure is strictly evaluated by SEC-SECRET-001.\n" +
-    "- Never infer vulnerabilities without sufficient code evidence.",
+    "- Never infer vulnerabilities without sufficient code evidence.\n\n" +
+
+    "### Analysis Priorities\n\n" +
+    "- Authentication/authorization or impersonation bypasses caused by missing credential verification MUST be mapped to the `AUTH_BYPASS` vulnerability class.\n" +
+    "- JWT-specific issues such as missing expiration, weak signing configuration, or JWT validation problems MUST be mapped to the `JWT_SECURITY` vulnerability class.",
 };

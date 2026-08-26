@@ -1,0 +1,2451 @@
+[
+  {
+    "id": "tc_012",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTHORIZATION_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2,
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.96,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 13421
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "9a81c3884b0e7cb6",
+          "title": "BUSINESS_LOGIC_FLAW: snippet.js:3",
+          "description": "The endpoint accepts targetUserId directly from req.body.userId and uses it in the database update. The visible requireAuth middleware establishes authentication but no ownership check or explicit permission check ties targetUserId to the authenticated user before modifying the record. An authenticated attacker could submit another user's ID and change that user's email address.",
+          "severity": "critical",
+          "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 3
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const targetUserId = req.body.userId;",
+              "explanation": "The resource identifier determining which user is modified is taken directly from client-controlled request data."
+            },
+            {
+              "file": "snippet.js",
+              "line": 3,
+              "snippet": "await db.users.update({ id: targetUserId, email: req.body.email });",
+              "explanation": "The client-controlled identifier is used to update a user record without a visible ownership or permission constraint."
+            }
+          ],
+          "suggestion": "Do not accept the target account identity from the request body for self-service updates. Derive the user ID from the authenticated session, such as req.user.id, and constrain the update to that identity. If administrators must update other users, require an explicit administrative permission and enforce it before the database operation. For example, update using a predicate such as { id: req.user.id } for self-service requests, or perform a verified ownership/permission check before using a supplied targetUserId.",
+          "cwes": [
+            "CWE-639"
+          ],
+          "contributingCheckpoints": [
+            "SEC-AUTHZ-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.96,
+        "summary": "The profile update endpoint authenticates the caller with requireAuth but uses a client-controlled userId to select the account being modified without visibly verifying ownership or an explicit administrative permission. An authenticated user may therefore be able to update another user's email address by supplying a different user ID.",
+        "findings": [
+          {
+            "findingId": "9a81c3884b0e7cb6",
+            "criterionId": "AUTHZ-C1",
+            "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+            "cwes": [
+              "CWE-639"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 3
+            },
+            "title": "Profile update uses an unverified client-controlled user ID",
+            "severity": "critical",
+            "description": "The endpoint accepts targetUserId directly from req.body.userId and uses it in the database update. The visible requireAuth middleware establishes authentication but no ownership check or explicit permission check ties targetUserId to the authenticated user before modifying the record. An authenticated attacker could submit another user's ID and change that user's email address.",
+            "suggestion": "Do not accept the target account identity from the request body for self-service updates. Derive the user ID from the authenticated session, such as req.user.id, and constrain the update to that identity. If administrators must update other users, require an explicit administrative permission and enforce it before the database operation. For example, update using a predicate such as { id: req.user.id } for self-service requests, or perform a verified ownership/permission check before using a supplied targetUserId.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "const targetUserId = req.body.userId;",
+                "explanation": "The resource identifier determining which user is modified is taken directly from client-controlled request data."
+              },
+              {
+                "file": "snippet.js",
+                "line": 3,
+                "snippet": "await db.users.update({ id: targetUserId, email: req.body.email });",
+                "explanation": "The client-controlled identifier is used to update a user record without a visible ownership or permission constraint."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 13421,
+          "llmDurationMs": 13420,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:14:13.915Z",
+          "tokenUsage": {
+            "promptTokens": 3908,
+            "completionTokens": 1015,
+            "totalTokens": 4923
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_013",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "warning",
+        "critical"
+      ],
+      "lines": [
+        2,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 2200
+      },
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.98,
+        "findingCount": 2,
+        "status": "completed",
+        "executionTimeMs": 11823
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "28e4a13c6d66bc12",
+          "title": "SECRET_EXPOSURE: snippet.js:2",
+          "description": "The JWT signing secret is hardcoded directly in the source code. Hardcoded secrets are easily discoverable in version control systems and can be used by unauthorized parties to forge tokens.",
+          "severity": "critical",
+          "vulnerabilityClass": "SECRET_EXPOSURE",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const token = jwt.sign({ user: req.body.user }, '***REDACTED***');",
+              "explanation": "The second argument to jwt.sign is a hardcoded string used as the secret key."
+            }
+          ],
+          "suggestion": "Remove the hardcoded secret and load it from a secure environment variable (e.g., process.env.JWT_SECRET) or a dedicated secrets management service.",
+          "cwes": [
+            "CWE-798"
+          ],
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ]
+        },
+        {
+          "findingId": "6a50bd2c112b0aa5",
+          "title": "AUTH_BYPASS: snippet.js:2",
+          "description": "The token endpoint signs the value of req.body.user without any visible authentication or credential verification. An attacker can submit another user's identifier and receive a signed JWT representing that user, enabling impersonation wherever the token is trusted.",
+          "severity": "critical",
+          "vulnerabilityClass": "AUTH_BYPASS",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');",
+              "explanation": "The JWT identity claim is populated directly from request body input, and no credential verification is shown before signing."
+            }
+          ],
+          "suggestion": "Authenticate the caller before issuing a token, derive the subject from the authenticated principal rather than req.body.user, and reject requests whose credentials are invalid. For example, verify a password or external identity-provider assertion and sign only the server-validated user ID.",
+          "cwes": [
+            "CWE-287",
+            "CWE-639"
+          ],
+          "contributingCheckpoints": [
+            "SEC-SESSION-001"
+          ]
+        }
+      ],
+      "warning": [
+        {
+          "findingId": "84dc94c4df1130dd",
+          "title": "JWT_SECURITY: snippet.js:2",
+          "description": "The jwt.sign call does not specify an expiresIn option or include an exp claim. The resulting token can remain usable indefinitely unless downstream validation imposes an independent expiration policy.",
+          "severity": "warning",
+          "vulnerabilityClass": "JWT_SECURITY",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');",
+              "explanation": "The JWT signing operation has no expiration option, so no token lifetime is established in the shown code."
+            }
+          ],
+          "suggestion": "Set an explicit short-lived expiration when signing the access token, such as jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn: '15m' }), and ensure token consumers verify the exp claim.",
+          "cwes": [
+            "CWE-613"
+          ],
+          "contributingCheckpoints": [
+            "SEC-SESSION-001"
+          ]
+        }
+      ],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The application uses a hardcoded string as the secret key for signing JWTs, which violates secure secrets management practices.",
+        "findings": [
+          {
+            "findingId": "28e4a13c6d66bc12",
+            "criterionId": "SECRET-C1",
+            "vulnerabilityClass": "SECRET_EXPOSURE",
+            "cwes": [
+              "CWE-798"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Hardcoded JWT Secret",
+            "severity": "critical",
+            "description": "The JWT signing secret is hardcoded directly in the source code. Hardcoded secrets are easily discoverable in version control systems and can be used by unauthorized parties to forge tokens.",
+            "suggestion": "Remove the hardcoded secret and load it from a secure environment variable (e.g., process.env.JWT_SECRET) or a dedicated secrets management service.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "const token = jwt.sign({ user: req.body.user }, '***REDACTED***');",
+                "explanation": "The second argument to jwt.sign is a hardcoded string used as the secret key."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 2200,
+          "llmDurationMs": 2199,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:14:16.256Z",
+          "tokenUsage": {
+            "promptTokens": 3996,
+            "completionTokens": 335,
+            "totalTokens": 4331
+          }
+        }
+      },
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.98,
+        "summary": "The snippet implements JWT issuance but signs a client-supplied user identity without visible credential verification and omits an expiration claim. This can enable token-based impersonation and produce tokens that remain valid indefinitely.",
+        "findings": [
+          {
+            "findingId": "6a50bd2c112b0aa5",
+            "criterionId": "SESSION-C1",
+            "vulnerabilityClass": "AUTH_BYPASS",
+            "cwes": [
+              "CWE-287",
+              "CWE-639"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "JWT identity is taken directly from client input",
+            "severity": "critical",
+            "description": "The token endpoint signs the value of req.body.user without any visible authentication or credential verification. An attacker can submit another user's identifier and receive a signed JWT representing that user, enabling impersonation wherever the token is trusted.",
+            "suggestion": "Authenticate the caller before issuing a token, derive the subject from the authenticated principal rather than req.body.user, and reject requests whose credentials are invalid. For example, verify a password or external identity-provider assertion and sign only the server-validated user ID.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');",
+                "explanation": "The JWT identity claim is populated directly from request body input, and no credential verification is shown before signing."
+              }
+            ]
+          },
+          {
+            "findingId": "84dc94c4df1130dd",
+            "criterionId": "SESSION-C3",
+            "vulnerabilityClass": "JWT_SECURITY",
+            "cwes": [
+              "CWE-613"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "JWT is issued without an expiration",
+            "severity": "warning",
+            "description": "The jwt.sign call does not specify an expiresIn option or include an exp claim. The resulting token can remain usable indefinitely unless downstream validation imposes an independent expiration policy.",
+            "suggestion": "Set an explicit short-lived expiration when signing the access token, such as jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn: '15m' }), and ensure token consumers verify the exp claim.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "const token = jwt.sign({ user: req.body.user }, 'super_secret_key');",
+                "explanation": "The JWT signing operation has no expiration option, so no token lifetime is established in the shown code."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 11823,
+          "llmDurationMs": 11822,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:14:25.881Z",
+          "tokenUsage": {
+            "promptTokens": 3344,
+            "completionTokens": 921,
+            "totalTokens": 4265
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_015",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-CONFIG-001",
+        "checkpointName": "Security Configuration Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 3846
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "6e7869b39025f8c3",
+          "title": "INSECURE_CONFIGURATION: snippet.js:4",
+          "description": "The CORS configuration uses a wildcard origin ('*'), which permits any website to make cross-origin requests to the application. This can lead to unauthorized data access if the application relies on browser-based security for sensitive operations.",
+          "severity": "critical",
+          "vulnerabilityClass": "INSECURE_CONFIGURATION",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 4
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 4,
+              "snippet": "app.use(cors({ origin: '*' }));",
+              "explanation": "The 'origin' property is explicitly set to '*', which is a wildcard that allows all origins."
+            }
+          ],
+          "suggestion": "Replace the wildcard origin with a specific allowlist of trusted domains. For example: cors({ origin: ['https://trusted-domain.com'] }).",
+          "cwes": [
+            "CWE-942"
+          ],
+          "contributingCheckpoints": [
+            "SEC-CONFIG-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-CONFIG-001",
+        "checkpointName": "Security Configuration Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The application explicitly configures CORS with a wildcard origin ('*'), which is a critical security misconfiguration that allows any origin to access the application's resources.",
+        "findings": [
+          {
+            "findingId": "6e7869b39025f8c3",
+            "criterionId": "CONFIG-C2",
+            "vulnerabilityClass": "INSECURE_CONFIGURATION",
+            "cwes": [
+              "CWE-942"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 4
+            },
+            "title": "Overly Permissive CORS Configuration",
+            "severity": "critical",
+            "description": "The CORS configuration uses a wildcard origin ('*'), which permits any website to make cross-origin requests to the application. This can lead to unauthorized data access if the application relies on browser-based security for sensitive operations.",
+            "suggestion": "Replace the wildcard origin with a specific allowlist of trusted domains. For example: cors({ origin: ['https://trusted-domain.com'] }).",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 4,
+                "snippet": "app.use(cors({ origin: '*' }));",
+                "explanation": "The 'origin' property is explicitly set to '*', which is a wildcard that allows all origins."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 3846,
+          "llmDurationMs": 3845,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:14:29.917Z",
+          "tokenUsage": {
+            "promptTokens": 3349,
+            "completionTokens": 342,
+            "totalTokens": 3691
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_031",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        5
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "PASS",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 1819
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "PASS",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The provided snippet contains configuration placeholders explicitly marked as examples. Per the Synthetic Credentials Exception rule, these are not considered hardcoded secrets.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 1819,
+          "llmDurationMs": 1818,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:14:31.877Z",
+          "tokenUsage": {
+            "promptTokens": 4007,
+            "completionTokens": 71,
+            "totalTokens": 4078
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_032",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_033",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_037",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 4598
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "summary": "The snippet explicitly handles a database credential by reading it from environment variables and passing it to db.connect(). No plaintext persistence, logging, URL exposure, or client-side storage is shown, and secret values are not being assessed under this checkpoint. However, the transport security and behavior of the opaque db.connect implementation are not visible, so credential handling cannot be fully verified.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 4598,
+          "llmDurationMs": 4597,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:14:38.579Z",
+          "tokenUsage": {
+            "promptTokens": 4183,
+            "completionTokens": 302,
+            "totalTokens": 4485
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_038",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.98,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 12827
+      },
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "PASS",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 1732
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "b6a345a404948b2e",
+          "title": "BUSINESS_LOGIC_FLAW: snippet.js:2",
+          "description": "The login function passes the user-supplied password directly into a query that compares it with the `pass` database column. This demonstrates a plaintext password comparison path and indicates that the database may contain plaintext passwords. A database compromise would expose user credentials, and the implementation does not perform password-hash verification.",
+          "severity": "critical",
+          "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);",
+              "explanation": "The raw `userPassword` is used as the value for a database equality comparison against the `pass` column, which is a plaintext password comparison path."
+            }
+          ],
+          "suggestion": "Store only salted, adaptive password hashes in the database and retrieve the user record by a non-password identifier such as username or email. Verify the submitted password in application code with the selected password-hashing library's verification function, such as `bcrypt.compare` or an Argon2 equivalent, rather than querying with the plaintext password.",
+          "cwes": [
+            "CWE-256"
+          ],
+          "contributingCheckpoints": [
+            "SEC-AUTH-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.98,
+        "summary": "The snippet implements login credential verification and directly compares the supplied password value against a database password column, demonstrating plaintext password comparison. Passwords must instead be verified against a securely stored password hash using an appropriate password-verification function.",
+        "findings": [
+          {
+            "findingId": "b6a345a404948b2e",
+            "criterionId": "AUTH-C1",
+            "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+            "cwes": [
+              "CWE-256"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Plaintext password comparison during login",
+            "severity": "critical",
+            "description": "The login function passes the user-supplied password directly into a query that compares it with the `pass` database column. This demonstrates a plaintext password comparison path and indicates that the database may contain plaintext passwords. A database compromise would expose user credentials, and the implementation does not perform password-hash verification.",
+            "suggestion": "Store only salted, adaptive password hashes in the database and retrieve the user record by a non-password identifier such as username or email. Verify the submitted password in application code with the selected password-hashing library's verification function, such as `bcrypt.compare` or an Argon2 equivalent, rather than querying with the plaintext password.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);",
+                "explanation": "The raw `userPassword` is used as the value for a database equality comparison against the `pass` column, which is a plaintext password comparison path."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 12827,
+          "llmDurationMs": 12826,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:14:51.596Z",
+          "tokenUsage": {
+            "promptTokens": 4189,
+            "completionTokens": 880,
+            "totalTokens": 5069
+          }
+        }
+      },
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "PASS",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The provided code snippet uses parameterized queries (prepared statements) to interact with the database, which is the standard and effective defense against SQL injection. The input 'userPassword' is passed as a parameter to the database driver, ensuring it is treated as data rather than executable code.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 1732,
+          "llmDurationMs": 1731,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:14:40.504Z",
+          "tokenUsage": {
+            "promptTokens": 3791,
+            "completionTokens": 100,
+            "totalTokens": 3891
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_040",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 4965
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "summary": "The snippet initializes a MongoClient with a redacted credential, making credential handling relevant to authentication review. However, the connection URI, TLS configuration, authentication mechanism, and any login or session behavior are not visible, so secure credential transmission and the other authentication criteria cannot be verified. No concrete authentication vulnerability is demonstrated.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 4965,
+          "llmDurationMs": 4964,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:14:56.726Z",
+          "tokenUsage": {
+            "promptTokens": 4176,
+            "completionTokens": 276,
+            "totalTokens": 4452
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_041",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_042",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.9,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 6780
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.9,
+        "summary": "The snippet exposes an administrative user-deletion endpoint that accepts a client-controlled userId and performs the deletion, but authentication, administrator-role enforcement, and resource authorization may be applied through unseen middleware or downstream database policies. Because the supplied code does not establish whether those controls exist elsewhere, authorization cannot be conclusively verified from this standalone snippet.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 6780,
+          "llmDurationMs": 6779,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:07.864Z",
+          "tokenUsage": {
+            "promptTokens": 3886,
+            "completionTokens": 375,
+            "totalTokens": 4261
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_043",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 8477
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "summary": "The snippet explicitly uses session state through req.session.user, so session security is applicable. However, it does not show session creation, authentication middleware, JWT handling, cookie configuration, refresh-token logic, or logout/invalidation behavior. The security of the session and authorization context therefore depends on unseen middleware and surrounding implementation, and no concrete session or JWT vulnerability can be established from the supplied code.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 8477,
+          "llmDurationMs": 8475,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:16.562Z",
+          "tokenUsage": {
+            "promptTokens": 3341,
+            "completionTokens": 232,
+            "totalTokens": 3573
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_044",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.96,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 9007
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.96,
+        "summary": "The snippet exposes a password-reset endpoint that changes the password for any email supplied by the requester without visibly requiring a cryptographically secure reset token, prior authentication, or another proof of account ownership. This creates a directly exploitable password-reset authentication bypass. The implementation of password storage and any external middleware cannot be evaluated from the supplied code.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 9007,
+          "llmDurationMs": 9006,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:25.864Z",
+          "tokenUsage": {
+            "promptTokens": 4198,
+            "completionTokens": 832,
+            "totalTokens": 5030
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_047",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.96,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 3680
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.96,
+        "summary": "The snippet defines a sensitive settings update route and attaches a requireAdmin middleware, indicating that administrative authorization is intended. However, the middleware implementation is not provided, so the enforcement of administrator role or permission checks cannot be verified from the supplied code.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 3680,
+          "llmDurationMs": 3680,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:30.724Z",
+          "tokenUsage": {
+            "promptTokens": 3887,
+            "completionTokens": 154,
+            "totalTokens": 4041
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_048",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.88,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 5843
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-SESSION-001",
+        "checkpointName": "Session & JWT Security Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.88,
+        "summary": "The snippet performs a session-based authentication gate by checking req.session.userId, but it does not show how the session is created, signed, configured, expired, invalidated, or protected in cookies. Therefore, the session security lifecycle cannot be verified from the supplied code, and no concrete vulnerability is demonstrated.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 5843,
+          "llmDurationMs": 5842,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:36.704Z",
+          "tokenUsage": {
+            "promptTokens": 3344,
+            "completionTokens": 197,
+            "totalTokens": 3541
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_052",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.99,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 7754
+      },
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 2148
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "02edb2ee795d045b",
+          "title": "JWT_SECURITY: snippet.js:3",
+          "description": "The application uses 'jwt.decode' to authenticate users. This function does not verify the signature of the JWT, meaning the application trusts the claims provided in the token without ensuring they were issued by a trusted authority. An attacker can craft a malicious token with arbitrary claims (e.g., setting the 'sub' or 'role' fields) to impersonate any user.",
+          "severity": "critical",
+          "vulnerabilityClass": "JWT_SECURITY",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 3
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 3,
+              "snippet": "const decoded = jwt.decode(token);",
+              "explanation": "jwt.decode() parses JWT contents without cryptographically verifying the signature, so the decoded identity can be forged by the client."
+            },
+            {
+              "file": "snippet.js",
+              "line": 4,
+              "snippet": "req.user = decoded;",
+              "explanation": "The unverified token payload is trusted as the authenticated user identity."
+            }
+          ],
+          "suggestion": "Replace 'jwt.decode' with 'jwt.verify' and provide the appropriate secret or public key to ensure the token's integrity and authenticity are validated before use.",
+          "cwes": [
+            "CWE-347",
+            "CWE-287"
+          ],
+          "contributingCheckpoints": [
+            "SEC-AUTH-001",
+            "SEC-SECRET-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.99,
+        "summary": "The snippet implements authentication logic but decodes the bearer token without verifying its cryptographic signature. An attacker can forge a JWT containing an arbitrary identity and have it assigned to req.user, potentially bypassing authentication and authorization checks.",
+        "findings": [
+          {
+            "findingId": "dfea8a44c5dca892",
+            "criterionId": "AUTH-C4",
+            "vulnerabilityClass": "AUTH_BYPASS",
+            "cwes": [
+              "CWE-347",
+              "CWE-287"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 3
+            },
+            "title": "JWT identity is trusted without signature verification",
+            "severity": "critical",
+            "description": "The authentication function extracts a bearer token and passes it to jwt.decode(), which only decodes the token payload and does not validate its signature. The resulting attacker-controlled claims are then assigned directly to req.user. A forged token can therefore impersonate another user or claim elevated privileges if downstream authorization relies on req.user.",
+            "suggestion": "Replace jwt.decode(token) with a verified JWT operation such as jwt.verify(token, trustedSecretOrKey, { algorithms: [\"RS256\"] }), using a trusted key and an explicit allowlist of algorithms. Reject verification failures, malformed authorization headers, and tokens with invalid claims before assigning the verified payload to req.user.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 3,
+                "snippet": "const decoded = jwt.decode(token);",
+                "explanation": "jwt.decode() parses JWT contents without cryptographically verifying the signature, so the decoded identity can be forged by the client."
+              },
+              {
+                "file": "snippet.js",
+                "line": 4,
+                "snippet": "req.user = decoded;",
+                "explanation": "The unverified token payload is trusted as the authenticated user identity."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 7754,
+          "llmDurationMs": 7753,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:44.588Z",
+          "tokenUsage": {
+            "promptTokens": 4196,
+            "completionTokens": 632,
+            "totalTokens": 4828
+          }
+        }
+      },
+      {
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The code uses 'jwt.decode' to process authentication tokens. 'jwt.decode' only decodes the payload without verifying the cryptographic signature, which allows an attacker to bypass authentication by providing a forged token.",
+        "findings": [
+          {
+            "findingId": "02edb2ee795d045b",
+            "criterionId": "SECRET-C3",
+            "vulnerabilityClass": "JWT_SECURITY",
+            "cwes": [
+              "CWE-347"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 3
+            },
+            "title": "Insecure JWT Processing via jwt.decode",
+            "severity": "critical",
+            "description": "The application uses 'jwt.decode' to authenticate users. This function does not verify the signature of the JWT, meaning the application trusts the claims provided in the token without ensuring they were issued by a trusted authority. An attacker can craft a malicious token with arbitrary claims (e.g., setting the 'sub' or 'role' fields) to impersonate any user.",
+            "suggestion": "Replace 'jwt.decode' with 'jwt.verify' and provide the appropriate secret or public key to ensure the token's integrity and authenticity are validated before use.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 3,
+                "snippet": "const decoded = jwt.decode(token);",
+                "explanation": "The use of jwt.decode() performs no signature verification, rendering the authentication mechanism insecure."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 2148,
+          "llmDurationMs": 2147,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:15:38.985Z",
+          "tokenUsage": {
+            "promptTokens": 3994,
+            "completionTokens": 384,
+            "totalTokens": 4378
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_063",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-FILE-001",
+        "checkpointName": "File & Path Security Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.9,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 1200
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-FILE-001",
+        "checkpointName": "File & Path Security Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.9,
+        "summary": "The snippet demonstrates a file download function that retrieves an 'absolutePath' from a database record. While the code itself does not perform unsafe path concatenation, the security of the download operation depends on whether the 'absolutePath' stored in the database is validated and whether the user has authorization to access the specific file record. Since these controls are handled by the database layer and missing authorization logic, the security cannot be fully verified from the snippet alone.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 1200,
+          "llmDurationMs": 1199,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:15:47.391Z",
+          "tokenUsage": {
+            "promptTokens": 3442,
+            "completionTokens": 136,
+            "totalTokens": 3578
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_065",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-CRYPTO-001",
+        "checkpointName": "Cryptography Security Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 7775
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [
+        {
+          "findingId": "34941b185de08f24",
+          "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+          "description": "The encryption function creates a cipher using the DES algorithm via `crypto.createCipher('des', key)`. DES has an insufficient key size and is considered broken and deprecated, allowing attackers to recover plaintext through practical cryptanalytic attacks. This violates the requirement to use modern approved encryption algorithms.",
+          "severity": "warning",
+          "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [],
+          "suggestion": "Replace DES with a modern authenticated-encryption scheme such as AES-256-GCM. Generate a unique nonce for each encryption operation, obtain encryption keys from a secure runtime source or KMS, and store or transmit the nonce alongside the ciphertext so it can be used during decryption.",
+          "cwes": [
+            "CWE-327"
+          ],
+          "contributingCheckpoints": [
+            "SEC-CRYPTO-001"
+          ]
+        }
+      ],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-CRYPTO-001",
+        "checkpointName": "Cryptography Security Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The snippet explicitly encrypts data with the deprecated and insecure DES cipher, which does not meet modern cryptographic requirements and exposes encrypted data to practical cryptanalytic attacks.",
+        "findings": [
+          {
+            "findingId": "34941b185de08f24",
+            "criterionId": "CRYPTO-C1",
+            "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+            "cwes": [
+              "CWE-327"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Use of deprecated DES encryption",
+            "severity": "warning",
+            "description": "The encryption function creates a cipher using the DES algorithm via `crypto.createCipher('des', key)`. DES has an insufficient key size and is considered broken and deprecated, allowing attackers to recover plaintext through practical cryptanalytic attacks. This violates the requirement to use modern approved encryption algorithms.",
+            "suggestion": "Replace DES with a modern authenticated-encryption scheme such as AES-256-GCM. Generate a unique nonce for each encryption operation, obtain encryption keys from a secure runtime source or KMS, and store or transmit the nonce alongside the ciphertext so it can be used during decryption.",
+            "evidence": []
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 7775,
+          "llmDurationMs": 7774,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:15:55.291Z",
+          "tokenUsage": {
+            "promptTokens": 3420,
+            "completionTokens": 587,
+            "totalTokens": 4007
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_069",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-CRYPTO-001",
+        "checkpointName": "Cryptography Security Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 9908
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [
+        {
+          "findingId": "34941b185de08f24",
+          "title": "CRYPTOGRAPHIC_FAILURE: snippet.js:2",
+          "description": "hashData() computes a SHA-1 digest using crypto.createHash('sha1'). SHA-1 is cryptographically deprecated because practical collision attacks exist. If this function is used for integrity verification, signatures, authentication-related values, or other security-sensitive identifiers, attackers may be able to construct distinct inputs with the same digest.",
+          "severity": "warning",
+          "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "return crypto.createHash('sha1').update(data).digest('hex');",
+              "explanation": "The code explicitly selects the deprecated SHA-1 algorithm to generate the digest."
+            }
+          ],
+          "suggestion": "Replace SHA-1 with SHA-256 or a stronger approved hash for non-password hashing. If the digest is intended to provide authenticity or tamper protection, use a verified HMAC or an authenticated encryption/signature scheme instead. Use bcrypt, Argon2, scrypt, or PBKDF2 rather than a general-purpose hash for passwords.",
+          "cwes": [
+            "CWE-328"
+          ],
+          "contributingCheckpoints": [
+            "SEC-CRYPTO-001"
+          ]
+        }
+      ],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-CRYPTO-001",
+        "checkpointName": "Cryptography Security Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.86,
+        "summary": "The snippet explicitly uses the deprecated SHA-1 hashing algorithm. Although the caller and purpose of hashData are not shown, SHA-1 is unsuitable for security-sensitive integrity, authenticity, or collision-resistance requirements and should be replaced with a modern hash or an appropriate authenticated construction.",
+        "findings": [
+          {
+            "findingId": "34941b185de08f24",
+            "criterionId": "CRYPTO-C6",
+            "vulnerabilityClass": "CRYPTOGRAPHIC_FAILURE",
+            "cwes": [
+              "CWE-328"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Deprecated SHA-1 hashing algorithm",
+            "severity": "warning",
+            "description": "hashData() computes a SHA-1 digest using crypto.createHash('sha1'). SHA-1 is cryptographically deprecated because practical collision attacks exist. If this function is used for integrity verification, signatures, authentication-related values, or other security-sensitive identifiers, attackers may be able to construct distinct inputs with the same digest.",
+            "suggestion": "Replace SHA-1 with SHA-256 or a stronger approved hash for non-password hashing. If the digest is intended to provide authenticity or tamper protection, use a verified HMAC or an authenticated encryption/signature scheme instead. Use bcrypt, Argon2, scrypt, or PBKDF2 rather than a general-purpose hash for passwords.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "return crypto.createHash('sha1').update(data).digest('hex');",
+                "explanation": "The code explicitly selects the deprecated SHA-1 algorithm to generate the digest."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 9908,
+          "llmDurationMs": 9906,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:16:05.378Z",
+          "tokenUsage": {
+            "promptTokens": 3403,
+            "completionTokens": 791,
+            "totalTokens": 4194
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_074",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 2297
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "dabf11839233392e",
+          "title": "INPUT_VALIDATION: snippet.js:2",
+          "description": "The application parses user-supplied XML using libxmljs with the 'noent' option enabled. This allows the XML parser to resolve external entities, which can be exploited by an attacker to read local files, perform SSRF, or cause a Denial of Service.",
+          "severity": "critical",
+          "vulnerabilityClass": "INPUT_VALIDATION",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });",
+              "explanation": "The 'noent: true' option explicitly enables entity substitution, which is the root cause of the XXE vulnerability."
+            }
+          ],
+          "suggestion": "Disable external entity resolution by setting 'noent' to false or removing the option entirely. If entity resolution is required, use a secure parser configuration that explicitly disables external DTDs and entity expansion.",
+          "cwes": [
+            "CWE-611"
+          ],
+          "contributingCheckpoints": [
+            "SEC-INPUT-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The code snippet uses the libxmljs library to parse XML input with the 'noent' option set to true. This configuration enables the resolution of external entities, which makes the application vulnerable to XML External Entity (XXE) injection attacks.",
+        "findings": [
+          {
+            "findingId": "dabf11839233392e",
+            "criterionId": "INPUT-C2",
+            "vulnerabilityClass": "INPUT_VALIDATION",
+            "cwes": [
+              "CWE-611"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "XML External Entity (XXE) Injection",
+            "severity": "critical",
+            "description": "The application parses user-supplied XML using libxmljs with the 'noent' option enabled. This allows the XML parser to resolve external entities, which can be exploited by an attacker to read local files, perform SSRF, or cause a Denial of Service.",
+            "suggestion": "Disable external entity resolution by setting 'noent' to false or removing the option entirely. If entity resolution is required, use a secure parser configuration that explicitly disables external DTDs and entity expansion.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "const xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });",
+                "explanation": "The 'noent: true' option explicitly enables entity substitution, which is the root cause of the XXE vulnerability."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 2297,
+          "llmDurationMs": 2296,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:16:10.065Z",
+          "tokenUsage": {
+            "promptTokens": 3796,
+            "completionTokens": 397,
+            "totalTokens": 4193
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_075",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 2047
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "e64287212780a8b1",
+          "title": "INPUT_VALIDATION: snippet.js:1",
+          "description": "The xml2js parser is configured with 'explicitEntity: true' and 'noent: true'. This configuration instructs the parser to resolve external entities and replace them with their defined values, which can be exploited by an attacker to read local files, perform SSRF, or cause a denial of service.",
+          "severity": "critical",
+          "vulnerabilityClass": "INPUT_VALIDATION",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 1
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 1,
+              "snippet": "const parser = new xml2js.Parser({ explicitEntity: true, noent: true });",
+              "explanation": "The configuration explicitly enables the resolution of external entities, which is the root cause of the XXE vulnerability."
+            }
+          ],
+          "suggestion": "Disable external entity resolution by setting 'explicitEntity' to false and 'noent' to false (or removing them, as they are typically false by default). If you must process untrusted XML, use a library that is hardened against XXE by default and ensure DTD processing is disabled.",
+          "cwes": [
+            "CWE-611"
+          ],
+          "contributingCheckpoints": [
+            "SEC-INPUT-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The code snippet initializes an XML parser with 'explicitEntity: true' and 'noent: true'. These settings explicitly enable the resolution of external entities and DTDs, which makes the parser vulnerable to XML External Entity (XXE) injection attacks if it processes untrusted XML input.",
+        "findings": [
+          {
+            "findingId": "e64287212780a8b1",
+            "criterionId": "INPUT-C2",
+            "vulnerabilityClass": "INPUT_VALIDATION",
+            "cwes": [
+              "CWE-611"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 1
+            },
+            "title": "XML External Entity (XXE) Injection Vulnerability",
+            "severity": "critical",
+            "description": "The xml2js parser is configured with 'explicitEntity: true' and 'noent: true'. This configuration instructs the parser to resolve external entities and replace them with their defined values, which can be exploited by an attacker to read local files, perform SSRF, or cause a denial of service.",
+            "suggestion": "Disable external entity resolution by setting 'explicitEntity' to false and 'noent' to false (or removing them, as they are typically false by default). If you must process untrusted XML, use a library that is hardened against XXE by default and ensure DTD processing is disabled.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 1,
+                "snippet": "const parser = new xml2js.Parser({ explicitEntity: true, noent: true });",
+                "explanation": "The configuration explicitly enables the resolution of external entities, which is the root cause of the XXE vulnerability."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 2047,
+          "llmDurationMs": 2046,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:16:13.689Z",
+          "tokenUsage": {
+            "promptTokens": 3782,
+            "completionTokens": 380,
+            "totalTokens": 4162
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_076",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_077",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_079",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.9,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 1229
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.9,
+        "summary": "The snippet performs a database lookup using user-provided input from req.body. While the use of an ORM (Sequelize-style) typically mitigates SQL injection, the snippet lacks explicit input validation (e.g., type checking or length limits) for the 'username' field. Because the validation logic is likely handled by middleware or the ORM layer not visible in this snippet, the security posture cannot be fully determined.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 1229,
+          "llmDurationMs": 1228,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:16:18.935Z",
+          "tokenUsage": {
+            "promptTokens": 3782,
+            "completionTokens": 135,
+            "totalTokens": 3917
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_080",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 2513
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "dabf11839233392e",
+          "title": "INPUT_VALIDATION: snippet.js:2",
+          "description": "The application takes user-provided input from 'req.query.dir' and passes it directly as an argument to the 'ls' command. An attacker could provide malicious input to execute arbitrary commands or access unintended directories.",
+          "severity": "critical",
+          "vulnerabilityClass": "INPUT_VALIDATION",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "spawn('ls', ['-l', req.query.dir]);",
+              "explanation": "The 'req.query.dir' variable is passed directly into the 'spawn' function, which executes the 'ls' command with user-controlled arguments."
+            }
+          ],
+          "suggestion": "Avoid passing user input directly to system commands. If necessary, use an allowlist of permitted directory paths and validate the input against this list before usage. Do not use shell-executing functions with unsanitized user input.",
+          "cwes": [
+            "CWE-78",
+            "CWE-20"
+          ],
+          "contributingCheckpoints": [
+            "SEC-INPUT-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The application directly passes unsanitized user input from 'req.query.dir' into a 'child_process.spawn' call. This allows for command injection or path traversal, as the input is used as an argument to the 'ls' command without any validation or sanitization.",
+        "findings": [
+          {
+            "findingId": "dabf11839233392e",
+            "criterionId": "INPUT-C2",
+            "vulnerabilityClass": "INPUT_VALIDATION",
+            "cwes": [
+              "CWE-78",
+              "CWE-20"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Command Injection via Unsanitized User Input",
+            "severity": "critical",
+            "description": "The application takes user-provided input from 'req.query.dir' and passes it directly as an argument to the 'ls' command. An attacker could provide malicious input to execute arbitrary commands or access unintended directories.",
+            "suggestion": "Avoid passing user input directly to system commands. If necessary, use an allowlist of permitted directory paths and validate the input against this list before usage. Do not use shell-executing functions with unsanitized user input.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "spawn('ls', ['-l', req.query.dir]);",
+                "explanation": "The 'req.query.dir' variable is passed directly into the 'spawn' function, which executes the 'ls' command with user-controlled arguments."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 2513,
+          "llmDurationMs": 2511,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:16:21.578Z",
+          "tokenUsage": {
+            "promptTokens": 3786,
+            "completionTokens": 408,
+            "totalTokens": 4194
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_085",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_086",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_087",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "NOT_VERIFIED",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.82,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 4255
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "NOT_VERIFIED",
+        "applicability": "APPLICABLE",
+        "confidence": 0.82,
+        "summary": "The handler returns the authenticated-user context's id and name, but the supplied snippet does not show how req.user is authenticated or whether the handler is protected by authorization middleware. No concrete authorization vulnerability is demonstrated, but access control for this user-information operation cannot be verified from the provided code.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 4255,
+          "llmDurationMs": 4254,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:16:29.835Z",
+          "tokenUsage": {
+            "promptTokens": 3885,
+            "completionTokens": 227,
+            "totalTokens": 4112
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_089",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "lines": [
+        1,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_091",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "PASS",
+        "applicability": "NOT_APPLICABLE",
+        "confidence": 0.99,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 4377
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "PASS",
+        "applicability": "NOT_APPLICABLE",
+        "confidence": 0.99,
+        "summary": "The changed file only assigns a database URL value and contains no authentication, credential-handling flow, session, token, password, MFA, reset, logout, or error-response logic relevant to SEC-AUTH-001. No authentication vulnerability can be identified from the supplied code.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 4377,
+          "llmDurationMs": 4376,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:16:35.429Z",
+          "tokenUsage": {
+            "promptTokens": 4174,
+            "completionTokens": 289,
+            "totalTokens": 4463
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_092",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.98,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 8274
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [
+        {
+          "findingId": "b6a345a404948b2e",
+          "title": "BUSINESS_LOGIC_FLAW: snippet.js:2",
+          "description": "The AdminPanel component grants access when localStorage contains the value isAdmin. localStorage is fully controllable by the user, so an attacker can set or alter this value in browser developer tools and render the AdminDashboard. Client-side checks cannot enforce authorization and must not be the sole protection for administrative functionality.",
+          "severity": "warning",
+          "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "if (!localStorage.getItem('isAdmin')) {",
+              "explanation": "The authorization decision is based on localStorage, which the user can freely modify."
+            },
+            {
+              "file": "snippet.js",
+              "line": 5,
+              "snippet": "return <AdminDashboard />;",
+              "explanation": "A truthy client-controlled value is sufficient to render the administrative dashboard."
+            }
+          ],
+          "suggestion": "Enforce the administrator role or permission on the server for every administrative API endpoint and sensitive operation using authenticated server-side identity and authorization middleware or guards. Treat this React check only as a UX optimization, and derive any displayed admin state from a server-validated session or authorization response rather than localStorage.",
+          "cwes": [
+            "CWE-602"
+          ],
+          "contributingCheckpoints": [
+            "SEC-AUTHZ-001"
+          ]
+        }
+      ],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTHZ-001",
+        "checkpointName": "Authorization Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 0.98,
+        "summary": "The snippet implements administrative access control solely through a client-controlled localStorage value. Any user can modify or create isAdmin in browser storage and render the AdminDashboard, so this is not a trustworthy server-side authorization mechanism.",
+        "findings": [
+          {
+            "findingId": "b6a345a404948b2e",
+            "criterionId": "AUTHZ-C2",
+            "vulnerabilityClass": "BUSINESS_LOGIC_FLAW",
+            "cwes": [
+              "CWE-602"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Administrative access relies on client-controlled localStorage",
+            "severity": "warning",
+            "description": "The AdminPanel component grants access when localStorage contains the value isAdmin. localStorage is fully controllable by the user, so an attacker can set or alter this value in browser developer tools and render the AdminDashboard. Client-side checks cannot enforce authorization and must not be the sole protection for administrative functionality.",
+            "suggestion": "Enforce the administrator role or permission on the server for every administrative API endpoint and sensitive operation using authenticated server-side identity and authorization middleware or guards. Treat this React check only as a UX optimization, and derive any displayed admin state from a server-validated session or authorization response rather than localStorage.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "if (!localStorage.getItem('isAdmin')) {",
+                "explanation": "The authorization decision is based on localStorage, which the user can freely modify."
+              },
+              {
+                "file": "snippet.js",
+                "line": 5,
+                "snippet": "return <AdminDashboard />;",
+                "explanation": "A truthy client-controlled value is sufficient to render the administrative dashboard."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 8274,
+          "llmDurationMs": 8272,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:16:45.498Z",
+          "tokenUsage": {
+            "promptTokens": 3892,
+            "completionTokens": 693,
+            "totalTokens": 4585
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_093",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": []
+  },
+  {
+    "id": "tc_098",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actualVerdict": "FAIL",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "findingCount": 1,
+        "status": "completed",
+        "executionTimeMs": 3780
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [
+        {
+          "findingId": "dabf11839233392e",
+          "title": "INPUT_VALIDATION: snippet.js:2",
+          "description": "The application uses the 'eval()' function with input derived directly from 'req.query.input'. An attacker can inject arbitrary JavaScript code that will be executed by the server process.",
+          "severity": "critical",
+          "vulnerabilityClass": "INPUT_VALIDATION",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 2
+          },
+          "evidence": [
+            {
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "eval('var state = ' + JSON.stringify(safeData));",
+              "explanation": "The 'eval' function is used to execute a string constructed from user-provided input, leading to remote code execution."
+            }
+          ],
+          "suggestion": "Remove the use of 'eval()' entirely. If you need to parse JSON, use the built-in 'JSON.parse()' method, which does not execute code.",
+          "cwes": [
+            "CWE-95"
+          ],
+          "contributingCheckpoints": [
+            "SEC-INPUT-001"
+          ]
+        }
+      ],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-INPUT-001",
+        "checkpointName": "Input Validation Review",
+        "verdict": "FAIL",
+        "applicability": "APPLICABLE",
+        "confidence": 1,
+        "summary": "The code uses the 'eval' function to process user-controlled input from 'req.query.input'. This is a critical security vulnerability as it allows for arbitrary code execution.",
+        "findings": [
+          {
+            "findingId": "dabf11839233392e",
+            "criterionId": "INPUT-C2",
+            "vulnerabilityClass": "INPUT_VALIDATION",
+            "cwes": [
+              "CWE-95"
+            ],
+            "primaryLocation": {
+              "file": "snippet.js",
+              "line": 2
+            },
+            "title": "Arbitrary Code Execution via eval()",
+            "severity": "critical",
+            "description": "The application uses the 'eval()' function with input derived directly from 'req.query.input'. An attacker can inject arbitrary JavaScript code that will be executed by the server process.",
+            "suggestion": "Remove the use of 'eval()' entirely. If you need to parse JSON, use the built-in 'JSON.parse()' method, which does not execute code.",
+            "evidence": [
+              {
+                "file": "snippet.js",
+                "line": 2,
+                "snippet": "eval('var state = ' + JSON.stringify(safeData));",
+                "explanation": "The 'eval' function is used to execute a string constructed from user-provided input, leading to remote code execution."
+              }
+            ]
+          }
+        ],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 3780,
+          "llmDurationMs": 3779,
+          "model": "google/gemini-3.1-flash-lite",
+          "timestamp": "2026-08-26T09:16:50.505Z",
+          "tokenUsage": {
+            "promptTokens": 3788,
+            "completionTokens": 349,
+            "totalTokens": 4137
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tc_100",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actualVerdict": "PASS",
+    "reportCheckpoints": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "PASS",
+        "applicability": "NOT_APPLICABLE",
+        "confidence": 0.98,
+        "findingCount": 0,
+        "status": "completed",
+        "executionTimeMs": 3548
+      }
+    ],
+    "aggregatedFindings": {
+      "critical": [],
+      "warning": [],
+      "info": []
+    },
+    "rawResults": [
+      {
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "verdict": "PASS",
+        "applicability": "NOT_APPLICABLE",
+        "confidence": 0.98,
+        "summary": "The changed code only establishes a database connection using an environment variable and a literal connection credential. It contains no user authentication, login flow, password storage, session/token handling, logout, password recovery, MFA, or authentication error handling logic. Hardcoded secret review is outside this checkpoint.",
+        "findings": [],
+        "status": "completed",
+        "execution": {
+          "executionTimeMs": 3548,
+          "llmDurationMs": 3547,
+          "model": "openai/gpt-5.6-luna",
+          "timestamp": "2026-08-26T09:16:54.197Z",
+          "tokenUsage": {
+            "promptTokens": 4195,
+            "completionTokens": 235,
+            "totalTokens": 4430
+          }
+        }
+      }
+    ]
+  }
+]

@@ -185,7 +185,7 @@ Deno.test("FindingAggregator - Test Case 8: Same SQL_INJECTION class + nearby li
   );
 
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
-  assertEquals(aggregated.length, 1, "Should merge identical vulnerability class on nearby lines with different evidence");
+  assertEquals(aggregated.length, 2, "Should NOT merge distinct vulnerability findings on nearby lines with different evidence");
 });
 
 Deno.test("FindingAggregator - Test Case 9: SQL_INJECTION vs SECRET_EXPOSURE on same line", () => {

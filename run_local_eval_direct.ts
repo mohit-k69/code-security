@@ -1,25 +1,4 @@
-export async function codeVibeTask(input: string) {
-  const API_URL = "https://riqjsppvihvcyihuhkzg.supabase.co/functions/v1/analyze-snippet";
-  
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-test-bypass': 'true'
-    },
-    body: JSON.stringify({
-      files: [{ name: "snippet.js", content: input }]
-    })
-  });
-  
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`API Error: ${res.status} ${res.statusText} - ${errorText}`);
-  }
-  
-  const data = await res.json();
-  return data.report;
-}
+import { localCodeVibeTask as codeVibeTask } from "./local_eval_task.ts";
 import { 
   findingCountAccuracy, 
   findingClassAccuracy, 
@@ -43,7 +22,6 @@ let scores = {
 let timeouts = 0;
 
 const specificResults: Record<string, any> = {};
-const mismatches: string[] = [];
 
 for (const tc of data) {
   let output;
@@ -53,7 +31,6 @@ for (const tc of data) {
     console.error(`Case ${tc.id} failed:`, err.message);
     timeouts++;
     totalCount++;
-    mismatches.push(tc.id);
     continue;
   }
 
@@ -65,10 +42,6 @@ for (const tc of data) {
   const sScore = severityAccuracy(args);
   const dScore = deduplicationAccuracy(args);
   
-  if (vScore < 1 || fcScore < 1 || cScore < 1 || sScore < 1 || dScore < 1) {
-    mismatches.push(tc.id);
-  }
-
   scores.verdict += vScore;
   scores.findingClass += fcScore;
   scores.findingCount += cScore;
@@ -118,7 +91,6 @@ console.log(JSON.stringify({
     deduplication: (scores.deduplication / totalCount) * 100,
   },
   timeouts,
-  mismatches,
   tc_004: specificResults['tc_004'],
   tc_012: specificResults['tc_012'],
   tc_013: specificResults['tc_013'],

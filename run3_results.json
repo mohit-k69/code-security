@@ -1,0 +1,96 @@
+{
+  "overall": 79.59999999999997,
+  "metrics": {
+    "verdict": 75,
+    "findingClass": 80,
+    "findingCount": 81,
+    "severity": 81,
+    "deduplication": 81
+  },
+  "timeouts": 0,
+  "mismatches": [
+    "tc_013",
+    "tc_015",
+    "tc_030",
+    "tc_037",
+    "tc_038",
+    "tc_040",
+    "tc_041",
+    "tc_042",
+    "tc_043",
+    "tc_044",
+    "tc_047",
+    "tc_048",
+    "tc_049",
+    "tc_053",
+    "tc_061",
+    "tc_063",
+    "tc_065",
+    "tc_066",
+    "tc_069",
+    "tc_076",
+    "tc_077",
+    "tc_079",
+    "tc_080",
+    "tc_085",
+    "tc_086",
+    "tc_089",
+    "tc_091",
+    "tc_092",
+    "tc_093",
+    "tc_098",
+    "tc_100"
+  ],
+  "tc_004": {
+    "expectedVerdict": "PASS",
+    "actualVerdict": "PASS",
+    "actualClasses": []
+  },
+  "tc_012": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "BUSINESS_LOGIC_FLAW"
+    ]
+  },
+  "tc_013": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "SECRET_EXPOSURE",
+      "AUTH_BYPASS",
+      "JWT_SECURITY"
+    ]
+  },
+  "tc_025": {
+    "expectedVerdict": "NOT_VERIFIED",
+    "actualVerdict": "NOT_VERIFIED",
+    "actualClasses": []
+  },
+  "tc_028": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "tc_030": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "CRYPTOGRAPHIC_FAILURE",
+      "AUTH_BYPASS",
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE",
+      "JWT_SECURITY"
+    ]
+  },
+  "realisticSecret": {
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  }
+}

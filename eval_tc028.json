@@ -1,0 +1,558 @@
+{
+  "expected": {
+    "findingCount": 2,
+    "lines": [
+      1,
+      2
+    ],
+    "severities": [
+      "critical",
+      "critical"
+    ],
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "id": "tc_028",
+  "input": {
+    "id": "tc_028",
+    "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+  },
+  "metadata": {
+    "category": "multi-vulnerability",
+    "rationale": "Distinct hardcoded secrets on adjacent lines must NOT be merged; should produce 2 findings.",
+    "tags": [
+      "deduplication",
+      "secrets"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "NOT_APPLICABLE",
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "confidence": 0.99,
+        "executionTimeMs": 3157,
+        "findingCount": 0,
+        "status": "completed",
+        "verdict": "PASS"
+      },
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 2442,
+        "findingCount": 2,
+        "status": "completed",
+        "verdict": "FAIL"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 2,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 8,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ],
+          "cwes": [
+            "CWE-798"
+          ],
+          "description": "A database password is hardcoded directly in the source code. Hardcoded secrets can be extracted from version control and abused by unauthorized parties.",
+          "evidence": [
+            {
+              "explanation": "The database password is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 1,
+              "snippet": "const DB_PASSWORD = \"***REDACTED***\";"
+            },
+            {
+              "explanation": "The API key is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const API_KEY = \"***REDACTED***\";"
+            }
+          ],
+          "findingId": "3bc0b30eda4d504c",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 1
+          },
+          "severity": "critical",
+          "suggestion": "Remove the hardcoded password and use an environment variable (e.g., process.env.DB_PASSWORD) or a secure secret management service.",
+          "title": "INSECURE_CONFIGURATION: snippet.js:1",
+          "vulnerabilityClass": "INSECURE_CONFIGURATION"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T09:39:28.784Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787650768784",
+    "totalFindings": 1,
+    "verdict": "FAIL"
+  },
+  "tags": []
+}
+{
+  "expected": {
+    "findingCount": 2,
+    "lines": [
+      1,
+      2
+    ],
+    "severities": [
+      "critical",
+      "critical"
+    ],
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "id": "tc_028",
+  "input": {
+    "id": "tc_028",
+    "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+  },
+  "metadata": {
+    "category": "multi-vulnerability",
+    "rationale": "Distinct hardcoded secrets on adjacent lines must NOT be merged; should produce 2 findings.",
+    "tags": [
+      "deduplication",
+      "secrets"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "NOT_APPLICABLE",
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "confidence": 0.99,
+        "executionTimeMs": 3157,
+        "findingCount": 0,
+        "status": "completed",
+        "verdict": "PASS"
+      },
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 2442,
+        "findingCount": 2,
+        "status": "completed",
+        "verdict": "FAIL"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 2,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 8,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ],
+          "cwes": [
+            "CWE-798"
+          ],
+          "description": "A database password is hardcoded directly in the source code. Hardcoded secrets can be extracted from version control and abused by unauthorized parties.",
+          "evidence": [
+            {
+              "explanation": "The database password is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 1,
+              "snippet": "const DB_PASSWORD = \"***REDACTED***\";"
+            },
+            {
+              "explanation": "The API key is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const API_KEY = \"***REDACTED***\";"
+            }
+          ],
+          "findingId": "3bc0b30eda4d504c",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 1
+          },
+          "severity": "critical",
+          "suggestion": "Remove the hardcoded password and use an environment variable (e.g., process.env.DB_PASSWORD) or a secure secret management service.",
+          "title": "INSECURE_CONFIGURATION: snippet.js:1",
+          "vulnerabilityClass": "INSECURE_CONFIGURATION"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T09:39:28.784Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787650768784",
+    "totalFindings": 1,
+    "verdict": "FAIL"
+  },
+  "tags": []
+}
+{
+  "expected": {
+    "findingCount": 2,
+    "lines": [
+      1,
+      2
+    ],
+    "severities": [
+      "critical",
+      "critical"
+    ],
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "id": "tc_028",
+  "input": {
+    "id": "tc_028",
+    "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+  },
+  "metadata": {
+    "category": "multi-vulnerability",
+    "rationale": "Distinct hardcoded secrets on adjacent lines must NOT be merged; should produce 2 findings.",
+    "tags": [
+      "deduplication",
+      "secrets"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "NOT_APPLICABLE",
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "confidence": 0.99,
+        "executionTimeMs": 3157,
+        "findingCount": 0,
+        "status": "completed",
+        "verdict": "PASS"
+      },
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 2442,
+        "findingCount": 2,
+        "status": "completed",
+        "verdict": "FAIL"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 2,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 8,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ],
+          "cwes": [
+            "CWE-798"
+          ],
+          "description": "A database password is hardcoded directly in the source code. Hardcoded secrets can be extracted from version control and abused by unauthorized parties.",
+          "evidence": [
+            {
+              "explanation": "The database password is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 1,
+              "snippet": "const DB_PASSWORD = \"***REDACTED***\";"
+            },
+            {
+              "explanation": "The API key is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const API_KEY = \"***REDACTED***\";"
+            }
+          ],
+          "findingId": "3bc0b30eda4d504c",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 1
+          },
+          "severity": "critical",
+          "suggestion": "Remove the hardcoded password and use an environment variable (e.g., process.env.DB_PASSWORD) or a secure secret management service.",
+          "title": "INSECURE_CONFIGURATION: snippet.js:1",
+          "vulnerabilityClass": "INSECURE_CONFIGURATION"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T09:39:28.784Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787650768784",
+    "totalFindings": 1,
+    "verdict": "FAIL"
+  },
+  "tags": []
+}
+{
+  "expected": {
+    "findingCount": 2,
+    "lines": [
+      1,
+      2
+    ],
+    "severities": [
+      "critical",
+      "critical"
+    ],
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "id": "tc_028",
+  "input": {
+    "id": "tc_028",
+    "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+  },
+  "metadata": {
+    "category": "multi-vulnerability",
+    "rationale": "Distinct hardcoded secrets on adjacent lines must NOT be merged; should produce 2 findings.",
+    "tags": [
+      "deduplication",
+      "secrets"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "NOT_APPLICABLE",
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "confidence": 0.99,
+        "executionTimeMs": 3157,
+        "findingCount": 0,
+        "status": "completed",
+        "verdict": "PASS"
+      },
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 2442,
+        "findingCount": 2,
+        "status": "completed",
+        "verdict": "FAIL"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 2,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 8,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ],
+          "cwes": [
+            "CWE-798"
+          ],
+          "description": "A database password is hardcoded directly in the source code. Hardcoded secrets can be extracted from version control and abused by unauthorized parties.",
+          "evidence": [
+            {
+              "explanation": "The database password is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 1,
+              "snippet": "const DB_PASSWORD = \"***REDACTED***\";"
+            },
+            {
+              "explanation": "The API key is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const API_KEY = \"***REDACTED***\";"
+            }
+          ],
+          "findingId": "3bc0b30eda4d504c",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 1
+          },
+          "severity": "critical",
+          "suggestion": "Remove the hardcoded password and use an environment variable (e.g., process.env.DB_PASSWORD) or a secure secret management service.",
+          "title": "INSECURE_CONFIGURATION: snippet.js:1",
+          "vulnerabilityClass": "INSECURE_CONFIGURATION"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T09:39:28.784Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787650768784",
+    "totalFindings": 1,
+    "verdict": "FAIL"
+  },
+  "tags": []
+}
+{
+  "expected": {
+    "findingCount": 2,
+    "lines": [
+      1,
+      2
+    ],
+    "severities": [
+      "critical",
+      "critical"
+    ],
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "SECRET_EXPOSURE",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "id": "tc_028",
+  "input": {
+    "id": "tc_028",
+    "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+  },
+  "metadata": {
+    "category": "multi-vulnerability",
+    "rationale": "Distinct hardcoded secrets on adjacent lines must NOT be merged; should produce 2 findings.",
+    "tags": [
+      "deduplication",
+      "secrets"
+    ]
+  },
+  "output": {
+    "checkpoints": [
+      {
+        "applicability": "NOT_APPLICABLE",
+        "checkpointId": "SEC-AUTH-001",
+        "checkpointName": "Authentication Review",
+        "confidence": 0.99,
+        "executionTimeMs": 3157,
+        "findingCount": 0,
+        "status": "completed",
+        "verdict": "PASS"
+      },
+      {
+        "applicability": "APPLICABLE",
+        "checkpointId": "SEC-SECRET-001",
+        "checkpointName": "Secrets Management Review",
+        "confidence": 1,
+        "executionTimeMs": 2442,
+        "findingCount": 2,
+        "status": "completed",
+        "verdict": "FAIL"
+      }
+    ],
+    "coverage": {
+      "executedCheckpoints": 2,
+      "notVerifiedCheckpoints": 0,
+      "skippedCheckpoints": 8,
+      "totalCheckpoints": 10
+    },
+    "findings": {
+      "critical": [
+        {
+          "contributingCheckpoints": [
+            "SEC-SECRET-001"
+          ],
+          "cwes": [
+            "CWE-798"
+          ],
+          "description": "A database password is hardcoded directly in the source code. Hardcoded secrets can be extracted from version control and abused by unauthorized parties.",
+          "evidence": [
+            {
+              "explanation": "The database password is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 1,
+              "snippet": "const DB_PASSWORD = \"***REDACTED***\";"
+            },
+            {
+              "explanation": "The API key is defined as a plaintext string literal.",
+              "file": "snippet.js",
+              "line": 2,
+              "snippet": "const API_KEY = \"***REDACTED***\";"
+            }
+          ],
+          "findingId": "3bc0b30eda4d504c",
+          "primaryLocation": {
+            "file": "snippet.js",
+            "line": 1
+          },
+          "severity": "critical",
+          "suggestion": "Remove the hardcoded password and use an environment variable (e.g., process.env.DB_PASSWORD) or a secure secret management service.",
+          "title": "INSECURE_CONFIGURATION: snippet.js:1",
+          "vulnerabilityClass": "INSECURE_CONFIGURATION"
+        }
+      ],
+      "info": [],
+      "warning": []
+    },
+    "generatedAt": "2026-08-25T09:39:28.784Z",
+    "repository": {
+      "commitSha": "local",
+      "name": "paste_snippet",
+      "owner": "local_user",
+      "prNumber": 0
+    },
+    "scanId": "scan_local_user_paste_snippet_pr0_1787650768784",
+    "totalFindings": 1,
+    "verdict": "FAIL"
+  },
+  "tags": []
+}
+{
+  "id": "tc_028",
+  "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+}
+{
+  "id": "tc_028",
+  "snippet": "const DB_PASSWORD = \"super_secret_db_pass_123\";\nconst API_KEY = \"sk_live_1234567890abcdef\";"
+}
