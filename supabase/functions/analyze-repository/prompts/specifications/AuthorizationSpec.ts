@@ -206,6 +206,11 @@ export const AuthorizationSpec: ReviewSpecification = {
     "missing authorization on write/delete operations is typically **critical**.\n" +
     "- For authorization failures caused by client-controlled object identifiers, missing ownership checks, or IDOR-style access to another user's resources, use BUSINESS_LOGIC_FLAW. Reserve AUTH_BYPASS for cases where authentication or an existing authorization control is directly bypassed or circumvented.\n\n" +
 
+    "### Deep Data-Flow Analysis for IDOR (CRITICAL)\n\n" +
+    "- Do NOT assume global middleware handles resource ownership (IDOR) checks. While global middleware can authenticate a user, it typically cannot authorize specific object IDs (e.g., `req.params.id`).\n" +
+    "- If a route handler directly accesses data using a client-supplied ID (e.g., `db.getUser(req.params.id)`) without verifying that the authenticated user owns that ID within the handler or inline middleware, you MUST report a **FAIL** (AUTHZ-C1).\n" +
+    "- You must verify that the authorization check happens **before** the sensitive action. A check-then-act race condition or an action followed by a check is a **FAIL**.\n\n" +
+
     "### Authorization vs Authentication\n\n" +
     "This checkpoint evaluates AUTHORIZATION (what an authenticated user can do), " +
     "not AUTHENTICATION (whether the user is who they claim to be). If an endpoint " +

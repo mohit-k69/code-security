@@ -1,25 +1,4 @@
-export async function codeVibeTask(input: string) {
-  const API_URL = "https://riqjsppvihvcyihuhkzg.supabase.co/functions/v1/analyze-snippet";
-  
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-test-bypass': 'true'
-    },
-    body: JSON.stringify({
-      files: [{ name: "snippet.js", content: input }]
-    })
-  });
-  
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`API Error: ${res.status} ${res.statusText} - ${errorText}`);
-  }
-  
-  const data = await res.json();
-  return data.report;
-}
+import { localCodeVibeTask as codeVibeTask } from "./local_eval_task.ts";
 import { 
   findingCountAccuracy, 
   findingClassAccuracy, 
@@ -28,8 +7,10 @@ import {
   verdictAccuracy 
 } from "./braintrust_scorers.ts";
 
-const filename = Deno.args[0] || "./eval_braintrust_100_cases.json";
-const data = JSON.parse(await Deno.readTextFile(filename));
+import fs from "fs";
+
+const filename = process.argv[2] || "./eval_braintrust_100_cases.json";
+const data = JSON.parse(fs.readFileSync(filename, "utf-8"));
 
 let totalScore = 0;
 let totalCount = 0;

@@ -161,9 +161,16 @@ export const SecretsManagementSpec: ReviewSpecification = {
     "### SYNTHETIC CREDENTIALS EXCEPTION (CRITICAL)\n\n" +
     "- Do NOT flag credentials that are explicitly and unambiguously marked as example, fake, mock, test, dummy, placeholder, or redacted values.\n" +
     "- Examples include values containing substrings such as: EXAMPLE, FAKE, MOCK, DUMMY, PLACEHOLDER, TEST-ONLY, DO-NOT-USE, ***REDACTED*** (even if embedded directly inside a longer credential-like value, e.g., `...CYEXAMPLEKEY`).\n" +
+    "- Also DO NOT flag obvious sequential or structural dummy patterns (e.g., `1234567890`, `abcdef`, `changeme`, `password123`, `your-api-key`).\n" +
     "- A variable name alone (e.g., `MOCK_AWS_KEY` or `TEST_SECRET`) is NOT sufficient evidence to suppress a finding if the value otherwise appears to be a real credential.\n" +
     "- Real-looking hardcoded credentials must still be reported unless the code clearly establishes that they are synthetic.\n" +
     "- Preserve all existing redaction requirements for evidence when reporting real credentials.\n\n" +
+
+    "### HARDCODED PASSWORDS & URIS (CRITICAL)\n\n" +
+    "- Database/service connection URIs containing embedded credentials MUST be treated as potential SECRET_EXPOSURE regardless of password entropy or apparent complexity.\n" +
+    "- This covers common URI schemes such as: mongodb://, mongodb+srv://, postgres://, postgresql://, mysql://, redis://.\n" +
+    "- You must flag credentials embedded in these URIs when they appear to be production/real credentials.\n" +
+    "- The existing synthetic-credential exceptions still apply. Do NOT flag a URI merely because it contains credentials if the code explicitly establishes that the credentials are synthetic using the allowed indicators (e.g., EXAMPLE, FAKE, MOCK, DUMMY, PLACEHOLDER, TEST-ONLY, DO-NOT-USE, ***REDACTED***).\n\n" +
 
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +

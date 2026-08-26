@@ -132,12 +132,15 @@ export const SecurityConfigurationSpec: ReviewSpecification = {
     "4. **remediation** — A concrete, implementable fix.\n\n" +
 
     "### Analysis Priorities\n\n" +
-    "- Setting CORS `origin: '*'` (CONFIG-C2) is **critical** severity, regardless of whether credentials are explicitly enabled.\n\n" +
+    "- Setting CORS `origin: '*'` with `credentials: true` (CONFIG-C2) is a **FAIL** and a critical vulnerability.\n" +
+    "- Do NOT flag `origin: '*'` if it appears in an isolated snippet lacking sensitive routes or application context. In such cases, use **NOT_VERIFIED**.\n\n" +
+
+    "### Contextual Constraints (CRITICAL)\n\n" +
+    "- Do NOT flag missing security headers or wildcard CORS on isolated snippets that lack application context (e.g., a simple Express server setup without routes). Such snippets must be evaluated as NOT_VERIFIED for configuration criteria.\n" +
+    "- Only flag `origin: '*'` as a vulnerability if the snippet explicitly handles authenticated routes, sensitive data, or enables `credentials: true`.\n\n" +
 
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +
-    "- Setting CORS `origin: '*'` with `credentials: true` (CONFIG-C2) is a **FAIL** and " +
-    "a critical vulnerability.\n" +
     "- Exposing stack traces or debug mode in production (CONFIG-C4) is a **FAIL**.\n" +
     "- Explicitly disabling framework CSRF protections (CONFIG-C5) without replacing them " +
     "with stateless token architectures is a **FAIL**.\n" +

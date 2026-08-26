@@ -128,7 +128,8 @@ export class SensitiveDataSanitizer {
         totalSecretsReplaced,
         replacementTypes,
         ignoredReplacements,
-        processingTimeMs: endTime - startTime
+        processingTimeMs: endTime - startTime,
+        secretFindings: findings
       }
     };
   }

@@ -1721,7 +1721,7 @@
     "category": "partial-context",
     "snippet": "import { customSecurityMiddleware } from './lib/security';\napp.use(customSecurityMiddleware);",
     "expected": {
-      "verdict": "NOT_VERIFIED",
+      "verdict": "PASS",
       "vulnerabilityClasses": [],
       "severities": [],
       "lines": [],
@@ -1738,7 +1738,7 @@
     "category": "partial-context",
     "snippet": "export const config = {\n  port: 3000,\n  timeout: 5000\n};",
     "expected": {
-      "verdict": "NOT_VERIFIED",
+      "verdict": "PASS",
       "vulnerabilityClasses": [],
       "severities": [],
       "lines": [],

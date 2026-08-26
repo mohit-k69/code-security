@@ -28,6 +28,7 @@ import { FindingAggregator } from "./aggregator/FindingAggregator.ts";
 import { ReportGenerator } from "./report/ReportGenerator.ts";
 import { SECURITY_REVIEW_FRAMEWORK } from "../prompts/SecurityReviewFramework.ts";
 import { getEnabledCheckpoints } from "./registry/CheckpointRegistry.ts";
+import { VulnerabilityClass } from "./types/VulnerabilityClass.ts";
 
 export interface OrchestratorConfig {
   /** The LLM provider to use for all checkpoint executions */
@@ -113,6 +114,46 @@ export class ReviewOrchestrator {
       selectedCheckpoints,
       sanitizedPackage
     );
+
+    // 4.5 Inject deterministic secret findings if any were detected by the sanitizer
+    if (sanitizedPackage.metadata.secretFindings && sanitizedPackage.metadata.secretFindings.length > 0) {
+      const syntheticFindings: import("../../services/CheckpointRunner.ts").CheckpointFinding[] = sanitizedPackage.metadata.secretFindings.map((f: any) => ({
+        findingId: f.id,
+        criterionId: "SECRET-C1",
+        vulnerabilityClass: VulnerabilityClass.SECRET_EXPOSURE,
+        cwes: ["CWE-798"],
+        primaryLocation: { file: f.file, line: f.line },
+        title: `Hardcoded Secret Detected: ${f.category}`,
+        severity: "critical",
+        description: `A hardcoded secret matching the pattern for ${f.category} was detected in the source code. It has been redacted for security.`,
+        suggestion: "Move this secret to a secure environment variable or secrets manager.",
+        evidence: [
+          {
+            file: f.file,
+            line: f.line,
+            snippet: "***REDACTED***",
+            explanation: "Deterministic heuristic detection confirmed the presence of a secret."
+          }
+        ]
+      }));
+
+      results.push({
+        checkpointId: "SEC-SECRET-001",
+        checkpointName: "Secrets Management Review",
+        verdict: "FAIL",
+        applicability: "APPLICABLE",
+        confidence: 1.0,
+        summary: "Deterministic secret scanning detected hardcoded credentials.",
+        findings: syntheticFindings,
+        status: "completed",
+        execution: {
+          executionTimeMs: 0,
+          llmDurationMs: 0,
+          model: "deterministic-heuristic",
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
 
     // 5. Aggregate findings (deterministic dedup)
     const aggregatedFindings = this.aggregator.aggregate(results);

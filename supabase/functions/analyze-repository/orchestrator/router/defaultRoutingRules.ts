@@ -33,7 +33,9 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "/delete-user", "/update-user", "/delete-account", "/update-account",
       "userservice.", "accountservice.",
       "chargeuser", "/charge-user",
-      "processpayment", "paymentgateway"
+      "processpayment", "paymentgateway",
+      "/:id", "req.params", "req.query",
+      "req.body", "object.assign", "userid", "accountid", "tenantid"
     ],
     checkpointIds: ["SEC-AUTHZ-001"],
   },

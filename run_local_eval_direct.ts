@@ -7,8 +7,9 @@ import {
   verdictAccuracy 
 } from "./braintrust_scorers.ts";
 
-const filename = Deno.args[0] || "./eval_braintrust_100_cases.json";
-const data = JSON.parse(await Deno.readTextFile(filename));
+import fs from 'fs';
+const filename = process.argv[2] || "./eval_braintrust_100_cases.json";
+const data = JSON.parse(fs.readFileSync(filename, 'utf-8'));
 
 let totalScore = 0;
 let totalCount = 0;

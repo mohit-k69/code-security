@@ -36,7 +36,7 @@ export class FindingAggregator {
       return intersectionCount / (set1.size + set2.size - intersectionCount);
     };
 
-    // 2. Group findings into semantic clusters
+    // 2. Group findings into deterministic clusters based on heuristics
     const clusters: { finding: CheckpointFinding; parentResult: CheckpointResult }[][] = [];
 
     for (const item of flattenedItems) {
@@ -50,53 +50,22 @@ export class FindingAggregator {
         const isSameFile = f1.primaryLocation.file === f2.primaryLocation.file;
         if (!isSameFile) continue;
 
-        // -------------------------------------------------------------
-        // NEW STRICT RULE FOR SECRET_EXPOSURE
-        // -------------------------------------------------------------
-        if (f1.vulnerabilityClass === "SECRET_EXPOSURE" || f2.vulnerabilityClass === "SECRET_EXPOSURE") {
-          // If both are SECRET_EXPOSURE, they must be on the same line to merge
-          if (f1.vulnerabilityClass === f2.vulnerabilityClass) {
-             if (f1.primaryLocation.line === f2.primaryLocation.line || f1.findingId === f2.findingId) {
-                matchedCluster = cluster;
-                break;
-             }
-             // Distinct secrets (different lines) must remain separate.
-             continue;
-          }
-          
-          // If they are different classes (e.g., SECRET_EXPOSURE vs JWT_SECURITY),
-          // DO NOT block them from falling through to the semantic similarity checks below!
-          // We simply let them pass through.
-        }
-        // -------------------------------------------------------------
-
+        const isSameClass = f1.vulnerabilityClass === f2.vulnerabilityClass;
         const isNearby = Math.abs(f1.primaryLocation.line - f2.primaryLocation.line) <= 3;
         
-        const snippet1 = f1.evidence?.[0]?.snippet || "";
-        const snippet2 = f2.evidence?.[0]?.snippet || "";
-        const clean1 = snippet1.replace(/\s+/g, '');
-        const clean2 = snippet2.replace(/\s+/g, '');
-        const isSubstring = Boolean(clean1 && clean2 && (clean1.includes(clean2) || clean2.includes(clean1)));
-        const snippetSimilarity = computeSemanticSimilarity(snippet1, snippet2);
-        
-        const hasSnippetOverlap = isSubstring || snippetSimilarity > 0.3;
-
-        const isStrongSnippetOverlap = isSubstring || snippetSimilarity > 0.6;
-        if (!isNearby && !isStrongSnippetOverlap) continue;
-
-        const text1 = `${f1.vulnerabilityClass} ${f1.title} ${f1.description}`;
-        const text2 = `${f2.vulnerabilityClass} ${f2.title} ${f2.description}`;
-        
-        let similarity = computeSemanticSimilarity(text1, text2);
-        
-        // Strongly reduce merge likelihood if evidence snippets do not overlap
-        if (!hasSnippetOverlap) {
-          similarity *= 0.2;
+        // If they share the exact same vulnerability class and are within 3 lines of each other,
+        // they are deterministically the same finding (e.g. two checkpoints finding XSS on the same line).
+        if (isSameClass && isNearby) {
+          matchedCluster = cluster;
+          break;
         }
-
+        
+        // If they are on the exact same line, but have different classes, we check for CWE overlap
+        // to see if they are actually the same fundamental issue classified differently.
+        const isSameLine = f1.primaryLocation.line === f2.primaryLocation.line;
         const sameCwe = Boolean(f1.cwes?.length > 0 && f2.cwes?.length > 0 && f1.cwes.some(c => f2.cwes?.includes(c)));
-
-        if (similarity >= 0.15 || (sameCwe && hasSnippetOverlap)) {
+        
+        if (isSameLine && sameCwe) {
           matchedCluster = cluster;
           break;
         }

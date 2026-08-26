@@ -1,4 +1,5 @@
-import { assertEquals } from "https://deno.land/std@0.220.0/assert/mod.ts";
+import assert from "node:assert";
+const assertEquals = assert.strictEqual;
 import { CheckpointRunner } from "../CheckpointRunner.ts";
 import type { ILLMProvider } from "../../orchestrator/providers/ILLMProvider.ts";
 import type { SanitizedContextPackage } from "../types.ts";
