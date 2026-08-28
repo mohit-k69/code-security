@@ -1,0 +1,106 @@
+{
+  "id": "tc_012",
+  "category": "obvious",
+  "snippet": "app.post('/updateProfile', requireAuth, async (req, res) => {\n  const targetUserId = req.body.userId;\n  await db.users.update({ id: targetUserId, email: req.body.email });\n  res.send('Updated');\n});",
+  "expected": {
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "BUSINESS_LOGIC_FLAW"
+    ],
+    "severities": [
+      "critical"
+    ],
+    "lines": [
+      2,
+      3
+    ],
+    "findingCount": 1
+  },
+  "tags": [
+    "authorization",
+    "idor"
+  ],
+  "rationale": "Trusts client-provided userId for updating profiles instead of authenticated token."
+}
+{
+  "id": "tc_038",
+  "category": "secrets",
+  "snippet": "function loginUser(userPassword) {\n  return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);\n}",
+  "expected": {
+    "verdict": "PASS",
+    "vulnerabilityClasses": [],
+    "severities": [],
+    "lines": [],
+    "findingCount": 0
+  },
+  "tags": [
+    "secrets",
+    "safe",
+    "variable-name"
+  ],
+  "rationale": "Variable named userPassword but purely receives dynamic arguments."
+}
+{
+  "id": "tc_059",
+  "category": "file",
+  "snippet": "app.post('/upload', upload.single('file'), (req, res) => {\n  fs.writeFileSync('/uploads/' + req.file.originalname, req.file.buffer);\n});",
+  "expected": {
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "PATH_TRAVERSAL"
+    ],
+    "severities": [
+      "critical"
+    ],
+    "lines": [
+      2
+    ],
+    "findingCount": 1
+  },
+  "tags": [
+    "file",
+    "upload"
+  ],
+  "rationale": "Path traversal in file uploads is highly exploitable, defaults to critical severity."
+}
+{
+  "id": "tc_074",
+  "category": "configuration",
+  "snippet": "const libxmljs = require('libxmljs');\nconst xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });",
+  "expected": {
+    "verdict": "FAIL",
+    "vulnerabilityClasses": [
+      "INPUT_VALIDATION"
+    ],
+    "severities": [
+      "critical"
+    ],
+    "lines": [
+      2
+    ],
+    "findingCount": 1
+  },
+  "tags": [
+    "config",
+    "error-handling"
+  ],
+  "rationale": "Enabling entity expansion (noent) in XML parsers is explicitly critical per SecurityConfigurationSpec."
+}
+{
+  "id": "tc_098",
+  "category": "adversarial",
+  "snippet": "const safeData = { val: req.query.input };\neval('var state = ' + JSON.stringify(safeData));",
+  "expected": {
+    "verdict": "PASS",
+    "vulnerabilityClasses": [],
+    "severities": [],
+    "lines": [],
+    "findingCount": 0
+  },
+  "tags": [
+    "adversarial",
+    "safe",
+    "eval"
+  ],
+  "rationale": "Eval looks dangerous, but JSON.stringify ensures input cannot break out into execution."
+}

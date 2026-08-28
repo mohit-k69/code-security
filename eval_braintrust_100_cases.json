@@ -1891,7 +1891,7 @@
     "expected": {
       "verdict": "FAIL",
       "vulnerabilityClasses": [
-        "BUSINESS_LOGIC_FLAW"
+        "AUTH_BYPASS"
       ],
       "severities": [
         "warning"

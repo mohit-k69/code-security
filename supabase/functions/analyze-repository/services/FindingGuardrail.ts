@@ -139,7 +139,11 @@ export class FindingGuardrail {
     }
 
     // 9. Suppression: IDOR false positives on partial snippets
-    if (finding.vulnerabilityClass === "AUTH_BYPASS" || finding.vulnerabilityClass === "BUSINESS_LOGIC_FLAW") {
+    if (
+      (finding.vulnerabilityClass === "AUTH_BYPASS" ||
+       finding.vulnerabilityClass === "BUSINESS_LOGIC_FLAW") &&
+      finding.criterionId !== "AUTH-C6"
+    ) {
       let codeContext = combinedEvidenceSnippet;
       
       if (contextPackage && finding.primaryLocation?.file) {

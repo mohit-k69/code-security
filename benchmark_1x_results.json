@@ -1,0 +1,2237 @@
+{
+  "tc_001": {
+    "id": "tc_001",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_002": {
+    "id": "tc_002",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_003": {
+    "id": "tc_003",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_004": {
+    "id": "tc_004",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_005": {
+    "id": "tc_005",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_006": {
+    "id": "tc_006",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_007": {
+    "id": "tc_007",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_008": {
+    "id": "tc_008",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "XSS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "XSS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_009": {
+    "id": "tc_009",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2,
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_010": {
+    "id": "tc_010",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_011": {
+    "id": "tc_011",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_012": {
+    "id": "tc_012",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2,
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_013": {
+    "id": "tc_013",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "warning",
+        "critical"
+      ],
+      "lines": [
+        2,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 3,
+      "classes": [
+        "AUTH_BYPASS",
+        "SECRET_EXPOSURE",
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical",
+        "critical",
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_014": {
+    "id": "tc_014",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_015": {
+    "id": "tc_015",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_016": {
+    "id": "tc_016",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_017": {
+    "id": "tc_017",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_018": {
+    "id": "tc_018",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_019": {
+    "id": "tc_019",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_020": {
+    "id": "tc_020",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_021": {
+    "id": "tc_021",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_022": {
+    "id": "tc_022",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_023": {
+    "id": "tc_023",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_024": {
+    "id": "tc_024",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_025": {
+    "id": "tc_025",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_026": {
+    "id": "tc_026",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_027": {
+    "id": "tc_027",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        7,
+        14
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_028": {
+    "id": "tc_028",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "lines": [
+        1,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_029": {
+    "id": "tc_029",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SQL_INJECTION",
+        "XSS"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "lines": [
+        3,
+        4
+      ],
+      "findingCount": 2
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 2,
+      "classes": [
+        "SQL_INJECTION",
+        "XSS"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_030": {
+    "id": "tc_030",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE",
+        "AUTH_BYPASS",
+        "JWT_SECURITY",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical",
+        "warning",
+        "critical"
+      ],
+      "lines": [
+        3,
+        4,
+        5,
+        5
+      ],
+      "findingCount": 4
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 4,
+      "classes": [
+        "CRYPTOGRAPHIC_FAILURE",
+        "AUTH_BYPASS",
+        "SECRET_EXPOSURE",
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical",
+        "critical",
+        "critical",
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_031": {
+    "id": "tc_031",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_032": {
+    "id": "tc_032",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_033": {
+    "id": "tc_033",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_034": {
+    "id": "tc_034",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_035": {
+    "id": "tc_035",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_036": {
+    "id": "tc_036",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_037": {
+    "id": "tc_037",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_038": {
+    "id": "tc_038",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_039": {
+    "id": "tc_039",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_040": {
+    "id": "tc_040",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_041": {
+    "id": "tc_041",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_042": {
+    "id": "tc_042",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_043": {
+    "id": "tc_043",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_044": {
+    "id": "tc_044",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_045": {
+    "id": "tc_045",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_046": {
+    "id": "tc_046",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_047": {
+    "id": "tc_047",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_048": {
+    "id": "tc_048",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_049": {
+    "id": "tc_049",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_050": {
+    "id": "tc_050",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_051": {
+    "id": "tc_051",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_052": {
+    "id": "tc_052",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_053": {
+    "id": "tc_053",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_054": {
+    "id": "tc_054",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "JWT_SECURITY"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_055": {
+    "id": "tc_055",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_056": {
+    "id": "tc_056",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_057": {
+    "id": "tc_057",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_058": {
+    "id": "tc_058",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_059": {
+    "id": "tc_059",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 2,
+      "classes": [
+        "PATH_TRAVERSAL",
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical",
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_060": {
+    "id": "tc_060",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_061": {
+    "id": "tc_061",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_062": {
+    "id": "tc_062",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_063": {
+    "id": "tc_063",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_064": {
+    "id": "tc_064",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_065": {
+    "id": "tc_065",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_066": {
+    "id": "tc_066",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_067": {
+    "id": "tc_067",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_068": {
+    "id": "tc_068",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_069": {
+    "id": "tc_069",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_070": {
+    "id": "tc_070",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_071": {
+    "id": "tc_071",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_072": {
+    "id": "tc_072",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_073": {
+    "id": "tc_073",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_074": {
+    "id": "tc_074",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_075": {
+    "id": "tc_075",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_076": {
+    "id": "tc_076",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INSECURE_CONFIGURATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_077": {
+    "id": "tc_077",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_078": {
+    "id": "tc_078",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "XSS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        3
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_079": {
+    "id": "tc_079",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_080": {
+    "id": "tc_080",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "PATH_TRAVERSAL"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_081": {
+    "id": "tc_081",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_082": {
+    "id": "tc_082",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_083": {
+    "id": "tc_083",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_084": {
+    "id": "tc_084",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_085": {
+    "id": "tc_085",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_086": {
+    "id": "tc_086",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_087": {
+    "id": "tc_087",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_088": {
+    "id": "tc_088",
+    "expected": {
+      "verdict": "NOT_VERIFIED",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "NOT_VERIFIED",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_089": {
+    "id": "tc_089",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "lines": [
+        1,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_090": {
+    "id": "tc_090",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SQL_INJECTION",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "lines": [
+        2,
+        2
+      ],
+      "findingCount": 2
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 2,
+      "classes": [
+        "SQL_INJECTION",
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical",
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_091": {
+    "id": "tc_091",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_092": {
+    "id": "tc_092",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "AUTH_BYPASS"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "error": null
+    }
+  },
+  "tc_093": {
+    "id": "tc_093",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "BUSINESS_LOGIC_FLAW"
+      ],
+      "severities": [
+        "warning"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  },
+  "tc_094": {
+    "id": "tc_094",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "XSS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "XSS"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_095": {
+    "id": "tc_095",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_096": {
+    "id": "tc_096",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_097": {
+    "id": "tc_097",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "CRYPTOGRAPHIC_FAILURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_098": {
+    "id": "tc_098",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "INPUT_VALIDATION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_099": {
+    "id": "tc_099",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        2
+      ],
+      "findingCount": 1
+    },
+    "actual": {
+      "verdict": "FAIL",
+      "findingCount": 1,
+      "classes": [
+        "SQL_INJECTION"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "error": null
+    }
+  },
+  "tc_100": {
+    "id": "tc_100",
+    "expected": {
+      "verdict": "PASS",
+      "vulnerabilityClasses": [],
+      "severities": [],
+      "lines": [],
+      "findingCount": 0
+    },
+    "actual": {
+      "verdict": "PASS",
+      "findingCount": 0,
+      "classes": [],
+      "severities": [],
+      "error": null
+    }
+  }
+}

@@ -1,0 +1,885 @@
+[
+  {
+    "id": "tc_003",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "BUSINESS_LOGIC_FLAW"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Nondeterministic"
+  },
+  {
+    "id": "tc_010",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_015",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INSECURE_CONFIGURATION"
+        ],
+        "severities": [
+          "warning"
+        ]
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Nondeterministic"
+  },
+  {
+    "id": "tc_023",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_024",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_025",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_026",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_031",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_033",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "SECRET_EXPOSURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_038",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "CRYPTOGRAPHIC_FAILURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "CRYPTOGRAPHIC_FAILURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "CRYPTOGRAPHIC_FAILURE"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_041",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "BUSINESS_LOGIC_FLAW"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "BUSINESS_LOGIC_FLAW"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Nondeterministic"
+  },
+  {
+    "id": "tc_042",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_044",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_049",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_060",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "PATH_TRAVERSAL"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Nondeterministic"
+  },
+  {
+    "id": "tc_063",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "BUSINESS_LOGIC_FLAW"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "BUSINESS_LOGIC_FLAW"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Nondeterministic"
+  },
+  {
+    "id": "tc_069",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_071",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_074",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_075",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Nondeterministic"
+  },
+  {
+    "id": "tc_076",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_077",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_078",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_080",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_081",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_083",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_084",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_087",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_088",
+    "expectedVerdict": "NOT_VERIFIED",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_093",
+    "expectedVerdict": "FAIL",
+    "runs": [
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      },
+      {
+        "verdict": "PASS",
+        "findingCount": 0,
+        "classes": [],
+        "severities": []
+      }
+    ],
+    "stability": "Stable Failure"
+  },
+  {
+    "id": "tc_098",
+    "expectedVerdict": "PASS",
+    "runs": [
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      },
+      {
+        "verdict": "FAIL",
+        "findingCount": 1,
+        "classes": [
+          "INPUT_VALIDATION"
+        ],
+        "severities": [
+          "critical"
+        ]
+      }
+    ],
+    "stability": "Stable Failure"
+  }
+]

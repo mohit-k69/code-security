@@ -1,0 +1,117 @@
+[FAIL] tc_012
+       EXPECTED: Verdict=FAIL Count=1 Classes=BUSINESS_LOGIC_FLAW Severities=critical
+       ACTUAL:   Verdict=FAIL Count=1 Classes=AUTHORIZATION_FAILURE Severities=critical
+--
+[FAIL] tc_037
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_038
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=FAIL Count=1 Classes=CRYPTOGRAPHIC_FAILURE Severities=critical
+--
+[FAIL] tc_041
+       EXPECTED: Verdict=FAIL Count=1 Classes=BUSINESS_LOGIC_FLAW Severities=critical
+       ACTUAL:   Verdict=FAIL Count=1 Classes=AUTHORIZATION_FAILURE Severities=critical
+--
+[FAIL] tc_042
+       EXPECTED: Verdict=FAIL Count=1 Classes=AUTH_BYPASS Severities=critical
+       ACTUAL:   Verdict=FAIL Count=1 Classes=AUTHORIZATION_FAILURE Severities=critical
+--
+[FAIL] tc_043
+       EXPECTED: Verdict=FAIL Count=1 Classes=BUSINESS_LOGIC_FLAW Severities=critical
+       ACTUAL:   Verdict=FAIL Count=1 Classes=AUTH_BYPASS Severities=critical
+--
+[FAIL] tc_047
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_048
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_057
+       EXPECTED: Verdict=FAIL Count=1 Classes=AUTH_BYPASS Severities=critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+--
+[FAIL] tc_059
+       EXPECTED: Verdict=FAIL Count=1 Classes=PATH_TRAVERSAL Severities=critical
+       ACTUAL:   Verdict=FAIL Count=2 Classes=PATH_TRAVERSAL,INPUT_VALIDATION Severities=critical,critical
+--
+[FAIL] tc_060
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_061
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_063
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_065
+       EXPECTED: Verdict=FAIL Count=1 Classes=CRYPTOGRAPHIC_FAILURE Severities=critical
+       ACTUAL:   Verdict=FAIL Count=1 Classes=CRYPTOGRAPHIC_FAILURE Severities=warning
+--
+[FAIL] tc_069
+       EXPECTED: Verdict=FAIL Count=1 Classes=CRYPTOGRAPHIC_FAILURE Severities=critical
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_071
+       EXPECTED: Verdict=FAIL Count=1 Classes=INSECURE_CONFIGURATION Severities=critical
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_074
+       EXPECTED: Verdict=FAIL Count=1 Classes=INPUT_VALIDATION Severities=critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+[FAIL] tc_075
+       EXPECTED: Verdict=FAIL Count=1 Classes=INPUT_VALIDATION Severities=critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+[FAIL] tc_076
+       EXPECTED: Verdict=FAIL Count=1 Classes=INSECURE_CONFIGURATION Severities=critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+--
+[FAIL] tc_077
+       EXPECTED: Verdict=FAIL Count=1 Classes=INPUT_VALIDATION Severities=critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+--
+[FAIL] tc_078
+       EXPECTED: Verdict=FAIL Count=1 Classes=XSS Severities=critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+--
+[FAIL] tc_080
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=FAIL Count=1 Classes=INPUT_VALIDATION Severities=critical
+--
+[FAIL] tc_081
+       EXPECTED: Verdict=FAIL Count=1 Classes=INPUT_VALIDATION Severities=critical
+       ACTUAL:   Verdict=NOT_VERIFIED Count=0 Classes= Severities=
+--
+[FAIL] tc_089
+       EXPECTED: Verdict=FAIL Count=2 Classes=SECRET_EXPOSURE,SECRET_EXPOSURE Severities=critical,critical
+       ACTUAL:   Verdict=PASS Count=0 Classes= Severities=
+--
+[FAIL] tc_090
+       EXPECTED: Verdict=FAIL Count=2 Classes=SQL_INJECTION,SECRET_EXPOSURE Severities=critical,critical
+       ACTUAL:   Verdict=FAIL Count=3 Classes=AUTHORIZATION_FAILURE,SQL_INJECTION,SECRET_EXPOSURE Severities=critical,critical,critical
+--
+[FAIL] tc_092
+       EXPECTED: Verdict=FAIL Count=1 Classes=BUSINESS_LOGIC_FLAW Severities=warning
+       ACTUAL:   Verdict=FAIL Count=1 Classes=AUTHORIZATION_FAILURE Severities=warning
+--
+[FAIL] tc_093
+       EXPECTED: Verdict=FAIL Count=1 Classes=AUTH_BYPASS Severities=warning
+       ACTUAL:   Verdict=FAIL Count=1 Classes=AUTHORIZATION_FAILURE Severities=warning
+--
+[FAIL] tc_094
+       EXPECTED: Verdict=FAIL Count=1 Classes=XSS Severities=critical
+       ACTUAL:   Verdict=FAIL Count=2 Classes=XSS,AUTHORIZATION_FAILURE Severities=critical,warning
+--
+[FAIL] tc_095
+       EXPECTED: Verdict=FAIL Count=1 Classes=SQL_INJECTION Severities=critical
+       ACTUAL:   Verdict=FAIL Count=2 Classes=AUTHORIZATION_FAILURE,SQL_INJECTION Severities=critical,critical
+--
+[FAIL] tc_098
+       EXPECTED: Verdict=PASS Count=0 Classes= Severities=
+       ACTUAL:   Verdict=FAIL Count=1 Classes=INPUT_VALIDATION Severities=critical

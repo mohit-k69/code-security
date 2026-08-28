@@ -34,9 +34,6 @@ export const InputValidationSpec: ReviewSpecification = {
         "NOT_VERIFIED: Validation is handled by a middleware or framework mechanism not visible in the provided context, or validation logic is simply absent from the partial snippet.",
     },
 
-    // ────────────────────────────────────────────────────────────────
-    // C2 — Input Sanitization
-    // ────────────────────────────────────────────────────────────────
     {
       id: "INPUT-C2",
       name: "Input Sanitization",
@@ -45,15 +42,15 @@ export const InputValidationSpec: ReviewSpecification = {
         "or escaped) before being stored or processed. Focus on whether the input is " +
         "prepared safely for its destination context. Note: Detailed XSS reviews are " +
         "covered in a dedicated checkpoint, but this checkpoint explicitly owns specific " +
-        "backend injection reviews (such as SQL Injection, where `SQL_INJECTION` is an allowed class).\n\n" +
+        "backend injection reviews (such as SQL Injection or Path Traversal, where `SQL_INJECTION` and `PATH_TRAVERSAL` are allowed classes).\n\n" +
         "PASS: Input is safely sanitized, type-cast, or encoded before storage or " +
-        "processing (e.g., using DOMPurify for rich text, stripping null bytes). " +
+        "processing (e.g., using DOMPurify for rich text, stripping null bytes, or using `path.basename()` to prevent path traversal). " +
         "Parameterized/prepared SQL queries (e.g., using `?`, `$1`, or named parameters) " +
         "must NOT be marked FAIL, even if the DB library implementation is out of context, " +
         "unless the supplied code also demonstrates unsafe string interpolation/concatenation.\n" +
         "FAIL: Concrete evidence of raw user input being explicitly passed directly " +
         "to a dangerous sink or sensitive mechanism (e.g., via string interpolation or concatenation " +
-        "into a SQL statement). Do not FAIL simply because sanitization logic is absent from a partial snippet.\n" +
+        "into a SQL statement, or directly to `fs.readFile` without directory traversal sanitization). Do not FAIL simply because sanitization logic is absent from a partial snippet.\n" +
         "NOT_VERIFIED: Sanitization happens in an external service, middleware, or " +
         "ORM layer not visible in the provided context, or is simply absent.",
     },
@@ -89,7 +86,7 @@ export const InputValidationSpec: ReviewSpecification = {
         "PASS: Unexpected input types (e.g., arrays instead of strings), null values, " +
         "or excessively large payloads are explicitly rejected or safely handled.\n" +
         "FAIL: Explicitly insecure handling of input that demonstrably causes a crash, " +
-        "type confusion, or undefined state. Do not FAIL simply because defensive " +
+        "type confusion, undefined state, or allows XML External Entity (XXE) expansion (e.g., explicitly enabling entities in XML parsers). Do not FAIL simply because defensive " +
         "parsing logic is absent.\n" +
         "NOT_VERIFIED: Error handling and payload parsing are managed by the framework " +
         "or middleware out of context, or absent.",
@@ -161,6 +158,7 @@ export const InputValidationSpec: ReviewSpecification = {
     "- Unrestricted file uploads (INPUT-C5) are almost always **critical** severity.\n" +
     "- Client-only validation without backend enforcement (INPUT-C3) is a **FAIL** and " +
     "typically **critical**.\n" +
-    "- **Specific Vulnerability Classification**: For INPUT-C2, if you identify concrete evidence of an injection attack (such as SQL Injection), you MUST classify the finding using the specific class (e.g., `SQL_INJECTION`) rather than the generic `INPUT_VALIDATION` class.\n" +
-    "- **Deduplication**: If a specific injection vulnerability (like `SQL_INJECTION`) is identified under INPUT-C2, report it exactly ONCE. Do NOT report a redundant `INPUT_VALIDATION` finding under INPUT-C1 for the exact same input field at the same sink. The specific injection vulnerability supersedes the generic missing validation.",
+    "- **Specific Vulnerability Classification**: For INPUT-C2, if you identify concrete evidence of an injection attack (such as SQL Injection or Path Traversal), you MUST classify the finding using the specific class (e.g., `SQL_INJECTION` or `PATH_TRAVERSAL`). However, for OS Command Injection, you MUST use the generic `INPUT_VALIDATION` class.\n" +
+    "- **Deduplication**: If a specific injection vulnerability (like `SQL_INJECTION` or `PATH_TRAVERSAL`) is identified under ANY criterion, it supersedes all other generic missing validation findings for that operation. Do NOT report a redundant `INPUT_VALIDATION` finding under C1, C5, or any other criterion for the exact same input field or operation. Report the specific injection finding EXACTLY ONCE.\n" +
+    "- **NOT_VERIFIED vs PASS**: If explicit defense logic is visible (e.g., path traversal checks like `startsWith(baseDir)`), you MUST return PASS for that criterion, not NOT_VERIFIED.",
 };

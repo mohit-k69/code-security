@@ -141,9 +141,15 @@ export const SessionJwtSpec: ReviewSpecification = {
     "token backend state (SESSION-C6) is a **FAIL**.\n" +
     "- Treat `process.env.JWT_SECRET` or equivalent runtime secret retrieval as secure by default.\n" +
     "- **CRITICAL**: Do NOT flag hardcoded JWT secrets or keys here. Secret exposure is strictly evaluated by SEC-SECRET-001.\n" +
+    "- **CRITICAL**: If you see an explicit inline check for session, user ID, or authentication status (e.g., `if (!req.session || !req.session.userId) return res.redirect('/login');`), you MUST consider this a valid session check and output PASS. Do NOT return NOT_VERIFIED claiming missing middleware context.\n" +
     "- Never infer vulnerabilities without sufficient code evidence.\n\n" +
 
     "### Analysis Priorities\n\n" +
     "- Authentication/authorization or impersonation bypasses caused by missing credential verification MUST be mapped to the `AUTH_BYPASS` vulnerability class.\n" +
-    "- JWT-specific issues such as missing expiration, weak signing configuration, or JWT validation problems MUST be mapped to the `JWT_SECURITY` vulnerability class.",
+    "- JWT-specific issues such as missing expiration, weak signing configuration, or JWT validation problems MUST be mapped to the `JWT_SECURITY` vulnerability class.\n" +
+    "- **CRITICAL**: Trusting `jwt.decode` without signature verification (SESSION-C2) is a JWT validation problem and MUST be mapped to `JWT_SECURITY`, not `AUTH_BYPASS`.\n\n" +
+
+    "### JWT Specifics\n\n" +
+    "- If a token is verified and immediately trusted for sensitive actions without additional authorization checks, or if it's a completely unauthenticated route minting tokens from query parameters (e.g., `jwt.sign({user: req.query.user})`), it MUST be flagged as AUTH_BYPASS.\n" +
+    "- Do not evaluate authorization (e.g., whether the user has permission to perform an action) — that belongs to SEC-AUTHZ-001.\n",
 };

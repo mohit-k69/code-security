@@ -1,0 +1,48 @@
+[
+  {
+    "id": "tc_040",
+    "category": "secrets",
+    "snippet": "const client = new MongoClient('mongodb://admin:admin12345@prod.database.internal:27017');",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "tags": [
+      "secrets",
+      "connection-string"
+    ],
+    "rationale": "Hardcoded password inside a connection string."
+  },
+  {
+    "id": "tc_091",
+    "category": "severity",
+    "snippet": "const DB_URL = 'postgres://prod_admin:RealProdPass123!@10.0.1.5:5432/main_db';",
+    "expected": {
+      "verdict": "FAIL",
+      "vulnerabilityClasses": [
+        "SECRET_EXPOSURE"
+      ],
+      "severities": [
+        "critical"
+      ],
+      "lines": [
+        1
+      ],
+      "findingCount": 1
+    },
+    "tags": [
+      "severity",
+      "critical"
+    ],
+    "rationale": "Clearly critical hardcoded production database password."
+  }
+]

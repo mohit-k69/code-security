@@ -139,10 +139,15 @@ export const AuthenticationSpec: ReviewSpecification = {
         "PASS: Reset tokens are random, single-use, and time-limited; the flow " +
         "does not leak account existence.\n" +
         "FAIL: Concrete evidence of predictable tokens, explicitly reusable tokens, " +
-        "explicit user enumeration logic, or insecure token delivery. Do not FAIL " +
-        "merely because protections are absent from a partial snippet.\n" +
-        "NOT_VERIFIED: No password reset flow is present, or the flow is incomplete " +
-        "in the changed files.",
+        "explicit user enumeration logic, or insecure token delivery. " +
+        "If the visible code demonstrates that a client-controlled recovery identifier (such as email) " +
+        "plus a new password directly reaches the password-change operation without a reset token, " +
+        "one-time credential, signed recovery artifact, or equivalent server-verifiable proof, classify it as FAIL. " +
+        "Do not FAIL merely because protections are absent from a partial snippet.\n" +
+        "NOT_VERIFIED: No password reset flow is present. For password-reset/recovery flows, do not classify " +
+        "the flow as NOT_VERIFIED merely because the underlying password-update/database function is unseen. " +
+        "If the visible code merely delegates the entire password-reset authorization decision to an " +
+        "opaque recovery service, return NOT_VERIFIED.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -179,13 +184,12 @@ export const AuthenticationSpec: ReviewSpecification = {
         "Session tokens must be cryptographically random and at least 128 bits. " +
         "Cookies carrying session tokens must set HttpOnly, Secure, and SameSite " +
         "flags (SameSite=Lax or Strict). " +
-        "If JWT is used: signature validation must be enforced, and the 'none' algorithm " +
-        "must be explicitly rejected. " +
-        "(Note: JWT expiration checks belong to SEC-SESSION-001, and secret storage belongs to SEC-SECRET-001. Do not flag them here.)\n\n" +
+        "### C1: JWT & SESSION VALIDATION DELEGATION\n" +
+        "- **CRITICAL**: Do NOT evaluate JWT algorithms, missing JWT expiration, or JWT validation logic (like `jwt.decode` vs `jwt.verify`) here. All JWT lifecycle management is strictly delegated to SEC-SESSION-001.\n" +
+        "- If you see `jwt.decode` used, you MUST NOT generate an AUTH_BYPASS or JWT_SECURITY finding. Assume it is verified elsewhere or SEC-SESSION-001 will handle it.\n\n" +
         "PASS: Sessions are regenerated post-auth; tokens are random and properly flagged. " +
         "Fetching secrets via `process.env.VAR` is secure.\n" +
-        "FAIL: No session regeneration, predictable tokens, missing cookie flags, or " +
-        "JWT 'none' algorithm accepted.\n" +
+        "FAIL: No session regeneration, predictable tokens, missing cookie flags.\n" +
         "NOT_VERIFIED: Session/token creation logic is handled by a framework or " +
         "library not visible in the changed files.",
     },
@@ -259,9 +263,11 @@ export const AuthenticationSpec: ReviewSpecification = {
     "but lack evidence, flag it as NOT_VERIFIED with an explanation, not as FAIL.\n" +
     "- **CRITICAL**: You MUST use an exact string from the allowed `vulnerabilityClass` list (e.g., `AUTH_BYPASS`, `BUSINESS_LOGIC_FLAW`, `INSECURE_CONFIGURATION`). Do NOT invent new classes like `INFORMATION_DISCLOSURE` or `SESSION_MANAGEMENT`. Map enumeration/disclosure issues to `BUSINESS_LOGIC_FLAW` or `AUTH_BYPASS`.\n" +
     "- **CRITICAL**: Do NOT flag hardcoded secrets or passwords here. Secret exposure is strictly evaluated by SEC-SECRET-001.\n" +
-    "- **CRITICAL**: Do NOT flag missing JWT/token expirations here. Token expiration is strictly evaluated by SEC-SESSION-001.\n" +
+    "- **CRITICAL**: Do NOT evaluate JWT algorithms, missing JWT expiration, or JWT validation logic here. However, if a JWT or session token is issued without checking credentials (missing authentication), it MUST be flagged as AUTH_BYPASS.\n" +
     "- **CRITICAL**: Do NOT flag generic input validation or missing request-body validation here. Input validation is strictly evaluated by SEC-INPUT-001.\n" +
-    "- **CRITICAL**: Do NOT flag cryptographic failures like timing-attacks or password hashing algorithms here. Cryptography is strictly evaluated by SEC-CRYPTO-001.\n\n" +
+    "- **CRITICAL**: Do NOT flag cryptographic failures like timing-attacks or password hashing algorithms here. Cryptography is strictly evaluated by SEC-CRYPTO-001.\n" +
+    "- **CRITICAL**: Do NOT flag a database query (e.g., `WHERE password = $1`) as plaintext password storage or missing hashing unless there is explicit evidence of storing a plaintext password or explicit missing hashing. If it's just a variable binding, you MUST return PASS (do NOT return NOT_VERIFIED).\n" +
+    "- **CRITICAL**: If you see an explicit inline check for session, user ID, or authentication status (e.g., `if (!req.session || !req.session.userId) return res.redirect('/login');`), you MUST consider this a valid authentication check and output PASS. Do NOT return NOT_VERIFIED claiming missing middleware context.\n\n" +
 
     "### Analysis Priorities\n\n" +
     "- Prioritize findings by exploitability: critical > warning > info.\n" +

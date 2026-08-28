@@ -43,6 +43,7 @@ export const AuthorizationSpec: ReviewSpecification = {
         "before returning data). No user-controlled IDs are used for lookups " +
         "without ownership filtering.\n" +
         "FAIL: The snippet explicitly demonstrates broken access control logic, an explicit authorization bypass, or a dangerous database operation using client-supplied IDs where the route definition (e.g., app.post) is visible and clearly lacks authorization middleware. Do NOT FAIL if the snippet is merely a partial function body where middleware might handle it; instead use NOT_VERIFIED.\n" +
+        "STATIC ASSETS EXCEPTION: Do not flag IDOR (AUTHZ-C1) for fetching generic static files, assets, or documents from a shared directory (e.g., `/var/www/downloads`) unless the code explicitly establishes that the files are user-scoped or contain sensitive user data.\n" +
         "NOT_VERIFIED: Resource ownership logic is delegated to a data access " +
         "layer, ORM policy, or missing downstream database authorization logic not included in the provided context, or authorization is simply not visible in the snippet.",
     },
@@ -187,24 +188,32 @@ export const AuthorizationSpec: ReviewSpecification = {
 
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +
-    "- A single criterion can have multiple findings if multiple issues exist.\n" +
+    "- **Deduplication**: If the exact same identical bypass logic or missing authorization check occurs across multiple identical routes or functions, group them into a SINGLE finding with multiple evidence entries. Do not report separate findings for identical copies of the same flaw.\n" +
+    "- A single criterion can have multiple findings if multiple distinct issues exist.\n" +
     "- If a criterion is not applicable to the changed code (e.g., no admin routes exist " +
     "in the PR), do not report it as a finding — note its absence in the summary.\n" +
     "- If a criterion cannot be fully evaluated because required context (middleware, " +
     "ORM policies, IAM configuration) is missing, use NOT_VERIFIED rather than assumptions.\n" +
     "- Never infer vulnerabilities without sufficient code evidence. If you suspect an issue " +
-    "but lack evidence, flag it as NOT_VERIFIED with an explanation, not as FAIL.\n\n" +
+    "but lack evidence, flag it as NOT_VERIFIED with an explanation, not as FAIL.\n" +
+    "- Precedence: If a vulnerability is flagged as a specific flaw such as Mass Assignment (AUTHZ-C4) or IDOR (AUTHZ-C1) on an operation, do not generate redundant findings for missing general authorization (AUTHZ-C2, AUTHZ-C3, or AUTHZ-C6) on the exact same operation.\n\n" +
 
     "### Analysis Priorities\n\n" +
     "- IDOR / missing ownership checks (AUTHZ-C1) are almost always **critical** severity.\n" +
     "- Privilege escalation (AUTHZ-C4) and multi-tenant isolation failures (AUTHZ-C5) " +
     "are almost always **critical** severity.\n" +
-    "- Missing admin guards (AUTHZ-C3) are typically **critical** if admin data is exposed.\n" +
-    "- Client-only enforcement (AUTHZ-C2) is **warning** if no server check is visible, " +
-    "**critical** if the API endpoint is confirmed to lack authorization.\n" +
-    "- Missing authorization on non-destructive read operations is typically **warning**; " +
-    "missing authorization on write/delete operations is typically **critical**.\n" +
-    "- For authorization failures caused by client-controlled object identifiers, missing ownership checks, or IDOR-style access to another user's resources, use BUSINESS_LOGIC_FLAW. Reserve AUTH_BYPASS for cases where authentication or an existing authorization control is directly bypassed or circumvented.\n\n" +
+    "- Missing authorization on a read-only/non-destructive operation is typically **warning**. Do not automatically escalate a read-only operation to critical merely because the data is internal/admin, unless the specification explicitly defines that scenario as critical.\n" +
+    "- Missing authorization on a write/delete/destructive operation is typically **critical**.\n" +
+    "- Bypassing an existing authentication/authorization guard (AUTH_BYPASS) or Privilege Escalation (AUTHZ-C4) is **critical** regardless of whether it is a read or write operation.\n" +
+    "- **CRITICAL VULNERABILITY CLASS CONSTRAINT**: The ONLY permitted vulnerability classes for this checkpoint are `BUSINESS_LOGIC_FLAW` and `AUTH_BYPASS`. You MUST NOT output `AUTHORIZATION_FAILURE`, `IDOR`, or any other custom class.\n" +
+    "- For IDOR (AUTHZ-C1), client-controlled object identifiers, missing ownership checks, or access to another user's resources, you MUST use BUSINESS_LOGIC_FLAW. Do NOT map these to AUTH_BYPASS even if server-side enforcement is missing.\n" +
+    "- For Privilege escalation (AUTHZ-C4) OR mass assignment, you MUST use BUSINESS_LOGIC_FLAW.\n" +
+    "- For completely missing server-side authorization enforcement (AUTHZ-C2) like client-side only checks, use BUSINESS_LOGIC_FLAW.\n" +
+    "- For missing role/admin authorization guards (AUTHZ-C3) on an admin route, or bypassing an existing authentication/authorization guard, use AUTH_BYPASS.\n" +
+    "- **CRITICAL**: Do NOT evaluate JWT creation/signing, missing JWT expiration, or JWT validation logic here. All JWT issues are strictly handled by SEC-SESSION-001.\n" +
+    "- Reserve AUTH_BYPASS for cases where authentication or an existing authorization control is directly bypassed or circumvented.\n" +
+    "- **Deduplication**: Do NOT flag a database query as an authorization failure (e.g. IDOR) if the query is just retrieving a user by token or ID for authentication/session purposes, unless explicit missing enforcement is evident.\n" +
+    "- **NOT_VERIFIED vs PASS**: If a middleware with a name suggesting authentication/authorization (like `requireAdmin`, `checkAuth`, `isAuthenticated`) is explicitly applied to the route in the snippet, you MUST return PASS for the respective criteria, not NOT_VERIFIED.\n\n" +
 
     "### Deep Data-Flow Analysis for IDOR (CRITICAL)\n\n" +
     "- Do NOT assume global middleware handles resource ownership (IDOR) checks. While global middleware can authenticate a user, it typically cannot authorize specific object IDs (e.g., `req.params.id`).\n" +
@@ -217,5 +226,6 @@ export const AuthorizationSpec: ReviewSpecification = {
     "lacks authentication entirely, that is an authentication finding (SEC-AUTH-001), " +
     "not an authorization finding. However, if an endpoint authenticates the user but " +
     "does not check whether that user is authorized for the specific action, that IS " +
-    "an authorization finding for this checkpoint.",
+    "an authorization finding for this checkpoint.\n" +
+    "- **CRITICAL EXCEPTION**: Do not flag login, registration, password reset, or token issuance endpoints (e.g., `/login`, `/register`, `/token`) for missing authorization, as these are inherently unauthenticated operations evaluated by the Authentication Review.",
 };

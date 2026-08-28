@@ -1,0 +1,194 @@
+{
+  "id": "tc_012",
+  "exp_cls": [
+    "BUSINESS_LOGIC_FLAW"
+  ],
+  "snippet": "app.post('/updateProfile', requireAuth, async (req, res) => {\n  const targetUserId = req.body.userId;\n  await db.users.update({ id: targetUserId, email: req.body.email });\n  res.send('Updated');\n});"
+}
+{
+  "id": "tc_037",
+  "exp_cls": [],
+  "snippet": "const dbPassword = process.env.DB_PASSWORD || process.env.FALLBACK_PASS;\ndb.connect(dbPassword);"
+}
+{
+  "id": "tc_038",
+  "exp_cls": [],
+  "snippet": "function loginUser(userPassword) {\n  return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);\n}"
+}
+{
+  "id": "tc_041",
+  "exp_cls": [
+    "BUSINESS_LOGIC_FLAW"
+  ],
+  "snippet": "app.get('/users/:id/messages', (req, res) => {\n  const messages = db.getMessagesForUser(req.params.id);\n  res.json(messages);\n});"
+}
+{
+  "id": "tc_042",
+  "exp_cls": [
+    "AUTH_BYPASS"
+  ],
+  "snippet": "app.post('/api/admin/delete_user', (req, res) => {\n  db.users.delete(req.body.userId);\n  res.send('Deleted');\n});"
+}
+{
+  "id": "tc_043",
+  "exp_cls": [
+    "BUSINESS_LOGIC_FLAW"
+  ],
+  "snippet": "app.post('/profile', (req, res) => {\n  const user = req.session.user;\n  Object.assign(user, req.body);\n  db.save(user);\n});"
+}
+{
+  "id": "tc_047",
+  "exp_cls": [],
+  "snippet": "import { requireAdmin } from './middleware';\nrouter.post('/settings', requireAdmin, (req, res) => {\n  res.send('Updated settings');\n});"
+}
+{
+  "id": "tc_048",
+  "exp_cls": [],
+  "snippet": "function handleRequest(req, res) {\n  if (!req.session || !req.session.userId) {\n    return res.redirect('/login');\n  }\n  res.send('Welcome');\n}"
+}
+{
+  "id": "tc_057",
+  "exp_cls": [
+    "AUTH_BYPASS"
+  ],
+  "snippet": "app.post('/token', (req, res) => {\n  const token = jwt.sign({ user: req.query.user }, process.env.JWT_SECRET, { expiresIn: '1h' });\n  res.json({ token });\n});"
+}
+{
+  "id": "tc_059",
+  "exp_cls": [
+    "PATH_TRAVERSAL"
+  ],
+  "snippet": "app.post('/upload', upload.single('file'), (req, res) => {\n  fs.writeFileSync('/uploads/' + req.file.originalname, req.file.buffer);\n});"
+}
+{
+  "id": "tc_060",
+  "exp_cls": [],
+  "snippet": "const safePath = path.resolve(baseDir, req.query.file);\nif (!safePath.startsWith(baseDir)) throw new Error('Invalid path');\nfs.readFileSync(safePath);"
+}
+{
+  "id": "tc_061",
+  "exp_cls": [],
+  "snippet": "app.post('/upload', upload.single('file'), (req, res) => {\n  const filename = crypto.randomUUID() + '.png';\n  fs.writeFileSync(path.join('/uploads', filename), req.file.buffer);\n});"
+}
+{
+  "id": "tc_063",
+  "exp_cls": [],
+  "snippet": "async function downloadFile(req, res) {\n  const record = await db.files.findById(req.params.id);\n  res.sendFile(record.absolutePath);\n}"
+}
+{
+  "id": "tc_065",
+  "exp_cls": [
+    "CRYPTOGRAPHIC_FAILURE"
+  ],
+  "snippet": "function encryptData(data, key) {\n  const cipher = crypto.createCipher('des', key);\n  return cipher.update(data, 'utf8', 'hex') + cipher.final('hex');\n}"
+}
+{
+  "id": "tc_069",
+  "exp_cls": [
+    "CRYPTOGRAPHIC_FAILURE"
+  ],
+  "snippet": "function hashData(data) {\n  return crypto.createHash('sha1').update(data).digest('hex');\n}"
+}
+{
+  "id": "tc_071",
+  "exp_cls": [
+    "INSECURE_CONFIGURATION"
+  ],
+  "snippet": "app.use(cors({ origin: '*' }));"
+}
+{
+  "id": "tc_074",
+  "exp_cls": [
+    "INPUT_VALIDATION"
+  ],
+  "snippet": "const libxmljs = require('libxmljs');\nconst xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });"
+}
+{
+  "id": "tc_075",
+  "exp_cls": [
+    "INPUT_VALIDATION"
+  ],
+  "snippet": "const parser = new xml2js.Parser({ explicitEntity: true, noent: true });"
+}
+{
+  "id": "tc_076",
+  "exp_cls": [
+    "INSECURE_CONFIGURATION"
+  ],
+  "snippet": "app.use((req, res, next) => {\n  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');\n  next();\n});"
+}
+{
+  "id": "tc_077",
+  "exp_cls": [
+    "INPUT_VALIDATION"
+  ],
+  "snippet": "app.get('/api/products', async (req, res) => {\n  const products = await db.collection('products').find({ category: req.query.category }).toArray();\n  res.json(products);\n});"
+}
+{
+  "id": "tc_078",
+  "exp_cls": [
+    "XSS"
+  ],
+  "snippet": "app.get('/greet', (req, res) => {\n  const tmpl = `Hello ${req.query.name}! Welcome to ${req.query.app}`; \n  res.renderString(tmpl);\n});"
+}
+{
+  "id": "tc_080",
+  "exp_cls": [],
+  "snippet": "const { spawn } = require('child_process');\nspawn('ls', ['-l', req.query.dir]);"
+}
+{
+  "id": "tc_081",
+  "exp_cls": [
+    "INPUT_VALIDATION"
+  ],
+  "snippet": "const filter = `(&(uid=${req.body.user})(objectClass=*))`;\nclient.search('dc=example,dc=com', { filter });"
+}
+{
+  "id": "tc_089",
+  "exp_cls": [
+    "SECRET_EXPOSURE",
+    "SECRET_EXPOSURE"
+  ],
+  "snippet": "const s3Key = 'AKIAIOSFODNN7EXAMPLE';\nconst stripeKey = 'sk_live_1234567890abcdef';"
+}
+{
+  "id": "tc_090",
+  "exp_cls": [
+    "SQL_INJECTION",
+    "SECRET_EXPOSURE"
+  ],
+  "snippet": "app.get('/data', async (req, res) => {\n  const result = await db.query(`SELECT * FROM users WHERE token = '${req.query.token}' AND secret = 'sk_live_123456789'`);\n});"
+}
+{
+  "id": "tc_092",
+  "exp_cls": [
+    "BUSINESS_LOGIC_FLAW"
+  ],
+  "snippet": "function AdminPanel() {\n  if (!localStorage.getItem('isAdmin')) {\n    return <div>Access Denied</div>;\n  }\n  return <AdminDashboard />;\n}"
+}
+{
+  "id": "tc_093",
+  "exp_cls": [
+    "AUTH_BYPASS"
+  ],
+  "snippet": "app.get('/api/internal/users', (req, res) => {\n  const users = db.getInternalUsers();\n  res.json(users);\n});"
+}
+{
+  "id": "tc_094",
+  "exp_cls": [
+    "XSS"
+  ],
+  "snippet": "app.get('/internal-admin/logs', (req, res) => {\n  res.send(`<h1>Logs for ${req.query.date}</h1>`);\n});"
+}
+{
+  "id": "tc_095",
+  "exp_cls": [
+    "SQL_INJECTION"
+  ],
+  "snippet": "// SAFE: User input is fully sanitized by upstream middleware\ndb.query('SELECT * FROM users WHERE id = ' + req.query.id);"
+}
+{
+  "id": "tc_098",
+  "exp_cls": [],
+  "snippet": "const safeData = { val: req.query.input };\neval('var state = ' + JSON.stringify(safeData));"
+}

@@ -56,12 +56,11 @@ export const CryptographySpec: ReviewSpecification = {
       name: "Key Management",
       description:
         "Encryption keys must be securely generated, stored, loaded, and used. " +
-        "Keys must not be hardcoded in the source code or checked into version control.\n\n" +
+        "Keys must be fetched securely at runtime from environment variables or a KMS.\n\n" +
         "PASS: Keys are fetched securely at runtime from environment variables or a " +
         "key management service (KMS).\n" +
-        "FAIL: Cryptographic keys or salts are hardcoded in the source files.\n" +
         "NOT_VERIFIED: Key generation/storage occurs entirely in an external vault system " +
-        "outside the context.",
+        "outside the context. Hardcoded secrets MUST NOT be evaluated here.",
     },
 
     // ────────────────────────────────────────────────────────────────
@@ -143,7 +142,8 @@ export const CryptographySpec: ReviewSpecification = {
     "- Do NOT suppress a finding merely because a variable is named 'checksum', 'etag', or similar if the surrounding logic is security-sensitive.\n\n" +
 
     "### Analysis Priorities\n\n" +
-    "- Using general-purpose or deprecated hash functions (like MD5 or SHA-1) for passwords (CRYPTO-C2) is **critical** severity.\n\n" +
+    "- Using general-purpose or deprecated hash functions (like MD5 or SHA-1) for passwords (CRYPTO-C2) is **critical** severity.\n" +
+    "- Using weak or deprecated encryption algorithms (e.g., DES, 3DES, RC4) for encryption (CRYPTO-C1) is **critical** severity.\n\n" +
 
     "### Verdict Assignment Rules\n\n" +
     "- Report each distinct issue as a separate finding.\n" +
@@ -151,8 +151,8 @@ export const CryptographySpec: ReviewSpecification = {
     "password, this is a **FAIL** under CRYPTO-C2.\n" +
     "- Using `Math.random()` for any sensitive value (tokens, keys, IDs) is a **FAIL** " +
     "under CRYPTO-C4.\n" +
-    "- Hardcoded encryption keys are a **FAIL** under CRYPTO-C3. (Note: remember to " +
-    "redact actual key values in the snippet output).\n" +
+    "- **CRITICAL**: Do NOT flag hardcoded encryption keys, JWT secrets, or API keys here. Hardcoded secrets are strictly evaluated by SEC-SECRET-001.\n" +
+    "- **CRITICAL**: Do NOT flag a database query (e.g., `WHERE password = $1`) as a cryptography/hashing failure unless there is explicit evidence of storing a plaintext password or explicit missing hashing. If it's just a variable binding, return NOT_VERIFIED or PASS.\n" +
     "- Using ECB mode (e.g., `aes-128-ecb`) is a **FAIL** under CRYPTO-C6.\n" +
     "- Never infer cryptographic weaknesses without sufficient code evidence.",
 };

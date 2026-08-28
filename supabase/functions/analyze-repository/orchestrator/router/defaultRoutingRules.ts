@@ -15,7 +15,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "sso", "saml", "oidc", "mfa", "2fa", "totp",
     ],
     contentMatchPatterns: [
-      "authenticate", "authorization", "password"
+      "authenticate", "authorization", "password", "login", "username", "signup", "signin"
     ],
     checkpointIds: ["SEC-AUTH-001"],
   },
@@ -35,7 +35,8 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "chargeuser", "/charge-user",
       "processpayment", "paymentgateway",
       "/:id", "req.params", "req.query",
-      "req.body", "object.assign", "userid", "accountid", "tenantid"
+      "req.body", "object.assign", "userid", "accountid", "tenantid",
+      "internal", "admin", "users", "settings", "config"
     ],
     checkpointIds: ["SEC-AUTHZ-001"],
   },
@@ -48,7 +49,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     ],
     contentMatchPatterns: [
       "select ", "select * from", "insert into", "update ", "delete from", "db.query", "db.execute",
-      "exec(", "child_process", "spawn(", "eval("
+      "exec(", "child_process", "spawn(", "eval(", "xml", "parse"
     ],
     checkpointIds: ["SEC-INPUT-001"],
   },
@@ -60,7 +61,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "vault", "keystore", "keyring",
     ],
     contentMatchPatterns: [
-      "secret", "token", "apikey"
+      "secret", "token", "apikey", "key", "redacted", "password", "credential", "env"
     ],
     checkpointIds: ["SEC-SECRET-001"],
   },
@@ -72,7 +73,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       "csrf", "xsrf",
     ],
     contentMatchPatterns: [
-      "jwt.sign", "jwt.verify", "jsonwebtoken", "session", "auth.verify", "verifytoken", "verifyusertoken", "validatetoken"
+      "jwt.sign", "jwt.verify", "jwt.decode", "jsonwebtoken", "session", "auth.verify", "verifytoken", "verifyusertoken", "validatetoken"
     ],
     checkpointIds: ["SEC-SESSION-001"],
   },
@@ -99,7 +100,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
       ".yaml", ".yml",
     ],
     contentMatchPatterns: [
-      "helmet(", "cors(", "tls.createserver", "https.createserver", "secure: true", "httponly: true", "x-frame-options", "x-xss-protection"
+      "helmet(", "cors(", "tls.createserver", "https.createserver", "secure: true", "httponly: true", "x-frame-options", "x-xss-protection", "access-control-allow-origin"
     ],
     checkpointIds: ["SEC-CONFIG-001"],
   },

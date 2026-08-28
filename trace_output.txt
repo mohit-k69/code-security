@@ -1,0 +1,510 @@
+=== 1. Load tc_023 ===
+Loaded tc_023
+
+=== 2. Show exact snippet ===
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+=== 3. Routing Logic ===
+
+=== 4. Checkpoints Selected ===
+[ 'SEC-SECRET-001', 'SEC-SESSION-001' ]
+Explanation: [
+  'Rule "Secrets Management" matched code content: snippet code → SEC-SECRET-001',
+  'Rule "Session & JWT" matched code content: snippet code → SEC-SESSION-001',
+  'Selected 2 checkpoint(s), skipped 8.'
+]
+
+=== 5. Confirm relevant checkpoint ===
+Actually running:
+SEC-SECRET-001
+SEC-SESSION-001
+
+=== 6. Prompt generated ===
+
+--- Running SEC-SECRET-001 ---
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16271 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PA
+════════════════════════════════════════════════════════════════════════════════
+
+
+Does pasteCodeOverride exist in prompt? true
+
+Exact Prompt Sent to LLM:
+## Review Specification
+
+**Checkpoint ID:** SEC-SECRET-001
+**Checkpoint Name:** Secrets Management Review
+**Version:** 1.0
+**Category:** secrets-management
+**Description:** Determines whether secrets (API keys, passwords, access tokens, database credentials, certificates, signing keys, encryption keys, and other sensitive credentials) are stored, transmitted, loaded, rotated, and protected securely throughout the application.
+
+### Evaluation Criteria
+
+| # | Criterion | Description |
+|---|-----------|-------------|
+| SECRET-C1 | Hardcoded Secrets | Secrets must never be hardcoded in source code or committed to version control. This includes API keys, access tokens, database passwords, JWT secrets, encryption keys, certificates, private keys, and inadvertently committed files like .env or service-account.json.
+
+PASS: Secrets are referenced via environment variables or secret managers, not hardcoded in the codebase.
+FAIL: A secret value (or a file containing secrets, like a .env file) is hardcoded or checked into the repository.
+NOT_VERIFIED: Not applicable as this can usually be verified directly from the code. |
+| SECRET-C2 | Secure Secret Storage | Secrets must be loaded from secure configuration mechanisms (e.g., environment variables, AWS Secrets Manager, HashiCorp Vault, Azure Key Vault) rather than insecure locations. Configuration files (JSON, YAML, XML) must not contain plaintext secrets.
+
+PASS: Secrets are injected into the application at runtime via secure environments (e.g., `process.env.VAR`) or fetched securely via a secrets manager.
+FAIL: Secrets are stored in plaintext configuration files, custom encrypted files with hardcoded keys, or use explicitly insecure fallbacks (e.g., `process.env.SECRET || 'dev_secret'`).
+NOT_VERIFIED: The mechanism by which the environment variables or configuration files are populated is external to the provided context. |
+| SECRET-C3 | Secret Exposure | Secrets must never be exposed inadvertently to untrusted parties. They must be excluded from application logs, error messages, API responses, client-side code (e.g., React/Vue frontend bundles), and debug output.
+
+PASS: Sensitive variables are explicitly masked or omitted before logging or returning data to the client. Frontend code does not import backend secrets.
+FAIL: Secrets are logged (e.g., console.log(process.env)), included in stack traces, returned in API payloads (e.g., returning a full user object with password hashes/tokens), or embedded in client-side JavaScript.
+NOT_VERIFIED: Logging or response serialization mechanisms are managed globally by frameworks not visible in the context. |
+| SECRET-C4 | Secret Lifecycle | Secrets should be handled safely throughout their lifecycle. Applications should prefer temporary, short-lived credentials over long-lived static keys. Tokens must have appropriate expiration times, and mechanisms should exist to rotate or revoke compromised secrets.
+
+PASS: The application uses short-lived tokens (e.g., JWTs with short expires), assumes temporary roles (e.g., AWS STS), or implements mechanisms to rotate keys.
+FAIL: The application relies entirely on long-lived, non-expiring tokens where short-lived alternatives are supported, or hardcodes assumptions that prevent secret rotation (e.g., immutable secret IDs).
+NOT_VERIFIED: Secret lifecycle management (rotation schedules, token policies) is handled by an external Identity Provider or Secrets Manager out of context. |
+| SECRET-C5 | Least Privilege Credentials | Applications must use credentials that possess only the minimum permissions necessary to perform their intended function. For example, an application that only reads data should use a read-only database user or a read-only API token.
+
+PASS: Credentials requested or used are scoped to specific, limited permissions (e.g., specific scopes in an OAuth token, restricted DB roles).
+FAIL: The application requests or uses highly privileged credentials (e.g., root database users, full-access cloud IAM roles, unscoped API tokens) for routine operations.
+NOT_VERIFIED: The actual permissions assigned to the credentials are defined in infrastructure-as-code or cloud consoles not visible in the provided files. |
+| SECRET-C6 | Secure Secret Usage | Secrets must be used only where strictly necessary and must not be unnecessarily copied, cached, serialized, or persisted to disk. Secrets should reside in memory only for as long as they are actively needed.
+
+PASS: Secrets are used directly for authentication/encryption and are not assigned to long-lived global states, written to temporary files, or cached insecurely.
+FAIL: Secrets are written to disk (e.g., saving a token to a temp file for another process), serialized into cache systems (e.g., Redis) in plaintext, or held unnecessarily in global application state.
+NOT_VERIFIED: The runtime memory management or caching infrastructure is external to the provided context. |
+### Additional Instructions
+
+Focus your analysis on the changed files. For each criterion, determine whether the code introduces, modifies, or fails to address the secrets management concern.
+
+### Finding Requirements
+
+Every finding MUST include:
+1. **criterionId** — The exact criterion ID (SECRET-C1 through SECRET-C6) this finding relates to.
+2. **evidence** — At least one evidence entry with the exact file path, line number, and code snippet from the provided context. Never fabricate evidence.
+3. **risk** — A clear description of the security risk (e.g., 'Hardcoded API keys can be extracted from version control and abused by attackers').
+4. **remediation** — A concrete, implementable fix (e.g., 'Move the Stripe secret key to an environment variable and access it via process.env.STRIPE_SECRET_KEY').
+
+### Primary Location and Deduplication (CRITICAL)
+
+- Each finding MUST have `primaryLocation.file` and `primaryLocation.line` corresponding to the EXACT source line containing the specific secret being reported.
+- If multiple distinct secrets exist on different lines, produce SEPARATE finding objects with DISTINCT `primaryLocation.line` values.
+- DO NOT reuse the first finding's location for subsequent findings.
+- Evidence line(s) for a finding MUST correspond to that finding's `primaryLocation`.
+
+### THE REDACTION RULE (CRITICAL)
+
+You MUST NEVER reveal actual secret values in your findings, risk explanations, remediations, or evidence snippets.
+- If you detect a hardcoded secret, describe its type ONLY (e.g., 'AWS Access Key', 'JWT Secret', 'Database Password').
+- In the `evidence` snippet, you MUST redact the actual secret value. For example, if the code is `const key = 'sk_live_12345';`, your evidence snippet MUST be `const key = '***REDACTED***';` or `const key = 'sk_live_...'`.
+- Failure to redact secrets constitutes a severe security violation of the review platform.
+
+### SYNTHETIC CREDENTIALS EXCEPTION (CRITICAL)
+
+- Do NOT flag credentials that are explicitly and unambiguously marked as example, fake, mock, test, dummy, placeholder, or redacted values.
+- Examples include values containing substrings such as: EXAMPLE, FAKE, MOCK, DUMMY, PLACEHOLDER, TEST-ONLY, DO-NOT-USE, ***REDACTED*** (even if embedded directly inside a longer credential-like value, e.g., `...CYEXAMPLEKEY`).
+- Also DO NOT flag obvious sequential or structural dummy patterns (e.g., `1234567890`, `abcdef`, `changeme`, `password123`, `your-api-key`).
+- A variable name alone (e.g., `MOCK_AWS_KEY` or `TEST_SECRET`) is NOT sufficient evidence to suppress a finding if the value otherwise appears to be a real credential.
+- Real-looking hardcoded credentials must still be reported unless the code clearly establishes that they are synthetic.
+- Preserve all existing redaction requirements for evidence when reporting real credentials.
+
+### HARDCODED PASSWORDS & URIS (CRITICAL)
+
+- Database/service connection URIs containing embedded credentials MUST be treated as potential SECRET_EXPOSURE regardless of password entropy or apparent complexity.
+- This covers common URI schemes such as: mongodb://, mongodb+srv://, postgres://, postgresql://, mysql://, redis://.
+- You must flag credentials embedded in these URIs when they appear to be production/real credentials.
+- The existing synthetic-credential exceptions still apply. Do NOT flag a URI merely because it contains credentials if the code explicitly establishes that the credentials are synthetic using the allowed indicators (e.g., EXAMPLE, FAKE, MOCK, DUMMY, PLACEHOLDER, TEST-ONLY, DO-NOT-USE, ***REDACTED***).
+
+### Verdict Assignment Rules
+
+- Report each distinct issue as a separate finding.
+- A single criterion can have multiple findings if multiple issues exist.
+- If a criterion cannot be fully evaluated because required context is missing, use NOT_VERIFIED rather than assumptions.
+- Never infer secret exposure without sufficient code evidence.
+
+### Analysis Priorities
+
+- All findings generated by this specification MUST be mapped to the `SECRET_EXPOSURE` vulnerability class.
+- Hardcoded secrets (SECRET-C1) and Secret Exposure via logs/APIs (SECRET-C3) are almost always **critical** severity.
+- Plaintext secrets in config files (SECRET-C2) are **critical** severity.
+- Using overly privileged credentials (SECRET-C5) is typically **high** severity.
+- Lack of secret rotation or relying on excessively long-lived tokens (SECRET-C4) is typically a **moderate** or **warning** level finding.
+
+---
+
+## Paste Code Specific Verdict Rules
+
+You are analyzing a standalone code snippet pasted by a user, not a full repository. Override the standard framework verdict semantics with the following:
+
+- **PASS**: Use PASS when the provided pasted code contains no demonstrated security vulnerability and the relevant security behavior can reasonably be evaluated from the supplied code. 
+  IMPORTANT: If the pasted code contains no functionality relevant to a checkpoint's security domain, that checkpoint must return PASS, not NOT_VERIFIED.
+- **FAIL**: Use FAIL when the pasted code contains concrete evidence of a security vulnerability.
+- **NOT_VERIFIED**: Use NOT_VERIFIED only when the pasted code contains security-sensitive behavior where an important security property genuinely depends on missing code, configuration, infrastructure, middleware, or downstream implementation. Do not use NOT_VERIFIED merely because the pasted snippet is not the entire application.
+
+**Opaque/Unseen Implementation Rule:**
+When a security-critical property is delegated to an unseen/opaque implementation, you MUST NOT assume that implementation is secure. Examples include:
+- unseen authentication/authorization functions
+- imported security helpers whose implementation is not provided
+- opaque middleware when its relevant security behavior cannot be verified
+- external payment/security services whose security behavior is not visible
+- custom wrappers whose validation/authentication behavior cannot be inspected
+
+If the supplied snippet contains no independently visible unsafe behavior, but correctness of the security property depends on such unseen implementation, return NOT_VERIFIED rather than PASS. However, do NOT turn every imported function, middleware, ORM, library, or helper into NOT_VERIFIED. If the snippet itself provides sufficient visible evidence that the relevant security property is safely enforced, return PASS.
+
+**Authentication & Authorization Context:**
+For Paste Code, do not treat missing inline middleware as proof that a route is unprotected. If a sensitive route/action is present but authentication/authorization logic is not visible in the supplied snippet, assume it may be applied globally or elsewhere and return NOT_VERIFIED rather than FAIL.
+
+Example:
+- Small, self-contained safe snippet → PASS
+- Clearly vulnerable snippet → FAIL
+- Security-sensitive partial snippet where an important control depends on unseen code → NOT_VERIFIED
+
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPLICABLE",
+  "confidence": <number between 0.0 and 1.0>,
+  "summary": "<one paragraph summarizing your assessment>",
+  "findings": [
+    {
+      "criterionId": "<the ID of the specific evaluation criterion this finding relates to, e.g. AUTH-C1>",
+      "vulnerabilityClass": "<MUST be exactly one of: XSS, PATH_TRAVERSAL, AUTH_BYPASS, SECRET_EXPOSURE, JWT_SECURITY, DEPENDENCY_RISK, SQL_INJECTION, SSRF, INSECURE_CONFIGURATION, BUSINESS_LOGIC_FLAW, INPUT_VALIDATION, CRYPTOGRAPHIC_FAILURE, UNKNOWN>",
+      "cwes": ["<CWE-798>", "<CWE-20>"], // array of strings, or [] if unable to map confidently
+      "primaryLocation": {
+        "file": "<file path containing the vulnerability root cause>",
+        "line": <line number>
+      },
+      "title": "<short title>",
+      "severity": "critical" | "warning" | "info",
+      "description": "<detailed description of the issue>",
+      "suggestion": "<actionable fix>",
+      "evidence": [
+        {
+          "file": "<file path>",
+          "line": <line number>,
+          "snippet": "<relevant code>",
+          "explanation": "<why this is evidence>"
+        }
+      ]
+    }
+  ]
+}
+
+If no issues are found, return verdict "PASS" with an empty findings array.
+If you cannot determine the result due to missing/unseen code, return verdict "NOT_VERIFIED" with an empty findings array. Do not generate speculative or informational findings for security controls that are simply not visible.
+Determine applicability from explicit security-sensitive logic present in the supplied code.
+Merely using Express, defining generic routes, creating a router, starting an HTTP server, or importing a framework does not make a security domain applicable.
+Examples:
+- app.listen() alone -> not Security Configuration applicable.
+- express.Router() alone -> not Authentication/Session applicable.
+- A database query alone -> not Authorization applicable unless authorization-related logic is actually present.
+- Explicit CORS/security headers/TLS/cookie security/auth middleware/JWT/session logic -> potentially applicable.
+Evaluate only the security behavior explicitly visible in the snippet.
+
+1. FAIL: If the visible code contains unsafe implementation (for example missing expirations, trusting client-controlled identities, missing credential checks, or other explicitly unsafe behavior), flag it. Do not assume unseen code provides protection against a visible flaw.
+
+2. PASS: If the visible code demonstrates a security control that is safe and sufficiently verifiable from the shown implementation, return PASS. Do not return NOT_VERIFIED merely because the snippet covers only one phase of a larger lifecycle. When a checkpoint contains multiple criteria, evaluate only criteria for which the snippet contains relevant code. If every applicable criterion can be positively verified as PASS and no applicable criterion is FAIL or NOT_VERIFIED, the checkpoint verdict MUST be PASS. Treat a criterion as applicable only if the snippet explicitly demonstrates behavior or functionality relevant to it. Do not require unrelated lifecycle phases to be verified if they are not represented in the snippet. However, if a criterion is directly relevant to the visible behavior, and its correctness genuinely depends on unseen code, you must evaluate that criterion as NOT_VERIFIED. Never convert an actual FAIL into PASS.
+
+3. NOT_VERIFIED: Return NOT_VERIFIED only when there is no visible unsafe behavior AND the core security property being evaluated is entirely delegated to an opaque or unseen implementation, leaving no concrete security behavior to verify.
+
+Do not treat ordinary use of a known library/API as automatically opaque when the security-relevant behavior and parameters are visible.
+If no relevant security-sensitive logic is explicitly present, return "NOT_APPLICABLE".
+
+=== 7. Raw LLM JSON response ===
+
+
+=== 8. CheckpointRunner result ===
+Verdict: NOT_VERIFIED
+Findings: 0
+
+--- Running SEC-SESSION-001 ---
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13276 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PA
+════════════════════════════════════════════════════════════════════════════════
+
+
+Does pasteCodeOverride exist in prompt? true
+
+Exact Prompt Sent to LLM:
+## Review Specification
+
+**Checkpoint ID:** SEC-SESSION-001
+**Checkpoint Name:** Session & JWT Security Review
+**Version:** 1.0
+**Category:** session-management
+**Description:** Determines whether authenticated sessions, cookies, JWTs, refresh tokens, and authentication state are securely created, maintained, validated, renewed, and destroyed throughout their lifecycle.
+
+### Evaluation Criteria
+
+| # | Criterion | Description |
+|---|-----------|-------------|
+| SESSION-C1 | Secure Session Creation | Sessions and authentication tokens must be securely created after successful authentication using cryptographically secure random generators or robust signing algorithms (e.g., RS256, HS256).
+
+PASS: Session IDs are generated securely (e.g., using robust libraries) and JWTs are signed using secure algorithms (HS256, RS256).
+FAIL: Session IDs are predictable (e.g., sequential IDs, weak PRNGs like Math.random()), or JWTs are signed with 'none' algorithm or weak hashing.
+NOT_VERIFIED: Token/Session creation logic is handled by external identity providers or middleware not visible in the context. |
+| SESSION-C2 | JWT Validation | JWTs must be properly validated before trust. This includes explicitly verifying the signature, expiration, issuer, audience, and algorithm. Using `jwt.decode()` instead of `jwt.verify()` for authentication trust is a critical vulnerability.
+
+PASS: JWTs are explicitly verified using robust libraries (e.g., jsonwebtoken's `verify()` method), checking the signature and throwing errors on invalid tokens. Explicitly specifying secure algorithms (e.g., `algorithms: ['HS256']`) inherently rejects 'none'.
+FAIL: The application trusts `jwt.decode()` without verifying the signature, accepts the 'none' algorithm, ignores the expiration date, or fails to verify critical claims (issuer/audience) when required. Do not fail if 'none' is rejected implicitly by an explicit algorithm list.
+NOT_VERIFIED: JWT verification is handled by an API Gateway or framework layer not provided in the context. |
+| SESSION-C3 | Session & Token Expiration | Sessions and tokens must expire appropriately and cannot be used indefinitely. Access tokens (JWTs) should have short lifetimes, and stateful sessions should enforce absolute and/or idle timeouts.
+
+PASS: Access tokens are created with short expiration times (e.g., '15m'), and session configurations define explicit timeouts.
+FAIL: Access tokens are explicitly configured to never expire, sessions explicitly disable timeout mechanisms, or a JWT signing operation (e.g., jwt.sign) omits the expiration option, causing it to default to a non-expiring token.
+NOT_VERIFIED: Expiration policies are defined in an external Identity Provider, or the snippet lacks the token creation or signing context entirely. |
+| SESSION-C4 | Refresh Token Security | Refresh tokens must be securely generated, stored (hashed or encrypted in DB), validated, rotated upon use, and revoked when appropriate.
+
+PASS: Refresh tokens are validated against a backend database/cache before issuing new access tokens, and ideally rotated (new refresh token issued) on use.
+FAIL: Refresh tokens are blindly trusted (e.g., verifying a JWT signature only) without checking a revocation list or database, allowing revoked tokens to generate new access tokens forever.
+NOT_VERIFIED: Refresh token logic is handled by external providers. |
+| SESSION-C5 | Secure Cookie Configuration | Authentication cookies must use appropriate security protections: `Secure` (HTTPS only), `HttpOnly` (inaccessible to JavaScript), and `SameSite` (CSRF protection) where applicable.
+
+PASS: Authentication/Session cookies explicitly set `HttpOnly: true`, `Secure: true` (or strictly in production), and `SameSite` appropriately.
+FAIL: Session cookies lack the `HttpOnly` flag (allowing XSS theft) or lack the `Secure` flag (allowing interception over HTTP).
+NOT_VERIFIED: Cookies are not used for authentication (e.g., Bearer tokens are used exclusively) or cookie configuration is external. |
+| SESSION-C6 | Session Invalidation | Sessions, JWTs, and refresh tokens must be properly invalidated after logout, password reset, credential change, or account disablement.
+
+PASS: The logout endpoint destroys the session cookie and revokes the refresh token in the database. Password resets revoke all active sessions.
+FAIL: Logout merely deletes a client-side token without backend revocation, or password resets fail to invalidate existing active refresh tokens/sessions.
+NOT_VERIFIED: Logout and session invalidation logic is managed externally. |
+### Additional Instructions
+
+Focus your analysis on the changed files. For each criterion, determine whether the code introduces, modifies, or fails to address the session/JWT concern.
+
+### Finding Requirements
+
+Every finding MUST include:
+1. **criterionId** — The exact criterion ID (SESSION-C1 through SESSION-C6) this finding relates to.
+2. **evidence** — At least one evidence entry with the exact file path, line number, and code snippet from the provided context. Never fabricate evidence.
+3. **risk** — A clear description of the security risk (e.g., 'Using jwt.decode instead of verify allows attackers to forge tokens and bypass authentication').
+4. **remediation** — A concrete, implementable fix.
+
+### Verdict Assignment Rules
+
+- Report each distinct issue as a separate finding.
+- If cookies are not used for authentication (e.g., Bearer tokens are used in headers), return NOT_VERIFIED for SESSION-C5 (Secure Cookie Configuration).
+- Using `jwt.decode()` for authentication trust (SESSION-C2) is a **FAIL**.
+- Missing `HttpOnly` on auth cookies (SESSION-C5) is a **FAIL**.
+- Logging out by only deleting a client-side cookie without invalidating the refresh token backend state (SESSION-C6) is a **FAIL**.
+- Treat `process.env.JWT_SECRET` or equivalent runtime secret retrieval as secure by default.
+- **CRITICAL**: Do NOT flag hardcoded JWT secrets or keys here. Secret exposure is strictly evaluated by SEC-SECRET-001.
+- Never infer vulnerabilities without sufficient code evidence.
+
+### Analysis Priorities
+
+- Authentication/authorization or impersonation bypasses caused by missing credential verification MUST be mapped to the `AUTH_BYPASS` vulnerability class.
+- JWT-specific issues such as missing expiration, weak signing configuration, or JWT validation problems MUST be mapped to the `JWT_SECURITY` vulnerability class.
+
+---
+
+## Paste Code Specific Verdict Rules
+
+You are analyzing a standalone code snippet pasted by a user, not a full repository. Override the standard framework verdict semantics with the following:
+
+- **PASS**: Use PASS when the provided pasted code contains no demonstrated security vulnerability and the relevant security behavior can reasonably be evaluated from the supplied code. 
+  IMPORTANT: If the pasted code contains no functionality relevant to a checkpoint's security domain, that checkpoint must return PASS, not NOT_VERIFIED.
+- **FAIL**: Use FAIL when the pasted code contains concrete evidence of a security vulnerability.
+- **NOT_VERIFIED**: Use NOT_VERIFIED only when the pasted code contains security-sensitive behavior where an important security property genuinely depends on missing code, configuration, infrastructure, middleware, or downstream implementation. Do not use NOT_VERIFIED merely because the pasted snippet is not the entire application.
+
+**Opaque/Unseen Implementation Rule:**
+When a security-critical property is delegated to an unseen/opaque implementation, you MUST NOT assume that implementation is secure. Examples include:
+- unseen authentication/authorization functions
+- imported security helpers whose implementation is not provided
+- opaque middleware when its relevant security behavior cannot be verified
+- external payment/security services whose security behavior is not visible
+- custom wrappers whose validation/authentication behavior cannot be inspected
+
+If the supplied snippet contains no independently visible unsafe behavior, but correctness of the security property depends on such unseen implementation, return NOT_VERIFIED rather than PASS. However, do NOT turn every imported function, middleware, ORM, library, or helper into NOT_VERIFIED. If the snippet itself provides sufficient visible evidence that the relevant security property is safely enforced, return PASS.
+
+**Authentication & Authorization Context:**
+For Paste Code, do not treat missing inline middleware as proof that a route is unprotected. If a sensitive route/action is present but authentication/authorization logic is not visible in the supplied snippet, assume it may be applied globally or elsewhere and return NOT_VERIFIED rather than FAIL.
+
+Example:
+- Small, self-contained safe snippet → PASS
+- Clearly vulnerable snippet → FAIL
+- Security-sensitive partial snippet where an important control depends on unseen code → NOT_VERIFIED
+
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPLICABLE",
+  "confidence": <number between 0.0 and 1.0>,
+  "summary": "<one paragraph summarizing your assessment>",
+  "findings": [
+    {
+      "criterionId": "<the ID of the specific evaluation criterion this finding relates to, e.g. AUTH-C1>",
+      "vulnerabilityClass": "<MUST be exactly one of: XSS, PATH_TRAVERSAL, AUTH_BYPASS, SECRET_EXPOSURE, JWT_SECURITY, DEPENDENCY_RISK, SQL_INJECTION, SSRF, INSECURE_CONFIGURATION, BUSINESS_LOGIC_FLAW, INPUT_VALIDATION, CRYPTOGRAPHIC_FAILURE, UNKNOWN>",
+      "cwes": ["<CWE-798>", "<CWE-20>"], // array of strings, or [] if unable to map confidently
+      "primaryLocation": {
+        "file": "<file path containing the vulnerability root cause>",
+        "line": <line number>
+      },
+      "title": "<short title>",
+      "severity": "critical" | "warning" | "info",
+      "description": "<detailed description of the issue>",
+      "suggestion": "<actionable fix>",
+      "evidence": [
+        {
+          "file": "<file path>",
+          "line": <line number>,
+          "snippet": "<relevant code>",
+          "explanation": "<why this is evidence>"
+        }
+      ]
+    }
+  ]
+}
+
+If no issues are found, return verdict "PASS" with an empty findings array.
+If you cannot determine the result due to missing/unseen code, return verdict "NOT_VERIFIED" with an empty findings array. Do not generate speculative or informational findings for security controls that are simply not visible.
+Determine applicability from explicit security-sensitive logic present in the supplied code.
+Merely using Express, defining generic routes, creating a router, starting an HTTP server, or importing a framework does not make a security domain applicable.
+Examples:
+- app.listen() alone -> not Security Configuration applicable.
+- express.Router() alone -> not Authentication/Session applicable.
+- A database query alone -> not Authorization applicable unless authorization-related logic is actually present.
+- Explicit CORS/security headers/TLS/cookie security/auth middleware/JWT/session logic -> potentially applicable.
+Evaluate only the security behavior explicitly visible in the snippet.
+
+1. FAIL: If the visible code contains unsafe implementation (for example missing expirations, trusting client-controlled identities, missing credential checks, or other explicitly unsafe behavior), flag it. Do not assume unseen code provides protection against a visible flaw.
+
+2. PASS: If the visible code demonstrates a security control that is safe and sufficiently verifiable from the shown implementation, return PASS. Do not return NOT_VERIFIED merely because the snippet covers only one phase of a larger lifecycle. When a checkpoint contains multiple criteria, evaluate only criteria for which the snippet contains relevant code. If every applicable criterion can be positively verified as PASS and no applicable criterion is FAIL or NOT_VERIFIED, the checkpoint verdict MUST be PASS. Treat a criterion as applicable only if the snippet explicitly demonstrates behavior or functionality relevant to it. Do not require unrelated lifecycle phases to be verified if they are not represented in the snippet. However, if a criterion is directly relevant to the visible behavior, and its correctness genuinely depends on unseen code, you must evaluate that criterion as NOT_VERIFIED. Never convert an actual FAIL into PASS.
+
+3. NOT_VERIFIED: Return NOT_VERIFIED only when there is no visible unsafe behavior AND the core security property being evaluated is entirely delegated to an opaque or unseen implementation, leaving no concrete security behavior to verify.
+
+Do not treat ordinary use of a known library/API as automatically opaque when the security-relevant behavior and parameters are visible.
+If no relevant security-sensitive logic is explicitly present, return "NOT_APPLICABLE".
+
+=== 7. Raw LLM JSON response ===
+
+
+=== 8. CheckpointRunner result ===
+Verdict: NOT_VERIFIED
+Findings: 0

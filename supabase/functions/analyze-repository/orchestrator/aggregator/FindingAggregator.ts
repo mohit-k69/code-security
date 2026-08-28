@@ -55,9 +55,14 @@ export class FindingAggregator {
         
         // If they share the exact same vulnerability class and are within 3 lines of each other,
         // they are deterministically the same finding (e.g. two checkpoints finding XSS on the same line).
+        // EXCEPTION: Distinct hardcoded secrets on nearby lines are separate vulnerabilities and MUST NOT be merged unless on the exact same line.
         if (isSameClass && isNearby) {
-          matchedCluster = cluster;
-          break;
+          if (f1.vulnerabilityClass === "SECRET_EXPOSURE" && f1.primaryLocation.line !== f2.primaryLocation.line) {
+            // Do not merge distinct secrets on different lines
+          } else {
+            matchedCluster = cluster;
+            break;
+          }
         }
         
         // If they are on the exact same line, but have different classes, we check for CWE overlap

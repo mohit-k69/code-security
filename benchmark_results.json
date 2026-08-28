@@ -1,0 +1,5958 @@
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16994 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const bcrypt = require('bcrypt');
+async function hashPassword(password) {
+  const salt = await bcrypt.genSalt(12);
+  return await bcrypt.hash(password, salt);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12296 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const bcrypt = require('bcrypt');
+async function hashPassword(password) {
+  const salt = await bcrypt.genSalt(12);
+  return await bcrypt.hash(password, salt);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16541 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const path = require('path');
+const fs = require('fs');
+app.get('/download', (req, res) => {
+  const filename = path.basename(req.query.file);
+  const safePath = path.join('/var/www/downloads', filename);
+  if (fs.existsSync(safePath)) {
+    res.sendFile(safePath);
+  } else {
+    res.status(404).send('Not found');
+  }
+});
+
+### Dependency Files (for conte
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15359 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const jwt = require('jsonwebtoken');
+function generateToken(user) {
+  return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any tex
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12364 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const jwt = require('jsonwebtoken');
+function generateToken(user) {
+  return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any tex
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16471 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.delete('/api/users/:id', requireAuth, async (req, res) => {
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  await db.users.delete({ where: { id: req.params.id } });
+  res.json({ success: true });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16392 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/search', async (req, res) => {
+  const term = req.query.q;
+  const results = await db.query('SELECT * FROM items WHERE name = $1', [term]);
+  res.json(results);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    14020 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/search', async (req, res) => {
+  const term = req.query.q;
+  const results = await db.query('SELECT * FROM items WHERE name = $1', [term]);
+  res.json(results);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16396 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/search', async (req, res) => {
+  const term = req.query.q;
+  const results = await db.query('SELECT * FROM items WHERE name = "' + term + '"');
+  res.json(results);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    14024 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/search', async (req, res) => {
+  const term = req.query.q;
+  const results = await db.query('SELECT * FROM items WHERE name = "' + term + '"');
+  res.json(results);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16331 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/greet', (req, res) => {
+  const name = req.query.name;
+  res.send("<h1>Hello, " + name + "!</h1>");
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-XSS-001 — Cross-Site Scripting (XSS) Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    11518 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/greet', (req, res) => {
+  const name = req.query.name;
+  res.send("<h1>Hello, " + name + "!</h1>");
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16376 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/file', (req, res) => {
+  const filepath = '/var/www/html/' + req.query.path;
+  const data = fs.readFileSync(filepath, 'utf8');
+  res.send(data);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside th
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12128 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/file', (req, res) => {
+  const filepath = '/var/www/html/' + req.query.path;
+  const data = fs.readFileSync(filepath, 'utf8');
+  res.send(data);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside th
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15355 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const AWS = require('aws-sdk');
+AWS.config.update({
+  accessKeyId: '<REDACTED_CLOUD_CREDENTIAL_EXAMPLE>',
+  secretAccessKey: '<REDACTED_CLOUD_CREDENTIAL_EXAMPLE>'
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text ou
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16402 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  if (req.body.username === 'admin' || req.query.bypass === 'true') {
+    req.session.user = 'admin';
+    return res.json({ success: true });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not i
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12378 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  if (req.body.username === 'admin' || req.query.bypass === 'true') {
+    req.session.user = 'admin';
+    return res.json({ success: true });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not i
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16416 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/updateProfile', requireAuth, async (req, res) => {
+  const targetUserId = req.body.userId;
+  await db.users.update({ id: targetUserId, email: req.body.email });
+  res.send('Updated');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact sc
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16350 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/token', (req, res) => {
+  const token = jwt.sign({ user: req.body.user }, 'super_secret_key');
+  res.json({ token });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdi
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15321 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/token', (req, res) => {
+  const token = jwt.sign({ user: req.body.user }, 'super_secret_key');
+  res.json({ token });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdi
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12326 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/token', (req, res) => {
+  const token = jwt.sign({ user: req.body.user }, 'super_secret_key');
+  res.json({ token });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdi
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16985 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const crypto = require('crypto');
+function storePassword(pass) {
+  const hash = crypto.createHash('md5').update(pass).digest('hex');
+  db.save(hash);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12287 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const crypto = require('crypto');
+function storePassword(pass) {
+  const hash = crypto.createHash('md5').update(pass).digest('hex');
+  db.save(hash);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12205 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const express = require('express');
+const cors = require('cors');
+const app = express();
+app.use(cors({ origin: '*' }));
+app.disable('x-powered-by');
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON ob
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16380 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const { exec } = require('child_process');
+app.post('/ping', (req, res) => {
+  exec('ping -c 4 ' + req.body.ip, (err, stdout) => {
+    res.send(stdout);
+  });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outsid
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    14008 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const { exec } = require('child_process');
+app.post('/ping', (req, res) => {
+  exec('ping -c 4 ' + req.body.ip, (err, stdout) => {
+    res.send(stdout);
+  });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outsid
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15339 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+// mock_data.test.js
+const MOCK_AWS_KEY = "AKIA-FAKE-TEST-KEY-DO-NOT-USE";
+const MOCK_AWS_SECRET = "FAKE-TEST-SECRET-STRING-FOR-MOCKS-DO-NOT-USE-999";
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON o
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16392 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const DOMPurify = require('dompurify');
+app.get('/bio', (req, res) => {
+  const cleanHtml = DOMPurify.sanitize(req.query.bio);
+  res.send("<div>" + cleanHtml + "</div>");
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-XSS-001 — Cross-Site Scripting (XSS) Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    11579 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const DOMPurify = require('dompurify');
+app.get('/bio', (req, res) => {
+  const cleanHtml = DOMPurify.sanitize(req.query.bio);
+  res.send("<div>" + cleanHtml + "</div>");
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16396 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/search', async (req, res) => {
+  // Using Prisma ORM
+  const results = await prisma.$queryRaw`SELECT * FROM items WHERE name = ${req.query.q}`;
+  res.json(results);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    14024 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/search', async (req, res) => {
+  // Using Prisma ORM
+  const results = await prisma.$queryRaw`SELECT * FROM items WHERE name = ${req.query.q}`;
+  res.json(results);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12269 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const crypto = require('crypto');
+function generateETag(content) {
+  return crypto.createHash('md5').update(content).digest('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verd
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16455 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/api/avatar', (req, res) => {
+  const allowedFiles = ['user.png', 'guest.png'];
+  const requestedFile = req.query.file;
+  if (allowedFiles.includes(requestedFile)) {
+    res.sendFile(path.join('/assets', requestedFile));
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15313 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PA
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12318 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PA
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12113 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/upload', upload.single('document'), (req, res) => {
+  fileProcessor.handleUpload(req.file);
+  res.status(200).send('Uploading');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16344 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+export const processPayment = async (amount: number, card: string) => {
+  return await paymentGateway.charge(amount, card);
+};
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12244 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const crypto = require('crypto');
+export function hashData(data) {
+  return cryptoHelper.customHash(data);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16710 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function requireAuth(req, res, next) {
+  if (req.session?.user) { return next(); }
+  return res.status(401).send('Unauthorized');
+}
+
+app.get('/data1', (req, res) => {
+  if(req.query.bypass === 'true') { return res.json(db.getAll()); }
+  return requireAuth(req, res, () => res.json(db.getAll()));
+});
+
+// ... lots of code ...
+
+app.get('/data2', (req, res) =
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12686 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function requireAuth(req, res, next) {
+  if (req.session?.user) { return next(); }
+  return res.status(401).send('Unauthorized');
+}
+
+app.get('/data1', (req, res) => {
+  if(req.query.bypass === 'true') { return res.json(db.getAll()); }
+  return requireAuth(req, res, () => res.json(db.getAll()));
+});
+
+// ... lots of code ...
+
+app.get('/data2', (req, res) =
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16925 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const DB_PASSWORD = "super_secret_db_pass_123";
+const API_KEY = "sk_live_1234567890abcdef";
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15280 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const DB_PASSWORD = "super_secret_db_pass_123";
+const API_KEY = "sk_live_1234567890abcdef";
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16448 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/stats', async (req, res) => {
+  const userQuery = req.query.q;
+  const data = await db.query("SELECT * FROM stats WHERE val = " + userQuery);
+  res.send("<h1>Stats for " + userQuery + "</h1>" + JSON.stringify(data));
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with v
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    14076 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/stats', async (req, res) => {
+  const userQuery = req.query.q;
+  const data = await db.query("SELECT * FROM stats WHERE val = " + userQuery);
+  res.send("<h1>Stats for " + userQuery + "</h1>" + JSON.stringify(data));
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with v
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-XSS-001 — Cross-Site Scripting (XSS) Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    11635 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/stats', async (req, res) => {
+  const userQuery = req.query.q;
+  const data = await db.query("SELECT * FROM stats WHERE val = " + userQuery);
+  res.send("<h1>Stats for " + userQuery + "</h1>" + JSON.stringify(data));
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with v
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    17104 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  const user = req.body.username;
+  const pass = crypto.createHash('md5').update(req.body.password).digest('hex');
+  if (user === 'admin') {
+    const token = jwt.sign({ user }, 'super_secret_jwt_key');
+    res.json({ token });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Out
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16488 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  const user = req.body.username;
+  const pass = crypto.createHash('md5').update(req.body.password).digest('hex');
+  if (user === 'admin') {
+    const token = jwt.sign({ user }, 'super_secret_jwt_key');
+    res.json({ token });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Out
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15459 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  const user = req.body.username;
+  const pass = crypto.createHash('md5').update(req.body.password).digest('hex');
+  if (user === 'admin') {
+    const token = jwt.sign({ user }, 'super_secret_jwt_key');
+    res.json({ token });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Out
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12464 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  const user = req.body.username;
+  const pass = crypto.createHash('md5').update(req.body.password).digest('hex');
+  if (user === 'admin') {
+    const token = jwt.sign({ user }, 'super_secret_jwt_key');
+    res.json({ token });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Out
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12406 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  const user = req.body.username;
+  const pass = crypto.createHash('md5').update(req.body.password).digest('hex');
+  if (user === 'admin') {
+    const token = jwt.sign({ user }, 'super_secret_jwt_key');
+    res.json({ token });
+  }
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Out
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15365 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const config = {
+  aws: {
+    credentials: {
+      accessKeyId: '<REDACTED_CLOUD_CREDENTIAL_EXAMPLE>',
+      secretAccessKey: '<REDACTED_CLOUD_CREDENTIAL_EXAMPLE>'
+    }
+  }
+};
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include a
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15327 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function init() {
+  // Never commit this!
+  // AWS_SECRET_ACCESS_KEY="<REDACTED_CLOUD_CREDENTIAL_EXAMPLE>"
+  console.log("Initialized");
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15306 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+console.log('Using Stripe Key:', stripeKey);
+stripe.init(stripeKey);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15245 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const getApiKey = () => 'sk_live_' + '9876543210abcdef';
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NO
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15255 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const endpoints = [{ url: '/api/v1', key: 'api_7654321_secret' }];
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICA
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16930 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const dbPassword = process.env.DB_PASSWORD || process.env.FALLBACK_PASS;
+db.connect(dbPassword);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16944 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function loginUser(userPassword) {
+  return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" |
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13956 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function loginUser(userPassword) {
+  return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" |
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15332 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+describe('Login Tests', () => {
+  it('should login', () => {
+    const testSecret = 'test_secret_123';
+    assert(login(testSecret));
+  });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16894 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const client = new MongoClient('<REDACTED_DATABASE_PASSWORD>
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" |
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16347 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/users/:id/messages', (req, res) => {
+  const messages = db.getMessagesForUser(req.params.id);
+  res.json(messages);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict"
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16331 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/api/admin/delete_user', (req, res) => {
+  db.users.delete(req.body.userId);
+  res.send('Deleted');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16341 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/profile', (req, res) => {
+  const user = req.session.user;
+  Object.assign(user, req.body);
+  db.save(user);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PAS
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12317 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/profile', (req, res) => {
+  const user = req.session.user;
+  Object.assign(user, req.body);
+  db.save(user);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PAS
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16977 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/reset-password', (req, res) => {
+  const userEmail = req.body.email;
+  db.users.updatePassword(userEmail, req.body.newPassword);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16361 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/reset-password', (req, res) => {
+  const userEmail = req.body.email;
+  db.users.updatePassword(userEmail, req.body.newPassword);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16398 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.delete('/post/:id', (req, res) => {
+  const post = db.getPost(req.params.id);
+  if (post.ownerId !== req.user.id) throw new Error('Unauthorized');
+  db.deletePost(post.id);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not inclu
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16342 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/admin', (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).send();
+  res.render('admin');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PA
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16353 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+import { requireAdmin } from './middleware';
+router.post('/settings', requireAdmin, (req, res) => {
+  res.send('Updated settings');
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "ve
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16361 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function handleRequest(req, res) {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/login');
+  }
+  res.send('Welcome');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12337 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function handleRequest(req, res) {
+  if (!req.session || !req.session.userId) {
+    return res.redirect('/login');
+  }
+  res.send('Welcome');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16947 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.use((req, res, next) => {
+  if (req.path.match('/public/')) return next();
+  requireAuth(req, res, next);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15253 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12258 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15252 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const token = jwt.sign(payload, secret, { algorithm: 'none' });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12257 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const token = jwt.sign(payload, secret, { algorithm: 'none' });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16985 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function authenticate(req, res) {
+  const token = req.headers.authorization.split(' ')[1];
+  const decoded = jwt.decode(token);
+  req.user = decoded;
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15340 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function authenticate(req, res) {
+  const token = req.headers.authorization.split(' ')[1];
+  const decoded = jwt.decode(token);
+  req.user = decoded;
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15292 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyToken(token, secret) {
+  return jwt.verify(token, secret, { ignoreExpiration: true });
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_V
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12297 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function verifyToken(token, secret) {
+  return jwt.verify(token, secret, { ignoreExpiration: true });
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_V
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16391 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/refresh', (req, res) => {
+  const payload = jwt.verify(req.body.refreshToken, secret);
+  res.json({ token: jwt.sign(payload, secret, { expiresIn: '15m' }) });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15362 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/refresh', (req, res) => {
+  const payload = jwt.verify(req.body.refreshToken, secret);
+  res.json({ token: jwt.sign(payload, secret, { expiresIn: '15m' }) });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12367 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/refresh', (req, res) => {
+  const payload = jwt.verify(req.body.refreshToken, secret);
+  res.json({ token: jwt.sign(payload, secret, { expiresIn: '15m' }) });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15295 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NO
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12300 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '15m', algorithm: 'HS256' });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NO
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15269 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+res.cookie('auth', token, { secure: true, httpOnly: true, sameSite: 'strict' });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicabil
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12136 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+res.cookie('auth', token, { secure: true, httpOnly: true, sameSite: 'strict' });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicabil
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16376 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/token', (req, res) => {
+  const token = jwt.sign({ user: req.query.user }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.json({ token });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside th
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15347 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/token', (req, res) => {
+  const token = jwt.sign({ user: req.query.user }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.json({ token });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside th
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12352 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/token', (req, res) => {
+  const token = jwt.sign({ user: req.query.user }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.json({ token });
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside th
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12101 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+zip.entries().forEach(entry => {
+  const outPath = path.join(outDir, entry.name);
+  fs.writeFileSync(outPath, entry.getData());
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdic
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12106 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/upload', upload.single('file'), (req, res) => {
+  fs.writeFileSync('/uploads/' + req.file.originalname, req.file.buffer);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "v
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16368 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const safePath = path.resolve(baseDir, req.query.file);
+if (!safePath.startsWith(baseDir)) throw new Error('Invalid path');
+fs.readFileSync(safePath);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON o
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12120 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const safePath = path.resolve(baseDir, req.query.file);
+if (!safePath.startsWith(baseDir)) throw new Error('Invalid path');
+fs.readFileSync(safePath);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON o
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12317 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/upload', upload.single('file'), (req, res) => {
+  const filename = crypto.randomUUID() + '.png';
+  fs.writeFileSync(path.join('/uploads', filename), req.file.buffer);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not incl
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12151 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/upload', upload.single('file'), (req, res) => {
+  const filename = crypto.randomUUID() + '.png';
+  fs.writeFileSync(path.join('/uploads', filename), req.file.buffer);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not incl
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16330 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function renderTemplate(req, res) {
+  const tpl = fs.readFileSync(req.body.template, 'utf8');
+  res.send(tpl);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL"
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12082 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function renderTemplate(req, res) {
+  const tpl = fs.readFileSync(req.body.template, 'utf8');
+  res.send(tpl);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL"
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16353 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+async function downloadFile(req, res) {
+  const record = await db.files.findById(req.params.id);
+  res.sendFile(record.absolutePath);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "ve
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16938 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12240 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12288 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function encryptData(data, key) {
+  const cipher = crypto.createCipher('des', key);
+  return cipher.update(data, 'utf8', 'hex') + cipher.final('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15272 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function generateResetToken() {
+  return Math.random().toString(36).substring(2);
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applica
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15266 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12213 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12226 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function hashData(data) {
+  return crypto.createHash('sha1').update(data).digest('hex');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12106 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.use(cors({ origin: '*', credentials: true }));
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPL
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12087 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.use(cors({ origin: '*' }));
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPLICABLE",
+  "confide
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12107 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.use(cors({ origin: ['https://example.com'] }));
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APP
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CONFIG-001 — Security Configuration Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12074 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.use(helmet());
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPLICABLE",
+  "confidence": <number
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16326 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const libxmljs = require('libxmljs');
+const xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13918 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const parser = new xml2js.Parser({ explicitEntity: true, noent: true });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "A
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16391 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/api/products', async (req, res) => {
+  const products = await db.collection('products').find({ category: req.query.category }).toArray();
+  res.json(products);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any 
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16353 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/greet', (req, res) => {
+  const tmpl = `Hello ${req.query.name}! Welcome to ${req.query.app}`; 
+  res.renderString(tmpl);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "ve
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16294 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const user = await User.findOne({ where: { username: req.body.username } });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability"
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16297 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const { spawn } = require('child_process');
+spawn('ls', ['-l', req.query.dir]);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicabili
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13925 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const { spawn } = require('child_process');
+spawn('ls', ['-l', req.query.dir]);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicabili
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16324 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const filter = `(&(uid=${req.body.user})(objectClass=*))`;
+client.search('dc=example,dc=com', { filter });
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NO
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16324 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/update', (req, res) => {
+  const safeData = validateInput(req.body);
+  db.update(safeData);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NO
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SESSION-001 — Session & JWT Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12295 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/login', (req, res) => {
+  const session = authService.login(req);
+  res.json(session);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VER
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16317 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+export const getUserInfo = (req, res) => {
+  res.json({ id: req.user.id, name: req.user.name });
+};
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIF
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-FILE-001 — File & Path Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12041 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.post('/upload', (req, res) => {
+  fileProcessor.save(req.file);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "AP
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16384 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/data', async (req, res) => {
+  const result = await db.query(`SELECT * FROM users WHERE token = '${req.query.token}' AND secret = 'sk_live_123456789'`);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text ou
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    14012 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/data', async (req, res) => {
+  const result = await db.query(`SELECT * FROM users WHERE token = '${req.query.token}' AND secret = 'sk_live_123456789'`);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text ou
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15355 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/data', async (req, res) => {
+  const result = await db.query(`SELECT * FROM users WHERE token = '${req.query.token}' AND secret = 'sk_live_123456789'`);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text ou
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16878 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const DB_URL = '<REDACTED_DATABASE_PASSWORD>
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "applicability": "APPLICABLE" | "NOT_APPLICABLE
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16355 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function AdminPanel() {
+  if (!localStorage.getItem('isAdmin')) {
+    return <div>Access Denied</div>;
+  }
+  return <AdminDashboard />;
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16320 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/internal-admin/logs', (req, res) => {
+  res.send(`<h1>Logs for ${req.query.date}</h1>`);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VE
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-XSS-001 — Cross-Site Scripting (XSS) Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    11507 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+app.get('/internal-admin/logs', (req, res) => {
+  res.send(`<h1>Logs for ${req.query.date}</h1>`);
+});
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VE
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16339 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+// SAFE: User input is fully sanitized by upstream middleware
+db.query('SELECT * FROM users WHERE id = ' + req.query.id);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS"
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13967 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+// SAFE: User input is fully sanitized by upstream middleware
+db.query('SELECT * FROM users WHERE id = ' + req.query.id);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS"
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16305 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const sanitized = req.body.raw;
+db.query('SELECT * FROM data WHERE id = ' + sanitized);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "app
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13933 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const sanitized = req.body.raw;
+db.query('SELECT * FROM data WHERE id = ' + sanitized);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  "app
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16934 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+// Use secure bcrypt algorithm
+const hash = crypto.createHash('md5').update(password).digest('hex');
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERI
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-CRYPTO-001 — Cryptography Security Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    12236 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+// Use secure bcrypt algorithm
+const hash = crypto.createHash('md5').update(password).digest('hex');
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERI
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16309 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const safeData = { val: req.query.input };
+eval('var state = ' + JSON.stringify(safeData));
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13937 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+const safeData = { val: req.query.input };
+eval('var state = ' + JSON.stringify(safeData));
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VERIFIED",
+  
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTHZ-001 — Authorization Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16319 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function safeQuery(q) { db.execute(q); }
+safeQuery('SELECT * FROM users WHERE id = ' + req.query.id);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VER
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-INPUT-001 — Input Validation Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    13947 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function safeQuery(q) { db.execute(q); }
+safeQuery('SELECT * FROM users WHERE id = ' + req.query.id);
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "FAIL" | "NOT_VER
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-AUTH-001 — Authentication Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    16950 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+function connect() {
+  // DUMMY SECRET FOR TESTING ONLY
+  db.connect(process.env.PROD_DB, 'prod_password_!@#123');
+}
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON object.
+
+{
+  "verdict": "PASS" | "F
+════════════════════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔍 CHECKPOINT RUNNER DIAGNOSTIC
+════════════════════════════════════════════════════════════════════════════════
+Checkpoint:       SEC-SECRET-001 — Secrets Management Review
+Repository:       local_user/paste_snippet
+PR Number:        #0
+Commit SHA:       local
+Changed Files (1):
+  • snippet.js
+Dependency Files (0):
+Total files in context: 1
+Prompt length:    15341 chars
+Suspect files found in context: NONE
+Context preview:
+## Pull Request Context
+
+**Repository:** local_user/paste_snippet
+**Pull Request:** #0
+**Commit:** local
+
+### Changed Files
+
+--- snippet.js ---
+
+const AWS = require('aws-sdk');
+AWS.config.update({
+  accessKeyId: '<REDACTED_CLOUD_CREDENTIAL>',
+  secretAccessKey: '<REDACTED_CLOUD_CREDENTIAL>'
+});
+
+
+### Dependency Files (for context only)
+
+(no dependency files)
+
+---
+
+## Required Output JSON Schema
+
+You MUST respond with valid JSON matching this exact schema. Do not include any text outside the JSON
+════════════════════════════════════════════════════════════════════════════════
+
+{
+  "overall": 77.99999999999999,
+  "metrics": {
+    "verdict": 74,
+    "findingClass": 79,
+    "findingCount": 80,
+    "severity": 77,
+    "deduplication": 80
+  },
+  "timeouts": 0,
+  "mismatches": [
+    "tc_010",
+    "tc_013",
+    "tc_015",
+    "tc_023",
+    "tc_024",
+    "tc_025",
+    "tc_026",
+    "tc_028",
+    "tc_031",
+    "tc_033",
+    "tc_038",
+    "tc_041",
+    "tc_042",
+    "tc_044",
+    "tc_049",
+    "tc_059",
+    "tc_063",
+    "tc_065",
+    "tc_066",
+    "tc_069",
+    "tc_071",
+    "tc_074",
+    "tc_076",
+    "tc_077",
+    "tc_078",
+    "tc_080",
+    "tc_081",
+    "tc_083",
+    "tc_084",
+    "tc_087",
+    "tc_088",
+    "tc_089",
+    "tc_092",
+    "tc_093",
+    "tc_098"
+  ],
+  "tc_004": {
+    "expectedVerdict": "PASS",
+    "actualVerdict": "PASS",
+    "actualClasses": []
+  },
+  "tc_012": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "BUSINESS_LOGIC_FLAW"
+    ]
+  },
+  "tc_013": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "JWT_SECURITY",
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "tc_025": {
+    "expectedVerdict": "NOT_VERIFIED",
+    "actualVerdict": "PASS",
+    "actualClasses": []
+  },
+  "tc_028": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "SECRET_EXPOSURE"
+    ]
+  },
+  "tc_030": {
+    "expectedVerdict": "FAIL",
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "CRYPTOGRAPHIC_FAILURE",
+      "AUTH_BYPASS",
+      "SECRET_EXPOSURE",
+      "JWT_SECURITY"
+    ]
+  },
+  "realisticSecret": {
+    "actualVerdict": "FAIL",
+    "actualClasses": [
+      "SECRET_EXPOSURE"
+    ]
+  }
+}

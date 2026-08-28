@@ -281,7 +281,7 @@ console.log("\n── Test 20: Implicit AuthZ routing ──");
 console.log("\n── Test 21: Generic route without keywords ──");
 {
   const router = new CheckpointRouter(ALL_IDS);
-  const decision = await router.route(["app.get('/settings', (req, res) => res.json({}));"], true);
+  const decision = await router.route(["app.get('/dashboard', (req, res) => res.json({}));"], true);
   assert(decision.isFallback, "Is fallback");
   assert(decision.selectedCheckpointIds.length === 0, "No specialized checkpoints selected for generic route");
 }

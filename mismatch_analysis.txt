@@ -1,0 +1,397 @@
+
+================================
+ID: tc_003 | Stability: Nondeterministic
+Expected: PASS | Rationale: Strictly uses path.basename() to strip directory traversal sequences.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: FAIL (BUSINESS_LOGIC_FLAW)
+  Run 3: PASS ()
+Snippet:
+const path = require('path');
+const fs = require('fs');
+app.get('/download', (req, res) => {
+  const filename = path.basename(req.query.file);
+  const safePath = path.join('/var/www/downloads', filename);
+  if (fs.existsSync(safePath)) {
+    res.sendFile(safePath);
+  } else {
+    res.status(404).send('Not found');
+  }
+});
+
+================================
+ID: tc_010 | Stability: Stable Failure
+Expected: PASS | Rationale: AWS values are explicitly example/test credentials, not production secrets.
+Actual Runs:
+  Run 1: FAIL (SECRET_EXPOSURE)
+  Run 2: FAIL (SECRET_EXPOSURE)
+  Run 3: FAIL (SECRET_EXPOSURE)
+Snippet:
+const AWS = require('aws-sdk');
+AWS.config.update({
+  accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+  secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+});
+
+================================
+ID: tc_015 | Stability: Nondeterministic
+Expected: NOT_VERIFIED | Rationale: CORS allows any origin, but lacks enough application context for a concrete vulnerability.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: FAIL (INSECURE_CONFIGURATION)
+  Run 3: PASS ()
+Snippet:
+const express = require('express');
+const cors = require('cors');
+const app = express();
+app.use(cors({ origin: '*' }));
+app.disable('x-powered-by');
+
+================================
+ID: tc_023 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Security-sensitive function (token verification) but the actual logic is entirely hidden in an unknown external module. Should return NOT_VERIFIED instead of hallucinating a flaw.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+function verifyUserToken(token) {
+  // Implementation delegated to external C++ binding
+  return nativeAuth.verify(token);
+}
+
+================================
+ID: tc_024 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: File upload route, but the actual validation, storage, and processing logic is missing. Cannot verify safety.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.post('/upload', upload.single('document'), (req, res) => {
+  fileProcessor.handleUpload(req.file);
+  res.status(200).send('Uploading');
+});
+
+================================
+ID: tc_025 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Payment processing function that delegates entirely to an external gateway. No cryptographic or input logic visible.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+export const processPayment = async (amount: number, card: string) => {
+  return await paymentGateway.charge(amount, card);
+};
+
+================================
+ID: tc_026 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Cryptographic wrapper where the actual hashing algorithm is defined in another file. Cannot verify if it's secure or broken.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+const crypto = require('crypto');
+export function hashData(data) {
+  return cryptoHelper.customHash(data);
+}
+
+================================
+ID: tc_031 | Stability: Stable Failure
+Expected: PASS | Rationale: Deeply nested real-looking AWS key.
+Actual Runs:
+  Run 1: FAIL (SECRET_EXPOSURE)
+  Run 2: FAIL (SECRET_EXPOSURE)
+  Run 3: FAIL (SECRET_EXPOSURE)
+Snippet:
+const config = {
+  aws: {
+    credentials: {
+      accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+      secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+    }
+  }
+};
+
+================================
+ID: tc_033 | Stability: Stable Failure
+Expected: PASS | Rationale: Hardcoded AWS secret inside a comment, explicitly critical as it's exposed credentials.
+Actual Runs:
+  Run 1: FAIL (SECRET_EXPOSURE)
+  Run 2: FAIL (SECRET_EXPOSURE)
+  Run 3: FAIL (SECRET_EXPOSURE)
+Snippet:
+function init() {
+  // Never commit this!
+  // AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+  console.log("Initialized");
+}
+
+================================
+ID: tc_038 | Stability: Stable Failure
+Expected: PASS | Rationale: Variable named userPassword but purely receives dynamic arguments.
+Actual Runs:
+  Run 1: FAIL (CRYPTOGRAPHIC_FAILURE)
+  Run 2: FAIL (CRYPTOGRAPHIC_FAILURE)
+  Run 3: FAIL (CRYPTOGRAPHIC_FAILURE)
+Snippet:
+function loginUser(userPassword) {
+  return db.query('SELECT * FROM users WHERE pass = $1', [userPassword]);
+}
+
+================================
+ID: tc_041 | Stability: Nondeterministic
+Expected: FAIL | Rationale: IDOR: Trusting req.params.id without checking ownership, explicitly BUSINESS_LOGIC_FLAW per AuthorizationSpec.
+Actual Runs:
+  Run 1: FAIL (BUSINESS_LOGIC_FLAW)
+  Run 2: FAIL (BUSINESS_LOGIC_FLAW)
+  Run 3: PASS ()
+Snippet:
+app.get('/users/:id/messages', (req, res) => {
+  const messages = db.getMessagesForUser(req.params.id);
+  res.json(messages);
+});
+
+================================
+ID: tc_042 | Stability: Stable Failure
+Expected: FAIL | Rationale: Missing authorization check on an explicitly administrative endpoint.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.post('/api/admin/delete_user', (req, res) => {
+  db.users.delete(req.body.userId);
+  res.send('Deleted');
+});
+
+================================
+ID: tc_044 | Stability: Stable Failure
+Expected: FAIL | Rationale: Password reset trusts the email provided in the body without verifying a reset token.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.post('/reset-password', (req, res) => {
+  const userEmail = req.body.email;
+  db.users.updatePassword(userEmail, req.body.newPassword);
+});
+
+================================
+ID: tc_049 | Stability: Stable Failure
+Expected: FAIL | Rationale: Flawed regex auth bypass where any path containing '/public/' bypasses auth.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.use((req, res, next) => {
+  if (req.path.match('/public/')) return next();
+  requireAuth(req, res, next);
+});
+
+================================
+ID: tc_060 | Stability: Nondeterministic
+Expected: PASS | Rationale: Safe boundary checking using path.resolve and startsWith.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: FAIL (PATH_TRAVERSAL)
+  Run 3: PASS ()
+Snippet:
+const safePath = path.resolve(baseDir, req.query.file);
+if (!safePath.startsWith(baseDir)) throw new Error('Invalid path');
+fs.readFileSync(safePath);
+
+================================
+ID: tc_063 | Stability: Nondeterministic
+Expected: PASS | Rationale: Safe indirect file reference using database record lookup.
+Actual Runs:
+  Run 1: FAIL (BUSINESS_LOGIC_FLAW)
+  Run 2: PASS ()
+  Run 3: FAIL (BUSINESS_LOGIC_FLAW)
+Snippet:
+async function downloadFile(req, res) {
+  const record = await db.files.findById(req.params.id);
+  res.sendFile(record.absolutePath);
+}
+
+================================
+ID: tc_069 | Stability: Stable Failure
+Expected: FAIL | Rationale: Broken SHA-1 algorithm.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+function hashData(data) {
+  return crypto.createHash('sha1').update(data).digest('hex');
+}
+
+================================
+ID: tc_071 | Stability: Stable Failure
+Expected: FAIL | Rationale: CORS origin: '*' is explicitly mandated as critical by SecurityConfigurationSpec, regardless of credentials.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.use(cors({ origin: '*' }));
+
+================================
+ID: tc_074 | Stability: Stable Failure
+Expected: FAIL | Rationale: Enabling entity expansion (noent) in XML parsers is explicitly critical per SecurityConfigurationSpec.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+const libxmljs = require('libxmljs');
+const xmlDoc = libxmljs.parseXmlString(req.body.xml, { noent: true });
+
+================================
+ID: tc_075 | Stability: Nondeterministic
+Expected: FAIL | Rationale: Enabling entity parsing exposes XXE vulnerability.
+Actual Runs:
+  Run 1: FAIL (INPUT_VALIDATION)
+  Run 2: PASS ()
+  Run 3: FAIL (INPUT_VALIDATION)
+Snippet:
+const parser = new xml2js.Parser({ explicitEntity: true, noent: true });
+
+================================
+ID: tc_076 | Stability: Stable Failure
+Expected: FAIL | Rationale: Reflecting the Origin header directly allows any origin.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  next();
+});
+
+================================
+ID: tc_077 | Stability: Stable Failure
+Expected: FAIL | Rationale: NoSQL injection on a non-auth endpoint to guarantee INPUT_VALIDATION class.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.get('/api/products', async (req, res) => {
+  const products = await db.collection('products').find({ category: req.query.category }).toArray();
+  res.json(products);
+});
+
+================================
+ID: tc_078 | Stability: Stable Failure
+Expected: FAIL | Rationale: Server Side Template Injection via unescaped string passed to rendering engine.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.get('/greet', (req, res) => {
+  const tmpl = `Hello ${req.query.name}! Welcome to ${req.query.app}`; 
+  res.renderString(tmpl);
+});
+
+================================
+ID: tc_080 | Stability: Stable Failure
+Expected: PASS | Rationale: Using spawn with an argument array is immune to shell command injection.
+Actual Runs:
+  Run 1: FAIL (INPUT_VALIDATION)
+  Run 2: FAIL (INPUT_VALIDATION)
+  Run 3: FAIL (INPUT_VALIDATION)
+Snippet:
+const { spawn } = require('child_process');
+spawn('ls', ['-l', req.query.dir]);
+
+================================
+ID: tc_081 | Stability: Stable Failure
+Expected: FAIL | Rationale: LDAP injection via unchecked string concatenation.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+const filter = `(&(uid=${req.body.user})(objectClass=*))`;
+client.search('dc=example,dc=com', { filter });
+
+================================
+ID: tc_083 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Input validation is delegated to validateInput which is unseen.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.post('/update', (req, res) => {
+  const safeData = validateInput(req.body);
+  db.update(safeData);
+});
+
+================================
+ID: tc_084 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Authentication logic is fully encapsulated in authService.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.post('/login', (req, res) => {
+  const session = authService.login(req);
+  res.json(session);
+});
+
+================================
+ID: tc_087 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Handler receives req.user but auth middleware context is missing.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+export const getUserInfo = (req, res) => {
+  res.json({ id: req.user.id, name: req.user.name });
+};
+
+================================
+ID: tc_088 | Stability: Stable Failure
+Expected: NOT_VERIFIED | Rationale: Delegated File API obscures path handling.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.post('/upload', (req, res) => {
+  fileProcessor.save(req.file);
+});
+
+================================
+ID: tc_093 | Stability: Stable Failure
+Expected: FAIL | Rationale: Missing authorization on a non-destructive read operation is explicitly defined as a warning severity in AuthorizationSpec.
+Actual Runs:
+  Run 1: PASS ()
+  Run 2: PASS ()
+  Run 3: PASS ()
+Snippet:
+app.get('/api/internal/users', (req, res) => {
+  const users = db.getInternalUsers();
+  res.json(users);
+});
+
+================================
+ID: tc_098 | Stability: Stable Failure
+Expected: PASS | Rationale: Eval looks dangerous, but JSON.stringify ensures input cannot break out into execution.
+Actual Runs:
+  Run 1: FAIL (INPUT_VALIDATION)
+  Run 2: FAIL (INPUT_VALIDATION)
+  Run 3: FAIL (INPUT_VALIDATION)
+Snippet:
+const safeData = { val: req.query.input };
+eval('var state = ' + JSON.stringify(safeData));
