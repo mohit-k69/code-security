@@ -70,6 +70,26 @@ export function useAuth() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // If we are in an OAuth popup, notify parent and close
+      if (window.opener) {
+        if (session?.provider_token) {
+          try {
+            await supabase.functions.invoke('store-provider-token', {
+              body: { 
+                providerToken: session.provider_token,
+                providerRefreshToken: session.provider_refresh_token
+              }
+            });
+          } catch (err) {
+            console.error('Failed to trigger token storage in popup:', err);
+          }
+        }
+        const workflow = new URLSearchParams(window.location.search).get('workflow');
+        window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', workflow }, '*');
+        window.close();
+        return;
+      }
+      
       if (session?.user) {
         const meta = session.user.user_metadata;
         setUser({

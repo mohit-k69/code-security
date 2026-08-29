@@ -104,38 +104,21 @@ export function GithubAnalysisModals({
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl shadow-xl border border-gray-200 p-10 flex flex-col items-center max-w-md w-full"
+              className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 flex flex-col items-center max-w-md w-full"
             >
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-20"></div>
-                <div className="relative bg-emerald-50 w-20 h-20 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-                </div>
+              <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center border-2 border-emerald-200 mb-4 text-emerald-600">
+                <Check className="w-8 h-8" />
               </div>
-              <h3 className="text-gray-900 font-semibold text-xl mb-3 text-center">Analyzing Pull Request #{analysisState.metadata.prNumber}</h3>
-              <div className="flex flex-col gap-2 w-full text-sm font-medium">
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Connecting to GitHub
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Fetching Pull Request
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 2.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Collecting changed files
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 3.5 }} className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                  <Check className="w-4 h-4" /> Preparing analysis
-                </motion.div>
-                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 4.5 }} className="flex items-center gap-3 text-gray-400 p-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> Waiting for AI analysis...
-                </motion.div>
+              <h3 className="text-gray-900 font-semibold text-xl mb-2 text-center">Analysis Complete!</h3>
+              <p className="text-gray-500 text-sm text-center mb-4">
+                {analysisState.metadata?.verdict 
+                  ? `Security Check Verdict: ${analysisState.metadata.verdict}`
+                  : 'Reviewing security vulnerabilities and code vibe.'}
+              </p>
+              <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center justify-center gap-2 text-emerald-700 text-sm font-medium">
+                <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                Loading results into your dashboard...
               </div>
-              <button
-                onClick={() => setAnalysisState({ status: 'idle' })}
-                className="mt-8 text-xs text-gray-400 hover:text-gray-600 underline"
-              >
-                Cancel Analysis
-              </button>
             </motion.div>
           )}
 

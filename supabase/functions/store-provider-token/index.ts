@@ -1,11 +1,11 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
 
     // 1. Verify the incoming Supabase JWT to get the user ID
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      process.env['SUPABASE_URL'] ?? '',
+      process.env['SUPABASE_ANON_KEY'] ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -61,8 +61,8 @@ Deno.serve(async (req) => {
 
     // 3. Upsert the token into the database securely using the Service Role Key
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      process.env['SUPABASE_URL'] ?? '',
+      process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
     );
 
     const { error: upsertError } = await supabaseAdmin
@@ -98,4 +98,4 @@ Deno.serve(async (req) => {
       status: 400,
     });
   }
-});
+}

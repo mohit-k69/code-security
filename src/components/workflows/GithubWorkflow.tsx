@@ -22,6 +22,7 @@ interface GithubWorkflowProps {
   setSelectedRepoId: (id: number | null) => void;
   providerTokenSetupError?: string | null;
   retryProviderTokenSetup?: () => void;
+  onAnalysisComplete: (repoName: string, prNumber: number, result: any) => void;
 }
 
 export function GithubWorkflow({
@@ -35,7 +36,8 @@ export function GithubWorkflow({
   selectedRepoId,
   setSelectedRepoId,
   providerTokenSetupError,
-  retryProviderTokenSetup
+  retryProviderTokenSetup,
+  onAnalysisComplete
 }: GithubWorkflowProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
@@ -45,10 +47,11 @@ export function GithubWorkflow({
   const handleConnectGithub = async () => {
     setLinkError('');
     try {
-      const { error } = await supabase.auth.linkIdentity({
+      const { data, error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '?workflow=github'
+          redirectTo: window.location.origin + '?workflow=github',
+          skipBrowserRedirect: true
         }
       });
       if (error) {
@@ -59,11 +62,32 @@ export function GithubWorkflow({
         }
         return;
       }
+      if (data?.url) {
+        window.open(data.url, 'oauth_popup', 'width=600,height=700');
+      }
     } catch (err: any) {
       console.error('Failed to link GitHub:', err);
       setLinkError('An unexpected error occurred while connecting GitHub.');
     }
   };
+
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+        return;
+      }
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        if (event.data.workflow) {
+          window.location.href = window.location.pathname + '?workflow=' + event.data.workflow;
+        } else {
+          window.location.reload();
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const handleAnalyze = async (repo: GithubRepo, prNumber?: number) => {
     setSelectedRepoId(repo.id);
@@ -80,10 +104,16 @@ export function GithubWorkflow({
         setAnalysisState({ status: 'no_prs' });
       } else if (data.status === 'select_pr') {
         setAnalysisState({ status: 'select_pr', prs: data.prs });
-      } else if (data.status === 'analysis_data_ready') {
-        setAnalysisState({ status: 'analysis_data_ready', metadata: data.metadata });
+      } else if (data.status === 'analysis_data_ready' || data.report || data.metadata || data.checkpoints || data.verdict || data.findings) {
+        const metadata = data.metadata || data.report || data;
+        const resolvedPrNumber = data.prNumber || data.report?.repository?.prNumber || prNumber || 1;
+        
+        setAnalysisState({ status: 'analysis_data_ready', metadata });
+        onAnalysisComplete(repo.name, resolvedPrNumber, metadata);
+        setTimeout(() => setActiveWorkflow('none'), 1200);
       } else {
-        throw new Error('Unknown response from server');
+        console.error('Unrecognized payload received from analyze-repository:', data);
+        throw new Error('Unknown response format from server.');
       }
     } catch (err: any) {
       console.error('Analyze Error:', err);

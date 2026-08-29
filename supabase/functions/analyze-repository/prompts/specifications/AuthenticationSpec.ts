@@ -4,7 +4,7 @@
 // Evaluates authentication implementations for security vulnerabilities
 // across credential handling, session management, and access control flows.
 
-import type { ReviewSpecification } from "./ReviewSpecification.ts";
+import type { ReviewSpecification } from "./ReviewSpecification";
 
 export const AuthenticationSpec: ReviewSpecification = {
   id: "SEC-AUTH-001",

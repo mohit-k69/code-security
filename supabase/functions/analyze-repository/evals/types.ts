@@ -39,7 +39,7 @@ export interface EvalDataset {
   scenarios: EvalScenario[];
 }
 
-import type { CheckpointResult } from "../services/CheckpointRunner.ts";
+import type { CheckpointResult } from "../services/CheckpointRunner";
 
 export interface ScenarioResult {
   scenarioId: string;

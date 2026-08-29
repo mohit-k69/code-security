@@ -54,6 +54,7 @@ export default function App() {
     reviewedItems,
     handleFileUpload,
     handleCheckVibe,
+    handleGithubAnalysisComplete,
     filteredFindings
   } = useAnalysis();
 
@@ -152,6 +153,32 @@ export default function App() {
                       uploadedFilesCount={uploadedFiles.length}
                       hasPastedCode={hasPastedCode}
                       githubConnected={githubConnected}
+                      onAnalyze={async () => {
+                        await handleCheckVibe();
+                      }}
+                      onLoadSampleAndAnalyze={async () => {
+                        setPastedCode(`// Sample Authentication & Payment Service
+import express from 'express';
+
+const app = express();
+const API_SECRET_KEY = "sk_live_99a82b4f912e41c88ab9134"; // Hardcoded secret
+
+app.post('/api/user/eval', (req, res) => {
+  const { code } = req.body;
+  // Critical vulnerability: arbitrary code execution
+  const result = eval(code);
+  res.json({ result });
+});
+
+app.post('/api/profile/render', (req, res) => {
+  const { bio } = req.body;
+  // Critical vulnerability: XSS injection via innerHTML
+  document.getElementById('user-bio').innerHTML = bio;
+});
+
+export default app;`);
+                        await handleCheckVibe();
+                      }}
                     />
                   )}
 
@@ -162,6 +189,7 @@ export default function App() {
                       setUploadedFiles={setUploadedFiles}
                       setFileContents={setFileContents}
                       handleFileUpload={handleFileUpload}
+                      handleCheckVibe={async () => { await handleCheckVibe(); setActiveWorkflow('none'); }}
                     />
                   )}
 
@@ -170,6 +198,7 @@ export default function App() {
                       setActiveWorkflow={setActiveWorkflow}
                       pastedCode={pastedCode}
                       setPastedCode={setPastedCode}
+                      handleCheckVibe={async () => { await handleCheckVibe(); setActiveWorkflow('none'); }}
                     />
                   )}
 
@@ -186,6 +215,7 @@ export default function App() {
                       setSelectedRepoId={setSelectedRepoId}
                       providerTokenSetupError={providerTokenSetupError}
                       retryProviderTokenSetup={retryProviderTokenSetup}
+                      onAnalysisComplete={handleGithubAnalysisComplete}
                     />
                   )}
                 </div>

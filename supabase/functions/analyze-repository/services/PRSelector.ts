@@ -1,5 +1,5 @@
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
-import { ProviderService, PullRequest } from "./ProviderService.ts";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { ProviderService, PullRequest } from "./ProviderService";
 
 export interface PRSelectorResult {
   status: 'pr_selected' | 'no_prs' | 'all_reviewed' | 'error';
@@ -37,30 +37,31 @@ export class PRSelector {
         };
       }
 
-      // 2. Fetch Review Tracking Data
-      // To implement Rule 2 & 3, we need the latest reviewed commit SHA for each PR.
-      // We will fetch the most recent review for the current repository.
+      // 2. Fetch Review Tracking Data (Optional)
+      // To implement Rule 2 & 3, we check the latest reviewed commit SHA if tracking table exists.
       const prNumbers = openPrs.map(pr => pr.number);
+      let reviews: any[] = [];
       
-      const { data: reviews, error } = await this.db
-        .from('pr_reviews')
-        .select('pr_number, commit_sha')
-        .eq('repository_owner', owner)
-        .eq('repository_name', repo)
-        .in('pr_number', prNumbers)
-        .order('reviewed_at', { ascending: false });
+      try {
+        const { data, error } = await this.db
+          .from('pr_reviews')
+          .select('pr_number, commit_sha')
+          .eq('repository_owner', owner)
+          .eq('repository_name', repo)
+          .in('pr_number', prNumbers)
+          .order('reviewed_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching PR reviews:', error);
-        return {
-          status: 'error',
-          message: 'Database connection/access error.'
-        };
+        if (!error && data) {
+          reviews = data;
+        }
+      } catch (err) {
+        // pr_reviews table might not be provisioned yet, gracefully proceed
+        console.warn('Optional pr_reviews table query skipped or errored:', err);
       }
 
       // Create a map of PR Number -> Latest Reviewed Commit SHA
       const latestReviews = new Map<number, string>();
-      for (const review of (reviews || [])) {
+      for (const review of reviews) {
         if (!latestReviews.has(review.pr_number)) {
           latestReviews.set(review.pr_number, review.commit_sha);
         }

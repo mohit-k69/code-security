@@ -1,4 +1,4 @@
-import type { EvalDataset } from "../types.ts";
+import type { EvalDataset } from "../types";
 
 export const AuthenticationEvalDataset: EvalDataset = {
   checkpointId: "SEC-AUTH-001",
@@ -12,7 +12,7 @@ export const AuthenticationEvalDataset: EvalDataset = {
       criteriaTargeted: ["AUTH-C1"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 export async function register(req, res) {
   const { username, password } = req.body;
@@ -27,7 +27,7 @@ export async function register(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C1",
-          expectedEvidence: [{ file: "src/controllers/auth.ts", snippetSubstr: "VALUES (?, ?)'" }]
+          expectedEvidence: [{ file: "src/controllers/auth", snippetSubstr: "VALUES (?, ?)'" }]
         }
       ],
       rationale: "Password is saved in plaintext, violating C1."
@@ -39,7 +39,7 @@ export async function register(req, res) {
       criteriaTargeted: ["AUTH-C1"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 export async function login(req, res) {
   const { username, password } = req.body;
@@ -57,7 +57,7 @@ export async function login(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C1",
-          expectedEvidence: [{ file: "src/controllers/auth.ts", snippetSubstr: "user.password === password" }]
+          expectedEvidence: [{ file: "src/controllers/auth", snippetSubstr: "user.password === password" }]
         }
       ],
       rationale: "Password is compared in plaintext, violating C1."
@@ -69,7 +69,7 @@ export async function login(req, res) {
       criteriaTargeted: ["AUTH-C1"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 import crypto from 'crypto';
 
@@ -86,7 +86,7 @@ export async function register(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C1",
-          expectedEvidence: [{ file: "src/controllers/auth.ts", snippetSubstr: "createHash('md5')" }]
+          expectedEvidence: [{ file: "src/controllers/auth", snippetSubstr: "createHash('md5')" }]
         }
       ],
       rationale: "MD5 is specifically called out as weak in C1."
@@ -98,7 +98,7 @@ export async function register(req, res) {
       criteriaTargeted: ["AUTH-C1"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 import crypto from 'crypto';
 
@@ -115,7 +115,7 @@ export async function register(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C1",
-          expectedEvidence: [{ file: "src/controllers/auth.ts", snippetSubstr: "createHash('sha256')" }]
+          expectedEvidence: [{ file: "src/controllers/auth", snippetSubstr: "createHash('sha256')" }]
         }
       ],
       rationale: "SHA-family without adaptive hashing violates C1."
@@ -127,7 +127,7 @@ export async function register(req, res) {
       criteriaTargeted: ["AUTH-C1"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 import bcrypt from 'bcrypt';
 
@@ -150,7 +150,7 @@ export async function register(req, res) {
       criteriaTargeted: ["AUTH-C1"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 import { verifyCredentials } from '../lib/authService';
 
@@ -177,7 +177,7 @@ export async function login(req, res) {
       criteriaTargeted: ["AUTH-C2"],
       changedFiles: [
         {
-          path: "src/controllers/auth.ts",
+          path: "src/controllers/auth",
           content: `
 export async function login(req, res) {
   try {
@@ -196,7 +196,7 @@ export async function login(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C2",
-          expectedEvidence: [{ file: "src/controllers/auth.ts", snippetSubstr: "pwd:\", req.body.password" }]
+          expectedEvidence: [{ file: "src/controllers/auth", snippetSubstr: "pwd:\", req.body.password" }]
         }
       ],
       rationale: "Passwords must never appear in application logs (C2)."
@@ -208,7 +208,7 @@ export async function login(req, res) {
       criteriaTargeted: ["AUTH-C2"],
       changedFiles: [
         {
-          path: "src/routes.ts",
+          path: "src/routes",
           content: `
 import express from 'express';
 const router = express.Router();
@@ -227,7 +227,7 @@ export default router;
       expectedFindings: [
         {
           criterionId: "AUTH-C2",
-          expectedEvidence: [{ file: "src/routes.ts", snippetSubstr: "req.query.password" }]
+          expectedEvidence: [{ file: "src/routes", snippetSubstr: "req.query.password" }]
         }
       ],
       rationale: "Passwords must not appear in URLs or query params (C2)."
@@ -241,7 +241,7 @@ export default router;
       criteriaTargeted: ["AUTH-C3"],
       changedFiles: [
         {
-          path: "src/routes.ts",
+          path: "src/routes",
           content: `
 import express from 'express';
 import { loginHandler } from './auth';
@@ -257,7 +257,7 @@ export default router;
       expectedFindings: [
         {
           criterionId: "AUTH-C3",
-          expectedEvidence: [{ file: "src/routes.ts", snippetSubstr: "router.post('/login', loginHandler);" }]
+          expectedEvidence: [{ file: "src/routes", snippetSubstr: "router.post('/login', loginHandler);" }]
         }
       ],
       rationale: "No rate limit middleware is applied to the login endpoint."
@@ -269,7 +269,7 @@ export default router;
       criteriaTargeted: ["AUTH-C3"],
       changedFiles: [
         {
-          path: "src/routes.ts",
+          path: "src/routes",
           content: `
 import express from 'express';
 import rateLimit from 'express-rate-limit';
@@ -294,7 +294,7 @@ export default router;
       criteriaTargeted: ["AUTH-C3"],
       changedFiles: [
         {
-          path: "src/auth.ts",
+          path: "src/auth",
           content: `
 export async function loginHandler(req, res) {
   const { username, password } = req.body;
@@ -327,7 +327,7 @@ export async function loginHandler(req, res) {
       criteriaTargeted: ["AUTH-C4"],
       changedFiles: [
         {
-          path: "src/auth.ts",
+          path: "src/auth",
           content: `
 export async function loginHandler(req, res) {
   const { user, pass } = req.body;
@@ -345,7 +345,7 @@ export async function loginHandler(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C4",
-          expectedEvidence: [{ file: "src/auth.ts", snippetSubstr: "req.session.userId = user.id;" }]
+          expectedEvidence: [{ file: "src/auth", snippetSubstr: "req.session.userId = user.id;" }]
         }
       ],
       rationale: "Session is not regenerated (e.g. req.session.regenerate) after authentication."
@@ -357,7 +357,7 @@ export async function loginHandler(req, res) {
       criteriaTargeted: ["AUTH-C4"],
       changedFiles: [
         {
-          path: "src/app.ts",
+          path: "src/app",
           content: `
 import session from 'express-session';
 app.use(session({
@@ -371,7 +371,7 @@ app.use(session({
       expectedFindings: [
         {
           criterionId: "AUTH-C4",
-          expectedEvidence: [{ file: "src/app.ts", snippetSubstr: "httpOnly: false" }]
+          expectedEvidence: [{ file: "src/app", snippetSubstr: "httpOnly: false" }]
         }
       ],
       rationale: "HttpOnly must be enabled to prevent XSS session theft."
@@ -383,7 +383,7 @@ app.use(session({
       criteriaTargeted: ["AUTH-C4"],
       changedFiles: [
         {
-          path: "src/app.ts",
+          path: "src/app",
           content: `
 import session from 'express-session';
 app.use(session({
@@ -397,7 +397,7 @@ app.use(session({
       expectedFindings: [
         {
           criterionId: "AUTH-C4",
-          expectedEvidence: [{ file: "src/app.ts", snippetSubstr: "secure: false" }]
+          expectedEvidence: [{ file: "src/app", snippetSubstr: "secure: false" }]
         }
       ],
       rationale: "Secure flag must be set for cookies."
@@ -409,7 +409,7 @@ app.use(session({
       criteriaTargeted: ["AUTH-C4"],
       changedFiles: [
         {
-          path: "src/auth.ts",
+          path: "src/auth",
           content: `
 export async function loginHandler(req, res) {
   const { user, pass } = req.body;
@@ -438,7 +438,7 @@ export async function loginHandler(req, res) {
       criteriaTargeted: ["AUTH-C5"],
       changedFiles: [
         {
-          path: "src/middleware.ts",
+          path: "src/middleware",
           content: `
 export function requireAuth(req, res, next) {
   if (req.headers['x-debug-bypass'] === 'true') {
@@ -455,7 +455,7 @@ export function requireAuth(req, res, next) {
       expectedFindings: [
         {
           criterionId: "AUTH-C5",
-          expectedEvidence: [{ file: "src/middleware.ts", snippetSubstr: "x-debug-bypass" }]
+          expectedEvidence: [{ file: "src/middleware", snippetSubstr: "x-debug-bypass" }]
         }
       ],
       rationale: "Debug backdoors allow complete bypass of authentication checks."
@@ -467,7 +467,7 @@ export function requireAuth(req, res, next) {
       criteriaTargeted: ["AUTH-C5"],
       changedFiles: [
         {
-          path: "src/auth.ts",
+          path: "src/auth",
           content: `
 export async function login(req, res) {
   const { username, password } = req.body;
@@ -487,7 +487,7 @@ export async function login(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C5",
-          expectedEvidence: [{ file: "src/auth.ts", snippetSubstr: "if (!password ||" }]
+          expectedEvidence: [{ file: "src/auth", snippetSubstr: "if (!password ||" }]
         }
       ],
       rationale: "Logic flaw allows bypass if no password is submitted."
@@ -501,7 +501,7 @@ export async function login(req, res) {
       criteriaTargeted: ["AUTH-C6"],
       changedFiles: [
         {
-          path: "src/tokens.ts",
+          path: "src/tokens",
           content: `
 import jwt from 'jsonwebtoken';
 
@@ -515,7 +515,7 @@ export function createToken(user) {
       expectedFindings: [
         {
           criterionId: "AUTH-C6",
-          expectedEvidence: [{ file: "src/tokens.ts", snippetSubstr: "'supersecret123'" }]
+          expectedEvidence: [{ file: "src/tokens", snippetSubstr: "'supersecret123'" }]
         }
       ],
       rationale: "Hardcoded JWT secrets violate C6."
@@ -527,7 +527,7 @@ export function createToken(user) {
       criteriaTargeted: ["AUTH-C6"],
       changedFiles: [
         {
-          path: "src/tokens.ts",
+          path: "src/tokens",
           content: `
 import jwt from 'jsonwebtoken';
 
@@ -541,7 +541,7 @@ export function verifyToken(token) {
       expectedFindings: [
         {
           criterionId: "AUTH-C6",
-          expectedEvidence: [{ file: "src/tokens.ts", snippetSubstr: "'none'" }]
+          expectedEvidence: [{ file: "src/tokens", snippetSubstr: "'none'" }]
         }
       ],
       rationale: "Allowing the 'none' algorithm enables token forgery."
@@ -553,7 +553,7 @@ export function verifyToken(token) {
       criteriaTargeted: ["AUTH-C6"],
       changedFiles: [
         {
-          path: "src/tokens.ts",
+          path: "src/tokens",
           content: `
 import jwt from 'jsonwebtoken';
 
@@ -568,7 +568,7 @@ export function createToken(user) {
       expectedFindings: [
         {
           criterionId: "AUTH-C6",
-          expectedEvidence: [{ file: "src/tokens.ts", snippetSubstr: "jwt.sign({ id: user.id }" }]
+          expectedEvidence: [{ file: "src/tokens", snippetSubstr: "jwt.sign({ id: user.id }" }]
         }
       ],
       rationale: "Tokens without expiration times live indefinitely, violating C6."
@@ -580,7 +580,7 @@ export function createToken(user) {
       criteriaTargeted: ["AUTH-C6"],
       changedFiles: [
         {
-          path: "src/tokens.ts",
+          path: "src/tokens",
           content: `
 import jwt from 'jsonwebtoken';
 
@@ -605,7 +605,7 @@ export function verifyToken(token) {
       criteriaTargeted: ["AUTH-C7"],
       changedFiles: [
         {
-          path: "src/reset.ts",
+          path: "src/reset",
           content: `
 export async function forgotPassword(req, res) {
   const user = await db.getUserByEmail(req.body.email);
@@ -622,7 +622,7 @@ export async function forgotPassword(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C7",
-          expectedEvidence: [{ file: "src/reset.ts", snippetSubstr: "res.status(404)" }]
+          expectedEvidence: [{ file: "src/reset", snippetSubstr: "res.status(404)" }]
         }
       ],
       rationale: "Returning 404 allows attackers to enumerate registered emails."
@@ -634,7 +634,7 @@ export async function forgotPassword(req, res) {
       criteriaTargeted: ["AUTH-C7"],
       changedFiles: [
         {
-          path: "src/reset.ts",
+          path: "src/reset",
           content: `
 export async function generateResetToken(userId) {
   const token = Math.random().toString(36).substring(2);
@@ -648,7 +648,7 @@ export async function generateResetToken(userId) {
       expectedFindings: [
         {
           criterionId: "AUTH-C7",
-          expectedEvidence: [{ file: "src/reset.ts", snippetSubstr: "Math.random()" }]
+          expectedEvidence: [{ file: "src/reset", snippetSubstr: "Math.random()" }]
         }
       ],
       rationale: "Math.random() is not cryptographically secure, leading to predictable tokens."
@@ -662,7 +662,7 @@ export async function generateResetToken(userId) {
       criteriaTargeted: ["AUTH-C8"],
       changedFiles: [
         {
-          path: "src/login.ts",
+          path: "src/login",
           content: `
 export async function login(req, res) {
   const user = await db.getUser(req.body.username);
@@ -681,7 +681,7 @@ export async function login(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C8",
-          expectedEvidence: [{ file: "src/login.ts", snippetSubstr: "User not found" }] // Just one example
+          expectedEvidence: [{ file: "src/login", snippetSubstr: "User not found" }] // Just one example
         }
       ],
       rationale: "Distinct messages enable enumeration attacks (C8)."
@@ -693,7 +693,7 @@ export async function login(req, res) {
       criteriaTargeted: ["AUTH-C8"],
       changedFiles: [
         {
-          path: "src/login.ts",
+          path: "src/login",
           content: `
 export async function login(req, res) {
   const user = await db.getUser(req.body.username);
@@ -718,7 +718,7 @@ export async function login(req, res) {
       criteriaTargeted: ["AUTH-C7"],
       changedFiles: [
         {
-          path: "src/reset.ts",
+          path: "src/reset",
           content: `
 export async function handleReset(req, res) {
   const { token, newPassword } = req.body;
@@ -736,7 +736,7 @@ export async function handleReset(req, res) {
       expectedFindings: [
         {
           criterionId: "AUTH-C7",
-          expectedEvidence: [{ file: "src/reset.ts", snippetSubstr: "updatePassword" }]
+          expectedEvidence: [{ file: "src/reset", snippetSubstr: "updatePassword" }]
         }
       ],
       rationale: "Reset tokens must be single-use and time-limited."
@@ -748,7 +748,7 @@ export async function handleReset(req, res) {
       criteriaTargeted: ["AUTH-C4"],
       changedFiles: [
         {
-          path: "src/app.ts",
+          path: "src/app",
           content: `
 import session from 'express-session';
 app.use(session({
@@ -762,7 +762,7 @@ app.use(session({
       expectedFindings: [
         {
           criterionId: "AUTH-C4",
-          expectedEvidence: [{ file: "src/app.ts", snippetSubstr: "sameSite: 'none'" }]
+          expectedEvidence: [{ file: "src/app", snippetSubstr: "sameSite: 'none'" }]
         }
       ],
       rationale: "SameSite 'none' can lead to CSRF if not handled correctly. Strictly speaking, C4 mentions secure flags."
@@ -774,7 +774,7 @@ app.use(session({
       criteriaTargeted: ["AUTH-C1", "AUTH-C4"],
       changedFiles: [
         {
-          path: "src/auth.ts",
+          path: "src/auth",
           content: `
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
@@ -813,7 +813,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       criteriaTargeted: ["AUTH-C2", "AUTH-C6"],
       changedFiles: [
         {
-          path: "src/redirect.ts",
+          path: "src/redirect",
           content: `
 export function redirectUser(res, token) {
   // Transmitting token in URL
@@ -826,7 +826,7 @@ export function redirectUser(res, token) {
       expectedFindings: [
         {
           criterionId: "AUTH-C2", // Can be C2 or C6
-          expectedEvidence: [{ file: "src/redirect.ts", snippetSubstr: "?token=" }]
+          expectedEvidence: [{ file: "src/redirect", snippetSubstr: "?token=" }]
         }
       ],
       rationale: "Tokens should not be transmitted in URL parameters due to logging."
@@ -838,7 +838,7 @@ export function redirectUser(res, token) {
       criteriaTargeted: ["AUTH-C6"],
       changedFiles: [
         {
-          path: "src/middleware.ts",
+          path: "src/middleware",
           content: `
 import jwt from 'jsonwebtoken';
 
@@ -859,7 +859,7 @@ export function authMiddleware(req, res, next) {
       expectedFindings: [
         {
           criterionId: "AUTH-C6",
-          expectedEvidence: [{ file: "src/middleware.ts", snippetSubstr: "jwt.decode" }]
+          expectedEvidence: [{ file: "src/middleware", snippetSubstr: "jwt.decode" }]
         }
       ],
       rationale: "jwt.decode does not verify the signature, allowing token forgery."

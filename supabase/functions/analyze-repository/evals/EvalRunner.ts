@@ -1,7 +1,7 @@
-import { CheckpointRunner } from "../services/CheckpointRunner.ts";
-import type { ReviewSpecification, CheckpointResult } from "../services/CheckpointRunner.ts";
-import type { SanitizedContextPackage } from "../services/types.ts";
-import type { EvalDataset, EvalReport, ScenarioResult, ExpectedFinding } from "./types.ts";
+import { CheckpointRunner } from "../services/CheckpointRunner";
+import type { ReviewSpecification, CheckpointResult } from "../services/CheckpointRunner";
+import type { SanitizedContextPackage } from "../services/types";
+import type { EvalDataset, EvalReport, ScenarioResult, ExpectedFinding } from "./types";
 
 export class EvalRunner {
   private checkpointRunner: CheckpointRunner;
@@ -183,7 +183,7 @@ export class EvalRunner {
     return {
       datasetId: dataset.checkpointId,
       datasetVersion: dataset.version,
-      model: Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash",
+      model: process.env["GEMINI_MODEL"] || "gemini-2.0-flash",
       timestamp: new Date().toISOString(),
       metrics: {
         totalScenarios,

@@ -77,7 +77,7 @@ export function AnalysisDashboard({
             {/* Score Card */}
             <div className="bg-[#faf6f4] rounded-2xl p-6 mb-8 border border-[#d4c4bc]">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[14px] font-semibold text-[#3f2a24]">Vibe Score</h3>
+                <h3 className="text-[14px] font-semibold text-[#3f2a24]">{analysisResult.verdict ? `Verdict: ${analysisResult.verdict}` : 'Vibe Score'}</h3>
                 <span className="text-[24px] font-bold text-[#3f2a24] tracking-tight">{analysisResult.vibeScore}/100</span>
               </div>
               <div className="w-full bg-white/50 h-2 rounded-full overflow-hidden mb-3 border border-[#e8dfdb]">

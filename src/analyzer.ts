@@ -25,6 +25,7 @@ export interface AnalysisResult {
   categoryCounts: Record<Category, number>;
   totalLines: number;
   analyzedAt: Date;
+  verdict?: string;
 }
 
 import { rules } from './lib/analyzerRules';

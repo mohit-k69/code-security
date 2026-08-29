@@ -4,23 +4,23 @@
 // Usage:
 //   GEMINI_API_KEY=<key> deno run --allow-net --allow-env supabase/functions/analyze-repository/evals/run_eval.ts
 
-import { EvalRunner } from "./EvalRunner.ts";
-import { AuthenticationEvalDataset } from "./datasets/AuthenticationEvalDataset.ts";
-import { AuthenticationSpec } from "../prompts/specifications/AuthenticationSpec.ts";
-import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../prompts/SecurityReviewFramework.ts";
+import { EvalRunner } from "./EvalRunner";
+import { AuthenticationEvalDataset } from "./datasets/AuthenticationEvalDataset";
+import { AuthenticationSpec } from "../prompts/specifications/AuthenticationSpec";
+import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../prompts/SecurityReviewFramework";
 
 async function main() {
   console.log("═══════════════════════════════════════════════════");
   console.log("  AI Eval Runner");
   console.log("═══════════════════════════════════════════════════\n");
 
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = process.env["GEMINI_API_KEY"];
   if (!apiKey) {
     console.error("❌ GEMINI_API_KEY is not set. Cannot run evaluation.");
     Deno.exit(1);
   }
 
-  const model = Deno.env.get("GEMINI_MODEL") || "(default)";
+  const model = process.env["GEMINI_MODEL"] || "(default)";
   console.log(`🔧 Model:     ${model}`);
   console.log(`📋 Framework: v${FRAMEWORK_VERSION}`);
   console.log(`📊 Dataset:   ${AuthenticationEvalDataset.checkpointId} (v${AuthenticationEvalDataset.version})`);

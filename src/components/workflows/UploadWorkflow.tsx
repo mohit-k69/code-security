@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Upload, FileText, X } from 'lucide-react';
+import { ChevronLeft, Upload, FileText, X, Play } from 'lucide-react';
 
 interface UploadWorkflowProps {
   setActiveWorkflow: (workflow: 'none') => void;
@@ -8,6 +8,7 @@ interface UploadWorkflowProps {
   setUploadedFiles: React.Dispatch<React.SetStateAction<File[]>>;
   setFileContents: React.Dispatch<React.SetStateAction<Map<string, string>>>;
   handleFileUpload: (files: File[]) => void;
+  handleCheckVibe: () => void;
 }
 
 export function UploadWorkflow({
@@ -15,7 +16,8 @@ export function UploadWorkflow({
   uploadedFiles,
   setUploadedFiles,
   setFileContents,
-  handleFileUpload
+  handleFileUpload,
+  handleCheckVibe
 }: UploadWorkflowProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,10 +30,19 @@ export function UploadWorkflow({
         <button onClick={() => setActiveWorkflow('none')} className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-[18px] font-semibold text-gray-900">Upload Files</h2>
+        <h2 className="text-[18px] font-semibold text-gray-900 flex-1">Upload Files</h2>
+        
+        <button 
+          onClick={handleCheckVibe}
+          disabled={uploadedFiles.length === 0}
+          className="px-4 py-2 bg-[#3f2a24] text-white text-[14px] font-medium rounded-xl hover:bg-[#2a1b17] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+        >
+          <Play className="w-4 h-4" />
+          Analyze Files
+        </button>
       </div>
       
-      <div className="flex-1 flex flex-col items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center relative">
         <div
           onClick={() => fileInputRef.current?.click()}
           className="w-full max-w-lg border-2 border-dashed border-[#d4c4bc] rounded-2xl p-12 flex flex-col items-center justify-center gap-4 bg-[#faf6f4] hover:bg-[#f5eeea] hover:border-[#b8a298] transition-all cursor-pointer group"
@@ -85,6 +96,17 @@ export function UploadWorkflow({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {uploadedFiles.length > 0 && (
+          <div className="absolute bottom-6 right-6">
+            <button 
+              onClick={handleCheckVibe}
+              className="px-6 py-3 bg-[#3f2a24] text-white text-[14px] font-medium rounded-xl hover:bg-[#2a1b17] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg"
+            >
+              <Play className="w-4 h-4" />
+              Analyze Files
+            </button>
           </div>
         )}
       </div>

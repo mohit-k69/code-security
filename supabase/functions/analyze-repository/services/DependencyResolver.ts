@@ -25,7 +25,7 @@ export class DependencyResolver {
 
   /**
    * Resolves a relative path against the current file's path.
-   * Example: resolvePath('src/components/App.tsx', '../utils/helpers') -> 'src/utils/helpers'
+   * Example: resolvePath('src/components/App.tsx', '../utils/helpers'] -> 'src/utils/helpers'
    */
   private resolvePath(currentFilePath: string, relativePath: string): string {
     const currentParts = currentFilePath.split('/');

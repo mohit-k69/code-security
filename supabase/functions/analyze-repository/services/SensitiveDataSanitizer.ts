@@ -1,9 +1,9 @@
-import { SanitizedContextPackage, SanitizationMetadata, groupBy } from "./types.ts";
-import { DetectionResult, SecretFinding } from "./SensitiveDataDetector.ts";
-import { PlaceholderRegistry } from "./PlaceholderRegistry.ts";
+import { SanitizedContextPackage, SanitizationMetadata, groupBy } from "./types";
+import { DetectionResult, SecretFinding } from "./SensitiveDataDetector";
+import { PlaceholderRegistry } from "./PlaceholderRegistry";
 
 // Re-export for backward compatibility
-export type { SanitizedContextPackage, SanitizationMetadata } from "./types.ts";
+export type { SanitizedContextPackage, SanitizationMetadata } from "./types";
 
 export class SensitiveDataSanitizer {
   private registry: PlaceholderRegistry;

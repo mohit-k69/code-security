@@ -53,4 +53,14 @@ export interface ProviderService {
    * Fetch the raw content of a specific file at a given commit/ref.
    */
   getFileContent(owner: string, repo: string, path: string, ref: string): Promise<string>;
+
+  /**
+   * Fetch latest commits on default branch for repositories without open PRs.
+   */
+  getLatestCommits?(owner: string, repo: string): Promise<any[]>;
+
+  /**
+   * Fetch changed files for a specific commit.
+   */
+  getCommitFiles?(owner: string, repo: string, commitSha: string): Promise<PRFile[]>;
 }
