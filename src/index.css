@@ -64,6 +64,33 @@
   100% { transform: rotate(360deg) translateX(6px) rotate(-360deg); }
 }
 
+@keyframes repository-scan-line {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-scan-line {
+  animation: repository-scan-line 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan-line {
+    animation: none;
+  }
+}
+
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
 .animate-float-delayed { animation: float-delayed 3.5s ease-in-out 0.5s infinite; }

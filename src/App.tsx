@@ -171,6 +171,20 @@ export default function App() {
                           ? 'flex-1' 
                           : 'flex-1 border-r border-gray-200'
                     }`}>
+                      {/* Scanning Line Animation during active analysis */}
+                      {isAnalyzing && (
+                        <div 
+                          className="absolute inset-0 pointer-events-none overflow-hidden z-30" 
+                          aria-hidden="true"
+                        >
+                          {shouldReduceMotion ? (
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500/60 shadow-[0_0_8px_1px_rgba(59,130,246,0.4)]" />
+                          ) : (
+                            <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_12px_2px_rgba(59,130,246,0.6)] animate-scan-line" />
+                          )}
+                        </div>
+                      )}
+
                       <div className={`min-h-full flex flex-col items-center ${isGithubAnalysisActive ? 'py-8 px-4' : 'py-12 px-6'}`}>
                         <div 
                           className={`w-full ${isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-8 pb-32`}
