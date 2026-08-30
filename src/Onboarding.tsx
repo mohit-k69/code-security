@@ -140,6 +140,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         provider: 'github',
         options: {
           redirectTo: window.location.origin,
+          scopes: 'repo read:user user:email',
           // Always show GitHub account selection/consent screen
           queryParams: { prompt: 'consent' },
         },

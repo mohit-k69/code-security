@@ -164,6 +164,7 @@ export function useAuth() {
             if (error) throw error;
             if (data?.error) throw new Error(data.error);
             setProviderTokenSetupError(null);
+            window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
           } catch (err: any) {
             console.error('Failed to trigger token storage:', err);
             setProviderTokenSetupError('GitHub was connected, but setup could not be completed due to a network error.');

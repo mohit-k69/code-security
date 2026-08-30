@@ -62,14 +62,15 @@ export function GithubWorkflow({
       const { error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '?workflow=github'
+          redirectTo: window.location.origin + '?workflow=github',
+          scopes: 'repo read:user user:email'
         }
       });
       if (error) {
         if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
           setLinkError('This GitHub account is already connected to another Code Vibe account. Please disconnect it from the other account or use a different GitHub account.');
         } else {
-          setLinkError('Failed to connect GitHub. Please try again.');
+          setLinkError(error.message || 'Failed to connect GitHub. Please try again.');
         }
         return;
       }
@@ -153,7 +154,14 @@ export function GithubWorkflow({
     }
   };
 
-  const isConnectionError = githubReposError.toLowerCase().includes('connect') || githubReposError.toLowerCase().includes('oauth');
+  const isConnectionError = 
+    githubReposError.toLowerCase().includes('connect') || 
+    githubReposError.toLowerCase().includes('oauth') ||
+    githubReposError.toLowerCase().includes('not found') ||
+    githubReposError.toLowerCase().includes('404') ||
+    githubReposError.toLowerCase().includes('token') ||
+    githubReposError.toLowerCase().includes('unauthorized') ||
+    githubReposError.toLowerCase().includes('non-2xx');
 
   return (
     <motion.div 

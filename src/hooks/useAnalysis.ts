@@ -18,7 +18,7 @@ export function useAnalysis(user?: User | null) {
 
   const [reviewedItems, setReviewedItems] = useState<ReviewedItem[]>([]);
 
-  // Fetch reviews from Supabase when user logs in or user changes
+  // Fetch reviews from Supabase when user logs in, session initializes, or user changes
   useEffect(() => {
     if (!user?.id) {
       setReviewedItems([]);
@@ -26,14 +26,35 @@ export function useAnalysis(user?: User | null) {
     }
 
     let isMounted = true;
-    fetchUserReviews(user.id).then(items => {
-      if (isMounted) {
-        setReviewedItems(items);
+    const currentUserId = user.id;
+
+    const loadReviews = async (targetUserId: string) => {
+      try {
+        const items = await fetchUserReviews(targetUserId);
+        if (isMounted) {
+          setReviewedItems(items);
+        }
+      } catch (err) {
+        console.error('Error fetching user reviews:', err);
+      }
+    };
+
+    loadReviews(currentUserId);
+
+    // Subscribe to auth state changes to reload reviews on sign-in / session restore
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setReviewedItems([]);
+      } else if (session?.user?.id === currentUserId) {
+        loadReviews(session.user.id);
       }
     });
 
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, [user?.id]);
 

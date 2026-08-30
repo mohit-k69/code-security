@@ -101,56 +101,67 @@ export function HistoryView({
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col">
           {reviewedItems
-            .filter(item => Date.now() - item.date.getTime() <= 30 * 24 * 60 * 60 * 1000)
-            .sort((a, b) => filterOption === 'Alphabetically' ? a.name.localeCompare(b.name) : b.date.getTime() - a.date.getTime())
-            .map((item, i) => (
-            <div 
-              key={item.id || i} 
-              onClick={() => {
-                setAnalysisResult(item.result);
-                setActiveTab('new');
-              }}
-              className="flex items-center justify-between px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer"
-            >
-              <div className="flex-1 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
-                  <FileText className="w-4 h-4" />
+            .filter(item => {
+              const itemDate = item.date instanceof Date ? item.date : new Date(item.date || Date.now());
+              return Date.now() - itemDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
+            })
+            .sort((a, b) => {
+              if (filterOption === 'Alphabetically') return a.name.localeCompare(b.name);
+              const aTime = a.date instanceof Date ? a.date.getTime() : new Date(a.date || 0).getTime();
+              const bTime = b.date instanceof Date ? b.date.getTime() : new Date(b.date || 0).getTime();
+              return bTime - aTime;
+            })
+            .map((item, i) => {
+              const itemDate = item.date instanceof Date ? item.date : new Date(item.date || Date.now());
+              return (
+                <div 
+                  key={item.id || i} 
+                  onClick={() => {
+                    setAnalysisResult(item.result);
+                    setActiveTab('new');
+                  }}
+                  className="flex items-center justify-between px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer"
+                >
+                  <div className="flex-1 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <span className="text-[14px] font-medium text-gray-900 truncate pr-4">{item.name}</span>
+                  </div>
+                  
+                  <div className="w-[120px] flex justify-center">
+                    <span className={`px-2.5 py-1 rounded-md text-[12px] font-bold ${
+                      item.verdict === 'FAIL' ? 'bg-red-100 text-red-700' :
+                      item.verdict === 'NOT_VERIFIED' ? 'bg-orange-100 text-orange-700' :
+                      'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {item.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.verdict || 'PASS'}
+                    </span>
+                  </div>
+                  
+                  <div className="w-[120px] flex justify-center">
+                    <span className="text-[13px] text-gray-600 font-medium">
+                      {item.pr ? `PR #${item.pr}` : '—'}
+                    </span>
+                  </div>
+                  
+                  <div className="w-[150px] text-right">
+                    <span className="text-[13px] text-gray-500">
+                      {itemDate.toLocaleString(undefined, { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: 'numeric', 
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  
+                  <div className="w-[60px] flex justify-end">
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-600 transition-colors" />
+                  </div>
                 </div>
-                <span className="text-[14px] font-medium text-gray-900 truncate pr-4">{item.name}</span>
-              </div>
-              
-              <div className="w-[120px] flex justify-center">
-                <span className={`px-2.5 py-1 rounded-md text-[12px] font-bold ${
-                  item.verdict === 'FAIL' ? 'bg-red-100 text-red-700' :
-                  item.verdict === 'NOT_VERIFIED' ? 'bg-orange-100 text-orange-700' :
-                  'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {item.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.verdict || 'PASS'}
-                </span>
-              </div>
-              
-              <div className="w-[120px] flex justify-center">
-                <span className="text-[13px] text-gray-600 font-medium">
-                  {item.pr ? `PR #${item.pr}` : '—'}
-                </span>
-              </div>
-              
-              <div className="w-[150px] text-right">
-                <span className="text-[13px] text-gray-500">
-                  {item.date.toLocaleString(undefined, { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: 'numeric', 
-                    minute: '2-digit'
-                  })}
-                </span>
-              </div>
-              
-              <div className="w-[60px] flex justify-end">
-                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-600 transition-colors" />
-              </div>
-            </div>
-          ))}
+              );
+            })}
           {reviewedItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-500">
               <FileText className="w-12 h-12 text-gray-300 mb-4" />

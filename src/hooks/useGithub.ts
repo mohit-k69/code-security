@@ -23,16 +23,29 @@ export function useGithub(activeWorkflow: string) {
   const [githubSearchQuery, setGithubSearchQuery] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
   const [isGithubConnected, setIsGithubConnected] = useState(false);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   const fetchGithubRepositories = useCallback(async () => {
     setIsFetchingRepos(true);
     setGithubReposError('');
     try {
       const { data, error } = await supabase.functions.invoke('fetch-github-repositories');
-      if (error) throw error;
+      if (error) {
+        let errorMsg = error.message;
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) {
+              errorMsg = body.error;
+            }
+          } catch {}
+        }
+        throw new Error(errorMsg);
+      }
       if (data?.error) throw new Error(data.error);
       setGithubRepos(data || []);
       setIsGithubConnected(true);
+      setGithubReposError('');
     } catch (err: any) {
       console.error('Fetch GitHub Repositories Error:', err);
       setGithubReposError(err.message || 'Failed to fetch repositories.');
@@ -43,10 +56,26 @@ export function useGithub(activeWorkflow: string) {
   }, []);
 
   useEffect(() => {
-    if (activeWorkflow === 'github' && githubRepos.length === 0 && !isFetchingRepos && !isGithubConnected) {
-      fetchGithubRepositories();
+    if (activeWorkflow === 'github') {
+      if (!hasAttemptedFetch && !isFetchingRepos) {
+        setHasAttemptedFetch(true);
+        fetchGithubRepositories();
+      }
+    } else {
+      setHasAttemptedFetch(false);
     }
-  }, [activeWorkflow, githubRepos.length, isFetchingRepos, isGithubConnected, fetchGithubRepositories]);
+  }, [activeWorkflow, hasAttemptedFetch, isFetchingRepos, fetchGithubRepositories]);
+
+  // Listen for connection completion event from OAuth linking
+  useEffect(() => {
+    const handleConnected = () => {
+      fetchGithubRepositories();
+    };
+    window.addEventListener('codevibe_github_connected', handleConnected);
+    return () => {
+      window.removeEventListener('codevibe_github_connected', handleConnected);
+    };
+  }, [fetchGithubRepositories]);
 
   const clearGithubSelection = useCallback(() => {
     setGithubSearchQuery('');

@@ -7,7 +7,7 @@ export interface ReviewedItem {
   verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
   pr: number | null;
   date: Date;
-  result: AnalysisResult;
+  result: AnalysisResult | any;
   reviewType?: string;
   repoOwner?: string;
   repoName?: string;
@@ -27,7 +27,7 @@ export interface SaveReviewInput {
 }
 
 /**
- * Fetches persisted reviews for the authenticated user from Supabase.
+ * Fetches persisted reviews for the authenticated user from the Supabase public.reviews table.
  */
 export async function fetchUserReviews(userId: string): Promise<ReviewedItem[]> {
   try {
@@ -40,7 +40,7 @@ export async function fetchUserReviews(userId: string): Promise<ReviewedItem[]> 
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.warn('Supabase fetch reviews warning:', error.message || error);
+      console.error('Supabase query error on public.reviews:', error);
       return [];
     }
 
@@ -61,13 +61,13 @@ export async function fetchUserReviews(userId: string): Promise<ReviewedItem[]> 
       commitSha: row.commit_sha
     }));
   } catch (err: any) {
-    console.error('Unexpected error loading review history:', err);
+    console.error('Unexpected error loading review history from public.reviews:', err);
     return [];
   }
 }
 
 /**
- * Saves a completed analysis review to Supabase associated with the authenticated user.
+ * Saves a completed analysis review to the Supabase public.reviews table.
  */
 export async function saveUserReview(input: SaveReviewInput): Promise<ReviewedItem | null> {
   try {
@@ -105,7 +105,7 @@ export async function saveUserReview(input: SaveReviewInput): Promise<ReviewedIt
       .single();
 
     if (error) {
-      console.error('Failed to save review to Supabase:', error.message || error);
+      console.error('Failed to insert into public.reviews:', error);
       return null;
     }
 
@@ -126,3 +126,4 @@ export async function saveUserReview(input: SaveReviewInput): Promise<ReviewedIt
     return null;
   }
 }
+
