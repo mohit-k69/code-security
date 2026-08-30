@@ -165,19 +165,32 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
     );
   }
 
+  const getSeverityRank = (finding: any): { rank: number; label: 'HIGH' | 'MEDIUM' | 'LOW' } => {
+    const sev = String(finding.severity || '').toLowerCase();
+    if (sev === 'critical' || sev === 'high') {
+      return { rank: 1, label: 'HIGH' };
+    }
+    if (sev === 'warning' || sev === 'medium') {
+      return { rank: 2, label: 'MEDIUM' };
+    }
+    return { rank: 3, label: 'LOW' };
+  };
+
   let allFindings: any[] = [];
   if (Array.isArray(report.findings)) {
-    allFindings = report.findings.map((f: any) => ({
-      ...f,
-      _severityLabel: f.severity === 'critical' || f.severity === 'CRITICAL' ? 'Critical' : f.severity === 'warning' || f.severity === 'WARNING' ? 'Warning' : 'Info'
-    }));
+    allFindings = report.findings.map((f: any) => {
+      const { rank, label } = getSeverityRank(f);
+      return { ...f, _severityRank: rank, _severityLabel: label };
+    });
   } else if (report.findings) {
-    allFindings = [
-      ...(report.findings?.critical || []).map((f: any) => ({ ...f, _severityLabel: 'Critical' })),
-      ...(report.findings?.warning || []).map((f: any) => ({ ...f, _severityLabel: 'Warning' })),
-      ...(report.findings?.info || []).map((f: any) => ({ ...f, _severityLabel: 'Info' }))
-    ];
+    const criticalList = (report.findings?.critical || []).map((f: any) => ({ ...f, _severityRank: 1, _severityLabel: 'HIGH' as const }));
+    const warningList = (report.findings?.warning || []).map((f: any) => ({ ...f, _severityRank: 2, _severityLabel: 'MEDIUM' as const }));
+    const infoList = (report.findings?.info || []).map((f: any) => ({ ...f, _severityRank: 3, _severityLabel: 'LOW' as const }));
+    allFindings = [...criticalList, ...warningList, ...infoList];
   }
+
+  // Stable sort: HIGH (1) -> MEDIUM (2) -> LOW (3), preserving original relative order for identical severity
+  allFindings.sort((a, b) => a._severityRank - b._severityRank);
 
   const totalFindings = allFindings.length;
 
@@ -234,8 +247,8 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
         {report.verdict === 'FAIL' && totalFindings > 0 && (
           <div className="space-y-6">
             {allFindings.map((finding: any, i: number) => {
-              const isCritical = finding._severityLabel === 'Critical';
-              const isWarning = finding._severityLabel === 'Warning';
+              const isHigh = finding._severityLabel === 'HIGH';
+              const isMedium = finding._severityLabel === 'MEDIUM';
               
               const issueName = finding.title || finding.rule || 'Security Finding';
               const fileName = finding.primaryLocation?.file || finding.file;
@@ -243,7 +256,6 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
               const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
               const explanation = finding.description || finding.message;
               const scenario = getRealWorldScenario(finding);
-              const suggestion = finding.suggestion || finding.remediation;
               const agentPrompt = getCodingAgentPrompt(finding);
               const isCopied = copiedIndex === i;
 
@@ -251,9 +263,9 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                 <div 
                   key={i} 
                   className={`border rounded-xl p-5 ${
-                    isCritical 
+                    isHigh 
                       ? 'border-red-200 bg-red-50/10' 
-                      : isWarning 
+                      : isMedium 
                         ? 'border-orange-200 bg-orange-50/10' 
                         : 'border-blue-200 bg-blue-50/10'
                   }`}
@@ -262,9 +274,9 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                   <div className="mb-2.5">
                     <span 
                       className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-0.5 rounded-md ${
-                        isCritical 
+                        isHigh 
                           ? 'bg-red-100 text-red-800' 
-                          : isWarning 
+                          : isMedium 
                             ? 'bg-orange-100 text-orange-800' 
                             : 'bg-blue-100 text-blue-800'
                       }`}
@@ -275,10 +287,10 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
 
                   {/* A. Issue Name */}
                   <h4 
-                    className={`text-base font-semibold mb-1 ${
-                      isCritical 
+                    className={`text-lg font-bold mb-1 ${
+                      isHigh 
                         ? 'text-red-950' 
-                        : isWarning 
+                        : isMedium 
                           ? 'text-orange-950' 
                           : 'text-blue-950'
                     }`}
@@ -302,46 +314,34 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                     </div>
                   )}
                   
-                  {/* D. What is the issue? */}
+                  {/* D. Issue */}
                   {explanation && (
                     <div className="mb-4">
-                      <span className="text-xs font-semibold text-gray-900 block mb-1">
-                        What is the issue?
-                      </span>
+                      <h5 className="text-base font-semibold text-gray-900 mb-1.5">
+                        Issue
+                      </h5>
                       <p className="text-gray-700 leading-relaxed text-sm">
                         {explanation}
                       </p>
                     </div>
                   )}
 
-                  {/* E. What could happen? (Real-World Scenario) */}
+                  {/* E. Real World Scenario */}
                   <div className="mb-4 pt-3 border-t border-gray-100">
-                    <span className="text-xs font-semibold text-gray-900 block mb-1">
-                      What could happen?
-                    </span>
+                    <h5 className="text-base font-semibold text-gray-900 mb-1.5">
+                      Real World Scenario
+                    </h5>
                     <p className="text-gray-700 leading-relaxed text-sm">
                       {scenario}
                     </p>
                   </div>
-                  
-                  {/* F. Recommended Fix */}
-                  {suggestion && (
-                    <div className="mb-4 pt-3 border-t border-gray-100">
-                      <span className="text-xs font-semibold text-gray-900 block mb-1">
-                        Recommended Fix
-                      </span>
-                      <p className="text-gray-700 leading-relaxed text-sm">
-                        {suggestion}
-                      </p>
-                    </div>
-                  )}
 
-                  {/* G. Fix with Coding Agent */}
+                  {/* F. Fix with Coding Agent */}
                   <div className="pt-3 border-t border-gray-100">
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-semibold text-gray-900">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <h5 className="text-base font-semibold text-gray-900">
                         Fix with Coding Agent
-                      </span>
+                      </h5>
                       <button
                         onClick={() => handleCopyPrompt(agentPrompt, i)}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
@@ -364,7 +364,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                         )}
                       </button>
                     </div>
-                    <div className="rounded-lg bg-gray-50 border border-gray-200 p-2.5">
+                    <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                       <p className="text-xs font-mono text-gray-800 leading-relaxed break-words whitespace-pre-wrap select-all">
                         {agentPrompt}
                       </p>
