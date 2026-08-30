@@ -30,9 +30,6 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const githubConnectionStatus: GithubConnectionStatus = isGithubConnected ? 'connected' : 'disconnected';
 
   const fetchGithubRepositories = useCallback(async () => {
-    if (!user?.isGithubLinked) {
-      return;
-    }
     setIsFetchingRepos(true);
     setGithubReposError('');
     try {
@@ -58,7 +55,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
     } finally {
       setIsFetchingRepos(false);
     }
-  }, [user?.isGithubLinked]);
+  }, []);
 
   useEffect(() => {
     if (activeWorkflow === 'github' && isGithubConnected) {

@@ -59,18 +59,39 @@ export function GithubWorkflow({
   const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'idle' });
   const [linkError, setLinkError] = useState<string>('');
+  const [isConnectingGithub, setIsConnectingGithub] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleOAuthError = (e: any) => {
+      setIsConnectingGithub(false);
+      if (e.detail?.message) {
+        setLinkError(e.detail.message);
+      }
+    };
+    window.addEventListener('codevibe_github_oauth_error', handleOAuthError);
+    return () => {
+      window.removeEventListener('codevibe_github_oauth_error', handleOAuthError);
+    };
+  }, []);
 
   const handleConnectGithub = async () => {
+    if (isConnectingGithub) return;
+    setIsConnectingGithub(true);
     setLinkError('');
     try {
-      const { error } = await supabase.auth.linkIdentity({
+      const redirectUrl = new URL(window.location.origin);
+      redirectUrl.pathname = window.location.pathname;
+      redirectUrl.searchParams.set('workflow', 'github');
+
+      const { data, error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '?workflow=github',
+          redirectTo: redirectUrl.toString(),
           scopes: 'repo read:user user:email'
         }
       });
       if (error) {
+        setIsConnectingGithub(false);
         if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
           setLinkError('This GitHub account is already connected to another Code Vibe account. Please disconnect it from the other account or use a different GitHub account.');
         } else {
@@ -78,8 +99,14 @@ export function GithubWorkflow({
         }
         return;
       }
+      if (data?.url) {
+        window.location.assign(data.url);
+      } else {
+        setIsConnectingGithub(false);
+      }
     } catch (err: any) {
       console.error('Failed to link GitHub:', err);
+      setIsConnectingGithub(false);
       setLinkError('An unexpected error occurred while connecting GitHub.');
     }
   };
@@ -191,6 +218,7 @@ export function GithubWorkflow({
             githubReposError={githubReposError} 
             handleConnectGithub={handleConnectGithub} 
             linkError={linkError} 
+            isConnecting={isConnectingGithub}
           />
         ) : isFetchingRepos ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
@@ -208,6 +236,7 @@ export function GithubWorkflow({
               githubReposError={githubReposError} 
               handleConnectGithub={handleConnectGithub} 
               linkError={linkError} 
+              isConnecting={isConnectingGithub}
             />
           ) : (
             <GenericError 

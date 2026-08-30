@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Github } from 'lucide-react';
+import { AlertTriangle, Github, Loader2 } from 'lucide-react';
 
 interface SetupIncompleteErrorProps {
   providerTokenSetupError: string;
@@ -28,9 +28,10 @@ interface ConnectionErrorProps {
   githubReposError: string;
   handleConnectGithub: () => void;
   linkError: string;
+  isConnecting?: boolean;
 }
 
-export function ConnectionError({ githubReposError, handleConnectGithub, linkError }: ConnectionErrorProps) {
+export function ConnectionError({ githubReposError, handleConnectGithub, linkError, isConnecting = false }: ConnectionErrorProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center">
       <div className="flex flex-col items-center max-w-md px-4">
@@ -41,9 +42,19 @@ export function ConnectionError({ githubReposError, handleConnectGithub, linkErr
         <p className="text-[14px] text-gray-500 mb-6">Connect your GitHub account to access your repositories.</p>
         <button 
           onClick={handleConnectGithub}
-          className="px-6 py-2.5 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors shadow-sm mb-4"
+          disabled={isConnecting}
+          className={`px-6 py-2.5 bg-gray-900 text-white rounded-full text-[14px] font-medium transition-colors shadow-sm mb-4 flex items-center justify-center gap-2 ${
+            isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-800'
+          }`}
         >
-          Connect GitHub
+          {isConnecting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Connecting...</span>
+            </>
+          ) : (
+            'Connect GitHub'
+          )}
         </button>
         {linkError && (
           <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-600 text-left w-full mt-2">

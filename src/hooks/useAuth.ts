@@ -51,21 +51,45 @@ export function useAuth() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const hasCode = searchParams.has('code');
-    const hasToken = window.location.hash.includes('access_token=');
-    const hasError = searchParams.has('error') || window.location.hash.includes('error=');
-    const isOAuthCallback = hasCode || hasToken || hasError;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const oauthError = searchParams.get('error_description') || hashParams.get('error_description') || searchParams.get('error') || hashParams.get('error');
+
+    if (oauthError) {
+      const cleanUrl = window.location.pathname + (window.location.search.includes('workflow=github') ? '?workflow=github' : '');
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
+      const userFriendlyError = isAccessDenied 
+        ? 'GitHub authorization was cancelled.'
+        : `GitHub connection error: ${oauthError}`;
+
+      window.dispatchEvent(new CustomEvent('codevibe_github_oauth_error', { detail: { message: userFriendlyError } }));
+    }
 
     const syncSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const meta = session.user.user_metadata;
-          const isGithubLinked = Boolean(
+          let isGithubLinked = Boolean(
             session.user.app_metadata?.providers?.includes('github') ||
             session.user.app_metadata?.provider === 'github' ||
             session.user.identities?.some((id: any) => id.provider === 'github')
           );
+
+          if (!isGithubLinked) {
+            try {
+              const { data: userData } = await supabase.auth.getUser();
+              if (userData?.user) {
+                isGithubLinked = Boolean(
+                  userData.user.app_metadata?.providers?.includes('github') ||
+                  userData.user.app_metadata?.provider === 'github' ||
+                  userData.user.identities?.some((id: any) => id.provider === 'github')
+                );
+              }
+            } catch {}
+          }
+
           setUser({
             id: session.user.id,
             name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
@@ -76,6 +100,24 @@ export function useAuth() {
             last_password_updated_at: meta?.last_password_updated_at,
             isGithubLinked,
           });
+
+          if (session.provider_token) {
+            try {
+              const { error, data } = await supabase.functions.invoke('store-provider-token', {
+                body: { 
+                  providerToken: session.provider_token,
+                  providerRefreshToken: session.provider_refresh_token
+                }
+              });
+              if (error) throw error;
+              if (data?.error) throw new Error(data.error);
+              setProviderTokenSetupError(null);
+              window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+            } catch (err: any) {
+              console.error('Failed to trigger token storage from syncSession:', err);
+              setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
+            }
+          }
         } else {
           setUser(null);
         }
@@ -145,11 +187,16 @@ export function useAuth() {
 
       if (session?.user) {
         const meta = session.user.user_metadata;
-        const isGithubLinked = Boolean(
+        let isGithubLinked = Boolean(
           session.user.app_metadata?.providers?.includes('github') ||
           session.user.app_metadata?.provider === 'github' ||
           session.user.identities?.some((id: any) => id.provider === 'github')
         );
+
+        if (!isGithubLinked && session.provider_token) {
+          isGithubLinked = true;
+        }
+
         setUser({
           id: session.user.id,
           name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
@@ -180,7 +227,7 @@ export function useAuth() {
             window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
           } catch (err: any) {
             console.error('Failed to trigger token storage:', err);
-            setProviderTokenSetupError('GitHub was connected, but setup could not be completed due to a network error.');
+            setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
           }
         }
       } else {
