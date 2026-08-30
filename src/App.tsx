@@ -16,8 +16,8 @@ import { Header } from './components/layout/Header';
 import { WorkflowSelector } from './components/workflows/WorkflowSelector';
 import { UploadWorkflow } from './components/workflows/UploadWorkflow';
 import { PasteWorkflow } from './components/workflows/PasteWorkflow';
+import { SecurityReportPanel } from './components/workflows/SecurityReportPanel';
 import { GithubWorkflow } from './components/workflows/GithubWorkflow';
-import { AnalysisDashboard } from './components/analysis/AnalysisDashboard';
 import { HistoryView } from './components/analysis/HistoryView';
 import { ProfileModal } from './components/auth/ProfileModal';
 
@@ -41,6 +41,7 @@ export default function App() {
   const {
     isAnalyzing,
     analysisResult,
+    setAnalysisResult,
     activeCategory,
     setActiveCategory,
     expandedFinding,
@@ -52,9 +53,9 @@ export default function App() {
     fileContents,
     setFileContents,
     reviewedItems,
+    setReviewedItems,
     handleFileUpload,
     handleCheckVibe,
-    handleGithubAnalysisComplete,
     filteredFindings
   } = useAnalysis();
 
@@ -67,7 +68,9 @@ export default function App() {
     selectedRepoId,
     setSelectedRepoId,
     fetchGithubRepositories,
-    isGithubConnected
+    isGithubConnected,
+    clearGithubSelection,
+    clearGithubCache
   } = useGithub(activeWorkflow);
 
   // Automatically switch to GitHub workflow if redirected back from OAuth Manual Linking
@@ -84,11 +87,12 @@ export default function App() {
   // Derived states
   const hasUploadedCode = uploadedFiles.length > 0;
   const hasPastedCode = pastedCode.trim().length > 0;
-  const githubConnected = isGithubConnected;
+  const githubConnected = selectedRepoId !== null;
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
+      clearGithubCache();
       setUser(null);
     } catch (err) {
       console.error('Error signing out:', err);
@@ -98,6 +102,15 @@ export default function App() {
   const handleOpenProfileModal = () => {
     setIsProfileOpen(false);
     setIsProfileModalOpen(true);
+  };
+
+  const handleReturnHome = () => {
+    setActiveWorkflow('none');
+    setAnalysisResult(null);
+    setPastedCode('');
+    setUploadedFiles([]);
+    setFileContents([]);
+    clearGithubSelection();
   };
 
   if (isInitializing) {
@@ -140,71 +153,50 @@ export default function App() {
               filterOption={filterOption}
               setFilterOption={setFilterOption}
               setActiveTab={setActiveTab}
+              setAnalysisResult={setAnalysisResult}
             />
           ) : (
-            <div className="flex flex-1 min-w-0">
-              <div className="flex-1 flex flex-col min-w-0 relative bg-white">
-
-                <div className="flex-1 p-6 flex flex-col min-h-0 bg-[#faf6f4]/30">
-                  {activeWorkflow === 'none' && (
+            <div className="flex-1 flex min-h-0 bg-white w-full">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] border-r border-gray-200">
+                <div className="min-h-full flex flex-col items-center py-12 px-6">
+                  <div 
+                    className="w-full max-w-4xl mx-auto space-y-8 pb-32"
+                    onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
+                  >
+                    {activeWorkflow === 'none' && (
                     <WorkflowSelector 
                       setActiveWorkflow={setActiveWorkflow}
                       hasUploadedCode={hasUploadedCode}
                       uploadedFilesCount={uploadedFiles.length}
                       hasPastedCode={hasPastedCode}
                       githubConnected={githubConnected}
-                      onAnalyze={async () => {
-                        await handleCheckVibe();
-                      }}
-                      onLoadSampleAndAnalyze={async () => {
-                        setPastedCode(`// Sample Authentication & Payment Service
-import express from 'express';
-
-const app = express();
-const API_SECRET_KEY = "sk_live_99a82b4f912e41c88ab9134"; // Hardcoded secret
-
-app.post('/api/user/eval', (req, res) => {
-  const { code } = req.body;
-  // Critical vulnerability: arbitrary code execution
-  const result = eval(code);
-  res.json({ result });
-});
-
-app.post('/api/profile/render', (req, res) => {
-  const { bio } = req.body;
-  // Critical vulnerability: XSS injection via innerHTML
-  document.getElementById('user-bio').innerHTML = bio;
-});
-
-export default app;`);
-                        await handleCheckVibe();
-                      }}
+                      onClearState={handleReturnHome}
                     />
                   )}
 
                   {activeWorkflow === 'upload' && (
                     <UploadWorkflow 
-                      setActiveWorkflow={setActiveWorkflow}
+                      setActiveWorkflow={handleReturnHome}
                       uploadedFiles={uploadedFiles}
                       setUploadedFiles={setUploadedFiles}
                       setFileContents={setFileContents}
                       handleFileUpload={handleFileUpload}
-                      handleCheckVibe={async () => { await handleCheckVibe(); setActiveWorkflow('none'); }}
                     />
                   )}
 
                   {activeWorkflow === 'paste' && (
                     <PasteWorkflow 
-                      setActiveWorkflow={setActiveWorkflow}
+                      setActiveWorkflow={handleReturnHome}
                       pastedCode={pastedCode}
                       setPastedCode={setPastedCode}
-                      handleCheckVibe={async () => { await handleCheckVibe(); setActiveWorkflow('none'); }}
+                      handleCheckVibe={handleCheckVibe}
+                      isAnalyzing={isAnalyzing}
                     />
                   )}
 
                   {activeWorkflow === 'github' && (
                     <GithubWorkflow 
-                      setActiveWorkflow={setActiveWorkflow}
+                      setActiveWorkflow={handleReturnHome}
                       isFetchingRepos={isFetchingRepos}
                       githubReposError={githubReposError}
                       fetchGithubRepositories={fetchGithubRepositories}
@@ -215,20 +207,17 @@ export default app;`);
                       setSelectedRepoId={setSelectedRepoId}
                       providerTokenSetupError={providerTokenSetupError}
                       retryProviderTokenSetup={retryProviderTokenSetup}
-                      onAnalysisComplete={handleGithubAnalysisComplete}
+                      setReviewedItems={setReviewedItems}
                     />
                   )}
                 </div>
               </div>
-              
-              <AnalysisDashboard 
+            </div>
+            
+            {/* Persistent Analysis Results Panel */}
+              <SecurityReportPanel 
+                report={analysisResult?.verdict ? analysisResult : null}
                 isAnalyzing={isAnalyzing}
-                analysisResult={analysisResult}
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-                expandedFinding={expandedFinding}
-                setExpandedFinding={setExpandedFinding}
-                filteredFindings={filteredFindings}
               />
             </div>
           )}

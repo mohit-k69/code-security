@@ -1,4 +1,4 @@
-import { PullRequest, PRFile, ProviderService } from './ProviderService';
+import { PullRequest, PRFile, ProviderService } from './ProviderService.ts';
 
 export class GithubService implements ProviderService {
   private token: string;
@@ -89,22 +89,5 @@ export class GithubService implements ProviderService {
       }
     });
     return await res.text();
-  }
-
-  async getLatestCommits(owner: string, repo: string): Promise<any[]> {
-    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/commits?per_page=10`);
-    return await res.json();
-  }
-
-  async getCommitFiles(owner: string, repo: string, commitSha: string): Promise<PRFile[]> {
-    const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/commits/${commitSha}`);
-    const data = await res.json();
-    return (data.files || []).map((file: any) => ({
-      filename: file.filename,
-      status: file.status,
-      additions: file.additions,
-      deletions: file.deletions,
-      changes: file.changes,
-    }));
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain } from './components/auth/onboarding/emailUtils';
@@ -133,42 +133,20 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     try {
       setIsLoading(true);
       setEmailError('');
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: window.location.origin,
-          skipBrowserRedirect: true,
           // Always show GitHub account selection/consent screen
           queryParams: { prompt: 'consent' },
         },
       });
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, 'oauth_popup', 'width=600,height=700');
-      }
     } catch (err: any) {
       setEmailError(err.message || 'Failed to authenticate with GitHub.');
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
-        return;
-      }
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        if (event.data.workflow) {
-          window.location.href = window.location.pathname + '?workflow=' + event.data.workflow;
-        } else {
-          window.location.reload();
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
 
   const handleForgotPassword = useCallback(async () => {
     if (!forgotEmail.trim()) return;

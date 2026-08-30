@@ -1,5 +1,5 @@
-import { ContextPackage } from "./types";
-import { PatternRegistry } from "./PatternRegistry";
+import { ContextPackage } from "./types.ts";
+import { PatternRegistry } from "./PatternRegistry.ts";
 
 export interface SecretFinding {
   id: string;

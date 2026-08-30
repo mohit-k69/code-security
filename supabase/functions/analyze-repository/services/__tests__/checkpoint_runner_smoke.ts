@@ -8,11 +8,12 @@
 // This test does NOT require the Supabase runtime or any database.
 // It feeds synthetic data into the runner and validates the output.
 
-import { CheckpointRunner } from "../CheckpointRunner";
-import type { CheckpointResult } from "../CheckpointRunner";
-import type { ReviewSpecification } from "../../prompts/specifications/ReviewSpecification";
-import type { SanitizedContextPackage } from "../types";
-import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../../prompts/SecurityReviewFramework";
+import { CheckpointRunner } from "../CheckpointRunner.ts";
+import type { CheckpointResult } from "../CheckpointRunner.ts";
+import type { ReviewSpecification } from "../../prompts/specifications/ReviewSpecification.ts";
+import type { SanitizedContextPackage } from "../types.ts";
+import { SECURITY_REVIEW_FRAMEWORK, FRAMEWORK_VERSION } from "../../prompts/SecurityReviewFramework.ts";
+import { GeminiProvider } from "../../orchestrator/providers/GeminiProvider.ts";
 
 // ─── Test Fixtures ───────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ const MOCK_SANITIZED_PACKAGE: SanitizedContextPackage = {
   commitSha: "abc123def456",
   changedFiles: [
     {
-      path: "src/auth/login",
+      path: "src/auth/login.ts",
       content: `
 import express from 'express';
 const router = express.Router();
@@ -43,7 +44,7 @@ export default router;
       deleted: false,
     },
     {
-      path: "src/auth/middleware",
+      path: "src/auth/middleware.ts",
       content: `
 export function requireAuth(req, res, next) {
   if (!req.session.userId) {
@@ -103,14 +104,14 @@ async function runSmokeTest(): Promise<void> {
   console.log("  Checkpoint Runner v1.0 — Smoke Test");
   console.log("═══════════════════════════════════════════════════\n");
 
-  const apiKey = process.env["GEMINI_API_KEY"];
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) {
     console.error("❌ GEMINI_API_KEY is not set. Cannot run live smoke test.");
     console.log("\nTo run: GEMINI_API_KEY=<your-key> deno run --allow-net --allow-env <this-file>");
     Deno.exit(1);
   }
 
-  const model = process.env["GEMINI_MODEL"] || "(default)";
+  const model = Deno.env.get("GEMINI_MODEL") || "(default)";
   console.log(`🔧 Model:     ${model}`);
   console.log(`📋 Framework: v${FRAMEWORK_VERSION}`);
   console.log(`📦 Repo:      ${MOCK_SANITIZED_PACKAGE.repository}`);
@@ -120,7 +121,7 @@ async function runSmokeTest(): Promise<void> {
 
   console.log("⏳ Executing checkpoint...\n");
 
-  const runner = new CheckpointRunner();
+  const runner = new CheckpointRunner(new GeminiProvider(model));
   const result: CheckpointResult = await runner.run(
     MOCK_SANITIZED_PACKAGE,
     SECURITY_REVIEW_FRAMEWORK,

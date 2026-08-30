@@ -19,7 +19,7 @@ export interface EvaluationCriterion {
 /**
  * Complete specification for a single security review checkpoint.
  *
- * The CheckpointRunner renders this into the Gemini prompt.
+ * The CheckpointRunner renders this into the LLM prompt.
  * The Orchestrator iterates over a list of these to execute all
  * mandatory security controls.
  */

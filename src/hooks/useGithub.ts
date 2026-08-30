@@ -43,10 +43,24 @@ export function useGithub(activeWorkflow: string) {
   }, []);
 
   useEffect(() => {
-    if (activeWorkflow === 'github') {
+    if (activeWorkflow === 'github' && githubRepos.length === 0 && !isFetchingRepos && !isGithubConnected) {
       fetchGithubRepositories();
     }
-  }, [activeWorkflow, fetchGithubRepositories]);
+  }, [activeWorkflow, githubRepos.length, isFetchingRepos, isGithubConnected, fetchGithubRepositories]);
+
+  const clearGithubSelection = useCallback(() => {
+    setGithubSearchQuery('');
+    setSelectedRepoId(null);
+  }, []);
+
+  const clearGithubCache = useCallback(() => {
+    setGithubRepos([]);
+    setIsFetchingRepos(false);
+    setGithubReposError('');
+    setGithubSearchQuery('');
+    setSelectedRepoId(null);
+    setIsGithubConnected(false);
+  }, []);
 
   return {
     githubRepos,
@@ -57,6 +71,8 @@ export function useGithub(activeWorkflow: string) {
     selectedRepoId,
     setSelectedRepoId,
     fetchGithubRepositories,
-    isGithubConnected
+    isGithubConnected,
+    clearGithubSelection,
+    clearGithubCache
   };
 }

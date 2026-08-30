@@ -1,9 +1,9 @@
-import { SanitizedContextPackage, SanitizationMetadata, groupBy } from "./types";
-import { DetectionResult, SecretFinding } from "./SensitiveDataDetector";
-import { PlaceholderRegistry } from "./PlaceholderRegistry";
+import { SanitizedContextPackage, SanitizationMetadata, groupBy } from "./types.ts";
+import { DetectionResult, SecretFinding } from "./SensitiveDataDetector.ts";
+import { PlaceholderRegistry } from "./PlaceholderRegistry.ts";
 
 // Re-export for backward compatibility
-export type { SanitizedContextPackage, SanitizationMetadata } from "./types";
+export type { SanitizedContextPackage, SanitizationMetadata } from "./types.ts";
 
 export class SensitiveDataSanitizer {
   private registry: PlaceholderRegistry;
@@ -51,7 +51,8 @@ export class SensitiveDataSanitizer {
 
         for (const finding of lineFindings) {
           const startIdx = finding.startColumn - 1; // 0-indexed string position
-          const endIdx = finding.endColumn - 1;
+          // endColumn is match.index + length, so to get exclusive 0-indexed end, it's just finding.endColumn - 1 + 1
+          const endIdx = finding.endColumn; 
 
           // Check for overlapping matches
           const isOverlapping = mutatedRanges.some(r => Math.max(startIdx, r.start) < Math.min(endIdx, r.end));
@@ -60,7 +61,7 @@ export class SensitiveDataSanitizer {
             continue; // Already mutated this section
           }
 
-          const placeholder = this.registry.getPlaceholder(finding.category);
+          let placeholder = this.registry.getPlaceholder(finding.category);
 
           if (!placeholder) {
             ignoredReplacements++;
@@ -69,6 +70,21 @@ export class SensitiveDataSanitizer {
 
           // Ensure the string actually matches what we expect (sanity check)
           const actualValue = currentLine.substring(startIdx, endIdx);
+          if (actualValue !== finding.matchedValue) {
+            console.error(`Mismatch: actual='${actualValue}', matched='${finding.matchedValue}'`);
+          }
+          
+          // Check for synthetic markers
+          const syntheticMarkers = ["EXAMPLE", "FAKE", "MOCK", "DUMMY", "PLACEHOLDER", "TEST-ONLY", "DO-NOT-USE", "***REDACTED***"];
+          const upperValue = finding.matchedValue.toUpperCase();
+          for (const marker of syntheticMarkers) {
+            if (upperValue.includes(marker)) {
+              // Append the marker to the placeholder, e.g. <REDACTED_CLOUD_CREDENTIAL> -> <REDACTED_CLOUD_CREDENTIAL_EXAMPLE>
+              placeholder = placeholder.replace('>', `_${marker}>`);
+              break;
+            }
+          }
+
           if (actualValue === finding.matchedValue) {
             currentLine = currentLine.substring(0, startIdx) + placeholder + currentLine.substring(endIdx);
             
@@ -112,7 +128,8 @@ export class SensitiveDataSanitizer {
         totalSecretsReplaced,
         replacementTypes,
         ignoredReplacements,
-        processingTimeMs: endTime - startTime
+        processingTimeMs: endTime - startTime,
+        secretFindings: findings
       }
     };
   }

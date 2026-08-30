@@ -22,7 +22,7 @@ interface GithubWorkflowProps {
   setSelectedRepoId: (id: number | null) => void;
   providerTokenSetupError?: string | null;
   retryProviderTokenSetup?: () => void;
-  onAnalysisComplete: (repoName: string, prNumber: number, result: any) => void;
+  setReviewedItems: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export function GithubWorkflow({
@@ -37,7 +37,7 @@ export function GithubWorkflow({
   setSelectedRepoId,
   providerTokenSetupError,
   retryProviderTokenSetup,
-  onAnalysisComplete
+  setReviewedItems
 }: GithubWorkflowProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
@@ -47,11 +47,10 @@ export function GithubWorkflow({
   const handleConnectGithub = async () => {
     setLinkError('');
     try {
-      const { data, error } = await supabase.auth.linkIdentity({
+      const { error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {
-          redirectTo: window.location.origin + '?workflow=github',
-          skipBrowserRedirect: true
+          redirectTo: window.location.origin + '?workflow=github'
         }
       });
       if (error) {
@@ -62,32 +61,11 @@ export function GithubWorkflow({
         }
         return;
       }
-      if (data?.url) {
-        window.open(data.url, 'oauth_popup', 'width=600,height=700');
-      }
     } catch (err: any) {
       console.error('Failed to link GitHub:', err);
       setLinkError('An unexpected error occurred while connecting GitHub.');
     }
   };
-
-  React.useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
-        return;
-      }
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        if (event.data.workflow) {
-          window.location.href = window.location.pathname + '?workflow=' + event.data.workflow;
-        } else {
-          window.location.reload();
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
 
   const handleAnalyze = async (repo: GithubRepo, prNumber?: number) => {
     setSelectedRepoId(repo.id);
@@ -96,6 +74,8 @@ export function GithubWorkflow({
       const { data, error } = await supabase.functions.invoke('analyze-repository', {
         body: { owner: repo.owner.login, repo: repo.name, prNumber }
       });
+      console.log("invoke result", data);
+      console.log("JSON", JSON.stringify(data, null, 2));
       
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -104,16 +84,17 @@ export function GithubWorkflow({
         setAnalysisState({ status: 'no_prs' });
       } else if (data.status === 'select_pr') {
         setAnalysisState({ status: 'select_pr', prs: data.prs });
-      } else if (data.status === 'analysis_data_ready' || data.report || data.metadata || data.checkpoints || data.verdict || data.findings) {
-        const metadata = data.metadata || data.report || data;
-        const resolvedPrNumber = data.prNumber || data.report?.repository?.prNumber || prNumber || 1;
-        
-        setAnalysisState({ status: 'analysis_data_ready', metadata });
-        onAnalysisComplete(repo.name, resolvedPrNumber, metadata);
-        setTimeout(() => setActiveWorkflow('none'), 1200);
+      } else if (data.report) {
+        setAnalysisState({ status: 'success', report: data.report });
+        setReviewedItems(prev => [{
+          name: `${repo.owner.login}/${repo.name}`,
+          verdict: data.report.verdict || 'NOT_VERIFIED',
+          pr: prNumber || null,
+          date: new Date(),
+          result: data.report
+        }, ...prev]);
       } else {
-        console.error('Unrecognized payload received from analyze-repository:', data);
-        throw new Error('Unknown response format from server.');
+        throw new Error('Unknown response from server');
       }
     } catch (err: any) {
       console.error('Analyze Error:', err);
@@ -136,6 +117,7 @@ export function GithubWorkflow({
         setGithubSearchQuery={setGithubSearchQuery}
         viewStyle={viewStyle}
         setViewStyle={setViewStyle}
+        onRefresh={fetchGithubRepositories}
       />
       
       <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-4 h-[calc(100vh-200px)]">

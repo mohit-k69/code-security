@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Search, LayoutGrid, List } from 'lucide-react';
+import { ChevronLeft, Search, LayoutGrid, List, RefreshCw } from 'lucide-react';
 
 interface GithubHeaderProps {
   setActiveWorkflow: (workflow: 'none') => void;
@@ -10,6 +10,7 @@ interface GithubHeaderProps {
   setGithubSearchQuery: (query: string) => void;
   viewStyle: 'grid' | 'list';
   setViewStyle: (style: 'grid' | 'list') => void;
+  onRefresh: () => void;
 }
 
 export function GithubHeader({
@@ -19,7 +20,8 @@ export function GithubHeader({
   githubSearchQuery,
   setGithubSearchQuery,
   viewStyle,
-  setViewStyle
+  setViewStyle,
+  onRefresh
 }: GithubHeaderProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +97,17 @@ export function GithubHeader({
                 title={`Switch to ${viewStyle === 'grid' ? 'list' : 'grid'} view`}
               >
                 {viewStyle === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={onRefresh}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
+                title="Refresh repositories"
+              >
+                <RefreshCw className="w-5 h-5" />
               </motion.button>
               <motion.button
                 initial={{ opacity: 0 }}

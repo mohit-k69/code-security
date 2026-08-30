@@ -39,6 +39,7 @@ export interface SanitizationMetadata {
   replacementTypes: Record<string, number>;
   ignoredReplacements: number;
   processingTimeMs: number;
+  secretFindings?: any[];
 }
 
 export interface SanitizedContextPackage {

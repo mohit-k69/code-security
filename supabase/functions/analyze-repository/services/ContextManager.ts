@@ -1,9 +1,9 @@
-import { ProviderService } from "./ProviderService";
-import { DependencyResolver } from "./DependencyResolver";
-import { ContextPackage, ContextFile, DependencyFile, PipelineError } from "./types";
+import { ProviderService } from "./ProviderService.ts";
+import { DependencyResolver } from "./DependencyResolver.ts";
+import { ContextPackage, ContextFile, DependencyFile, PipelineError } from "./types.ts";
 
 // Re-export for backward compatibility
-export type { ContextPackage } from "./types";
+export type { ContextPackage } from "./types.ts";
 
 // ─── File-Type Configuration ─────────────────────────────────────
 // Consolidated into Sets for clean O(1) lookups.
@@ -20,7 +20,7 @@ const EXCLUDED_EXTS = new Set([
 ]);
 
 const SUPPORTED_EXTS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',      // JavaScript/TypeScript
+  '.ts', '.tsx', '.js', '.jsx',      // JavaScript/TypeScript
   '.py',                              // Python
   '.go',                              // Go
   '.java',                            // Java
@@ -28,9 +28,6 @@ const SUPPORTED_EXTS = new Set([
   '.cs',                              // C#
   '.rb',                              // Ruby
   '.php',                             // PHP
-  '.rs',                              // Rust
-  '.kt', '.swift',                    // Kotlin / Swift
-  '.sql', '.sh'                       // SQL / Shell
 ]);
 
 // ─── Context Manager ─────────────────────────────────────────────
@@ -135,6 +132,10 @@ export class ContextManager {
             dependencyQueue.push(nd);
           }
         }
+      }
+
+      if (changedFiles.length === 0) {
+        return { stage: 'context_manager', message: 'No supported source files were available for security analysis.', fatal: false };
       }
 
       return {

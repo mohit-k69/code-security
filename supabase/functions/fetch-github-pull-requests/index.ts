@@ -1,11 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-export default async function handler(req: Request) {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -22,8 +22,8 @@ export default async function handler(req: Request) {
     }
 
     const supabaseClient = createClient(
-      process.env['SUPABASE_URL'] ?? '',
-      process.env['SUPABASE_ANON_KEY'] ?? '',
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -60,8 +60,8 @@ export default async function handler(req: Request) {
 
     // 3. Fetch the stored GitHub token securely using the Service Role Key
     const supabaseAdmin = createClient(
-      process.env['SUPABASE_URL'] ?? '',
-      process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { data: connection, error: dbError } = await supabaseAdmin
@@ -153,4 +153,4 @@ export default async function handler(req: Request) {
       status: 500,
     });
   }
-}
+});
