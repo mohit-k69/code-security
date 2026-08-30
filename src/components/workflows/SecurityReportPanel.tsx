@@ -118,16 +118,32 @@ function getRealWorldScenario(finding: any): string {
 }
 
 /**
- * Builds a specific, high-quality prompt for an AI coding agent.
+ * Builds a structured, concise, and actionable prompt for an AI coding agent.
  */
 function getCodingAgentPrompt(finding: any): string {
-  const file = finding.primaryLocation?.file || finding.file || 'the source file';
+  const file = finding.primaryLocation?.file || finding.file || 'source file';
   const lineNum = finding.primaryLocation?.line || finding.line;
-  const locationText = lineNum ? `${file} line ${lineNum}` : file;
-  const title = finding.title || finding.rule || 'security issue';
-  const suggestion = finding.suggestion || 'Refactor the code according to security best practices.';
+  const locationText = [
+    `File: ${file}`,
+    lineNum ? `Line: ${lineNum}` : null
+  ].filter(Boolean).join('\n');
 
-  return `Review ${locationText}. Address the ${title} vulnerability by implementing this remediation: ${suggestion} Ensure the fix is secure, handles edge cases cleanly, and preserves existing application behavior without modifying unaffected parts of the file.`;
+  const title = finding.title || finding.rule || 'Security Vulnerability';
+  const description = finding.description || finding.message || 'Vulnerability detected in the source code.';
+  const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
+  const suggestion = finding.suggestion || finding.remediation || 'Refactor the code according to security best practices to resolve the vulnerability.';
+
+  const sections: string[] = [
+    `TASK\nFix the identified security vulnerability.`,
+    `LOCATION\n${locationText}`,
+    `ISSUE\n${title}\n\n${description}`,
+    snippet ? `CURRENT CODE\n${snippet}` : '',
+    `REQUIRED FIX\n${suggestion}`,
+    `REQUIREMENTS\n- Preserve existing application behavior.\n- Modify only what is necessary to fix the vulnerability.\n- Do not introduce new security issues.\n- Follow the existing project's coding patterns.\n- Do not modify unrelated files unless required by the fix.`,
+    `VALIDATION\n- Verify the vulnerability is resolved.\n- Verify the application still compiles/builds.\n- Verify existing functionality is preserved.`
+  ].filter(Boolean);
+
+  return sections.join('\n\n');
 }
 
 export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanelProps) {
@@ -317,7 +333,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                   {/* D. Issue */}
                   {explanation && (
                     <div className="mb-4">
-                      <h5 className="text-base font-semibold text-gray-900 mb-1.5">
+                      <h5 className="text-[17px] font-bold text-gray-900 mb-1.5 tracking-tight">
                         Issue
                       </h5>
                       <p className="text-gray-700 leading-relaxed text-sm">
@@ -326,10 +342,10 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                     </div>
                   )}
 
-                  {/* E. Real World Scenario */}
+                  {/* E. Scenario */}
                   <div className="mb-4 pt-3 border-t border-gray-100">
-                    <h5 className="text-base font-semibold text-gray-900 mb-1.5">
-                      Real World Scenario
+                    <h5 className="text-[17px] font-bold text-gray-900 mb-1.5 tracking-tight">
+                      Scenario
                     </h5>
                     <p className="text-gray-700 leading-relaxed text-sm">
                       {scenario}
@@ -339,7 +355,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                   {/* F. Fix with Coding Agent */}
                   <div className="pt-3 border-t border-gray-100">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <h5 className="text-base font-semibold text-gray-900">
+                      <h5 className="text-[17px] font-bold text-gray-900 tracking-tight">
                         Fix with Coding Agent
                       </h5>
                       <button
