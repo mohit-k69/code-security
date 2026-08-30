@@ -1,12 +1,146 @@
-import React from 'react';
-import { Check, AlertTriangle, Info, Loader2, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Copy, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
 
 interface SecurityReportPanelProps {
   report: any;
   isAnalyzing: boolean;
 }
 
+/**
+ * Derives a concrete, practical consequence of the vulnerability in simple developer-friendly terms.
+ */
+function getRealWorldScenario(finding: any): string {
+  if (finding.scenario || finding.realWorldScenario || finding.impact || finding.consequence) {
+    return finding.scenario || finding.realWorldScenario || finding.impact || finding.consequence;
+  }
+
+  const textToAnalyze = [
+    finding.title || '',
+    finding.rule || '',
+    finding.description || '',
+    ...(finding.cwes || [])
+  ].join(' ').toLowerCase();
+
+  if (
+    textToAnalyze.includes('secret') ||
+    textToAnalyze.includes('api_key') ||
+    textToAnalyze.includes('apikey') ||
+    textToAnalyze.includes('api key') ||
+    textToAnalyze.includes('token') ||
+    textToAnalyze.includes('password') ||
+    textToAnalyze.includes('credential') ||
+    textToAnalyze.includes('cwe-798') ||
+    textToAnalyze.includes('cwe-259') ||
+    textToAnalyze.includes('cwe-312')
+  ) {
+    return 'If this secret or API key is committed to a public or compromised repository, an attacker could copy it and use the API under your account. If the key allows billable requests or privileged actions, they could generate thousands of requests, leave you with an unexpected bill, or access protected user data.';
+  }
+
+  if (
+    textToAnalyze.includes('sql') ||
+    textToAnalyze.includes('injection') && textToAnalyze.includes('query') ||
+    textToAnalyze.includes('cwe-89')
+  ) {
+    return 'An attacker could supply crafted inputs to manipulate database queries, allowing them to bypass authentication, read confidential database tables, or modify and delete application records.';
+  }
+
+  if (
+    textToAnalyze.includes('xss') ||
+    textToAnalyze.includes('cross-site scripting') ||
+    textToAnalyze.includes('innerhtml') ||
+    textToAnalyze.includes('dangerouslysetinnerhtml') ||
+    textToAnalyze.includes('cwe-79')
+  ) {
+    return "Malicious script content could execute in another user's browser session. Depending on the application's protections, this could allow an attacker to steal session cookies, capture keystrokes, or perform unauthorized actions on that user's behalf.";
+  }
+
+  if (
+    textToAnalyze.includes('command') ||
+    textToAnalyze.includes('exec') ||
+    textToAnalyze.includes('spawn') ||
+    textToAnalyze.includes('eval') ||
+    textToAnalyze.includes('cwe-78') ||
+    textToAnalyze.includes('cwe-94')
+  ) {
+    return 'An attacker could inject and execute arbitrary commands on the underlying server or host system, potentially gaining shell access, reading filesystem data, or pivoting into internal infrastructure.';
+  }
+
+  if (
+    textToAnalyze.includes('traversal') ||
+    textToAnalyze.includes('path') ||
+    textToAnalyze.includes('cwe-22')
+  ) {
+    return 'An attacker could supply directory traversal sequences (like ../) to read or overwrite files outside the intended folder, such as server configuration files or sensitive source code.';
+  }
+
+  if (
+    textToAnalyze.includes('auth') ||
+    textToAnalyze.includes('bypass') ||
+    textToAnalyze.includes('access control') ||
+    textToAnalyze.includes('idor') ||
+    textToAnalyze.includes('cwe-287') ||
+    textToAnalyze.includes('cwe-306') ||
+    textToAnalyze.includes('cwe-862') ||
+    textToAnalyze.includes('cwe-639')
+  ) {
+    return 'An attacker could potentially access restricted features, administrative endpoints, or private account data without completing the intended authentication or authorization checks.';
+  }
+
+  if (
+    textToAnalyze.includes('ssrf') ||
+    textToAnalyze.includes('cwe-918')
+  ) {
+    return 'An attacker could force the server to issue requests to internal networks or cloud metadata services (e.g., 169.254.169.254), exposing internal services or cloud credentials.';
+  }
+
+  if (
+    textToAnalyze.includes('crypto') ||
+    textToAnalyze.includes('hash') ||
+    textToAnalyze.includes('md5') ||
+    textToAnalyze.includes('sha1') ||
+    textToAnalyze.includes('cwe-327') ||
+    textToAnalyze.includes('cwe-328')
+  ) {
+    return 'Weak cryptographic algorithms or insufficient key sizes make encrypted payloads and hashed passwords susceptible to pre-computed lookup attacks and collision cracking.';
+  }
+
+  if (
+    textToAnalyze.includes('dos') ||
+    textToAnalyze.includes('denial') ||
+    textToAnalyze.includes('redos') ||
+    textToAnalyze.includes('cwe-400') ||
+    textToAnalyze.includes('cwe-1333')
+  ) {
+    return 'Specially crafted inputs could consume excessive CPU or memory resources, causing server degradation or making the application unavailable to legitimate users.';
+  }
+
+  return 'If exploited in a production environment, this vulnerability could allow an attacker to bypass intended controls, access unauthorized data, or disrupt application operations depending on how this code path is exposed.';
+}
+
+/**
+ * Builds a specific, high-quality prompt for an AI coding agent.
+ */
+function getCodingAgentPrompt(finding: any): string {
+  const file = finding.primaryLocation?.file || finding.file || 'the source file';
+  const lineNum = finding.primaryLocation?.line || finding.line;
+  const locationText = lineNum ? `${file} line ${lineNum}` : file;
+  const title = finding.title || finding.rule || 'security issue';
+  const suggestion = finding.suggestion || 'Refactor the code according to security best practices.';
+
+  return `Review ${locationText}. Address the ${title} vulnerability by implementing this remediation: ${suggestion} Ensure the fix is secure, handles edge cases cleanly, and preserves existing application behavior without modifying unaffected parts of the file.`;
+}
+
 export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanelProps) {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const handleCopyPrompt = (promptText: string, index: number) => {
+    navigator.clipboard.writeText(promptText);
+    setCopiedIndex(index);
+    setTimeout(() => {
+      setCopiedIndex(null);
+    }, 2000);
+  };
+
   if (isAnalyzing) {
     return (
       <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
@@ -31,20 +165,25 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
     );
   }
 
-  const allFindings = [
-    ...(report.findings?.critical || []).map((f: any) => ({ ...f, _severityLabel: 'Critical' })),
-    ...(report.findings?.warning || []).map((f: any) => ({ ...f, _severityLabel: 'Warning' })),
-    ...(report.findings?.info || []).map((f: any) => ({ ...f, _severityLabel: 'Info' }))
-  ];
+  let allFindings: any[] = [];
+  if (Array.isArray(report.findings)) {
+    allFindings = report.findings.map((f: any) => ({
+      ...f,
+      _severityLabel: f.severity === 'critical' || f.severity === 'CRITICAL' ? 'Critical' : f.severity === 'warning' || f.severity === 'WARNING' ? 'Warning' : 'Info'
+    }));
+  } else if (report.findings) {
+    allFindings = [
+      ...(report.findings?.critical || []).map((f: any) => ({ ...f, _severityLabel: 'Critical' })),
+      ...(report.findings?.warning || []).map((f: any) => ({ ...f, _severityLabel: 'Warning' })),
+      ...(report.findings?.info || []).map((f: any) => ({ ...f, _severityLabel: 'Info' }))
+    ];
+  }
 
   const totalFindings = allFindings.length;
-  const criticalCount = report.findings?.critical?.length || 0;
-  const warningCount = report.findings?.warning?.length || 0;
-  const infoCount = report.findings?.info?.length || 0;
 
   return (
     <div className="w-full bg-white border-l border-gray-200 flex flex-col h-full shrink-0">
-      {/* 1. Verdict - Highest visual priority */}
+      {/* 1. Results Header */}
       <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
         {report.verdict === 'PASS' && (
           <div>
@@ -81,75 +220,160 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
             </div>
             <p className="text-red-700 font-medium">Security vulnerabilities were detected in the provided code.</p>
             
-            {/* 2. Findings summary */}
-            <div className="mt-4 flex flex-col gap-2">
-              <span className="font-semibold text-gray-800">{totalFindings} security {totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'}</span>
-              <div className="flex gap-3 text-sm">
-                {criticalCount > 0 && <span className="text-red-700 font-medium">{criticalCount} Critical</span>}
-                {warningCount > 0 && <span className="text-orange-700 font-medium">{warningCount} Warning</span>}
-                {infoCount > 0 && <span className="text-blue-700 font-medium">{infoCount} Info</span>}
-              </div>
+            <div className="mt-3">
+              <span className="font-semibold text-gray-800 text-sm">
+                {totalFindings} security {totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'}
+              </span>
             </div>
           </div>
         )}
       </div>
 
+      {/* 2. Scrollable Findings List */}
       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-        {/* 3. Individual findings */}
         {report.verdict === 'FAIL' && totalFindings > 0 && (
           <div className="space-y-6">
             {allFindings.map((finding: any, i: number) => {
               const isCritical = finding._severityLabel === 'Critical';
               const isWarning = finding._severityLabel === 'Warning';
               
+              const issueName = finding.title || finding.rule || 'Security Finding';
+              const fileName = finding.primaryLocation?.file || finding.file;
+              const lineNum = finding.primaryLocation?.line || finding.line;
+              const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
+              const explanation = finding.description || finding.message;
+              const scenario = getRealWorldScenario(finding);
+              const suggestion = finding.suggestion || finding.remediation;
+              const agentPrompt = getCodingAgentPrompt(finding);
+              const isCopied = copiedIndex === i;
+
               return (
-                <div key={i} className={`border rounded-xl p-5 ${isCritical ? 'border-red-100 bg-red-50/10' : isWarning ? 'border-orange-100 bg-orange-50/10' : 'border-blue-100 bg-blue-50/10'}`}>
-                  {/* Severity Tag */}
-                  <div className="mb-2">
-                    <span className={`text-xs font-bold uppercase px-2 py-1 rounded-md ${isCritical ? 'bg-red-100 text-red-800' : isWarning ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}`}>
+                <div 
+                  key={i} 
+                  className={`border rounded-xl p-5 ${
+                    isCritical 
+                      ? 'border-red-200 bg-red-50/10' 
+                      : isWarning 
+                        ? 'border-orange-200 bg-orange-50/10' 
+                        : 'border-blue-200 bg-blue-50/10'
+                  }`}
+                >
+                  {/* Severity Badge */}
+                  <div className="mb-2.5">
+                    <span 
+                      className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-0.5 rounded-md ${
+                        isCritical 
+                          ? 'bg-red-100 text-red-800' 
+                          : isWarning 
+                            ? 'bg-orange-100 text-orange-800' 
+                            : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
                       {finding._severityLabel}
                     </span>
                   </div>
 
-                  {/* Vulnerability Title */}
-                  <h4 className={`text-lg font-semibold mb-1 ${isCritical ? 'text-red-900' : isWarning ? 'text-orange-900' : 'text-blue-900'}`}>
-                    {finding.title}
+                  {/* A. Issue Name */}
+                  <h4 
+                    className={`text-base font-semibold mb-1 ${
+                      isCritical 
+                        ? 'text-red-950' 
+                        : isWarning 
+                          ? 'text-orange-950' 
+                          : 'text-blue-950'
+                    }`}
+                  >
+                    {issueName}
                   </h4>
                   
-                  {/* filename — Line X */}
-                  {finding.primaryLocation?.file && (
-                    <p className="text-sm font-medium text-gray-500 mb-4">
-                      {finding.primaryLocation.file} — Line {finding.primaryLocation.line || 'unknown'}
+                  {/* B. Location */}
+                  {(fileName || lineNum) && (
+                    <p className="text-xs font-medium text-gray-500 mb-3.5">
+                      {fileName ? fileName : 'Source'} {lineNum ? `· Line ${lineNum}` : ''}
                     </p>
                   )}
 
-                  {/* Evidence / Code */}
-                  {finding.evidence && finding.evidence.length > 0 && finding.evidence[0]?.snippet && (
+                  {/* C. Exact Problematic Code */}
+                  {snippet && (
                     <div className="rounded-lg bg-gray-900 p-3 mb-4 overflow-x-auto">
                       <code className="text-xs font-mono text-gray-100 whitespace-pre">
-                        {finding.evidence[0].snippet}
+                        {snippet}
                       </code>
                     </div>
                   )}
                   
-                  {/* Explanation (Why this is a problem) */}
-                  <div className="mb-4">
-                    <p className="text-gray-800 leading-relaxed text-sm">
-                      {finding.description}
-                    </p>
-                  </div>
-                  
-                  {/* Recommended fix */}
-                  {finding.suggestion && (
-                    <div className="pt-3 border-t border-gray-200/60 text-sm">
-                      <span className="font-semibold text-gray-900 block mb-1">Recommended Fix</span>
-                      <span className="text-gray-700">{finding.suggestion}</span>
+                  {/* D. What is the issue? */}
+                  {explanation && (
+                    <div className="mb-4">
+                      <span className="text-xs font-semibold text-gray-900 block mb-1">
+                        What is the issue?
+                      </span>
+                      <p className="text-gray-700 leading-relaxed text-sm">
+                        {explanation}
+                      </p>
                     </div>
                   )}
 
-                  {/* CWE metadata */}
+                  {/* E. What could happen? (Real-World Scenario) */}
+                  <div className="mb-4 pt-3 border-t border-gray-100">
+                    <span className="text-xs font-semibold text-gray-900 block mb-1">
+                      What could happen?
+                    </span>
+                    <p className="text-gray-700 leading-relaxed text-sm">
+                      {scenario}
+                    </p>
+                  </div>
+                  
+                  {/* F. Recommended Fix */}
+                  {suggestion && (
+                    <div className="mb-4 pt-3 border-t border-gray-100">
+                      <span className="text-xs font-semibold text-gray-900 block mb-1">
+                        Recommended Fix
+                      </span>
+                      <p className="text-gray-700 leading-relaxed text-sm">
+                        {suggestion}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* G. Fix with Coding Agent */}
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-xs font-semibold text-gray-900">
+                        Fix with Coding Agent
+                      </span>
+                      <button
+                        onClick={() => handleCopyPrompt(agentPrompt, i)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+                          isCopied
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                        }`}
+                        title="Copy prompt for AI coding agent"
+                      >
+                        {isCopied ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-gray-500" />
+                            <span>Copy Prompt</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="rounded-lg bg-gray-50 border border-gray-200 p-2.5">
+                      <p className="text-xs font-mono text-gray-800 leading-relaxed break-words whitespace-pre-wrap select-all">
+                        {agentPrompt}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* CWE metadata if present */}
                   {finding.cwes && finding.cwes.length > 0 && (
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-3.5 pt-2 flex flex-wrap gap-1.5">
                       {finding.cwes.map((cwe: string, idx: number) => (
                         <span key={idx} className="text-[10px] uppercase font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
                           {cwe}
