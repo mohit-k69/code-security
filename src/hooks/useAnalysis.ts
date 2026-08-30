@@ -1,16 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { analyzeCode, type AnalysisResult, type Category, type Finding } from '../analyzer';
 import { supabase } from '../lib/supabase';
+import { type ReviewedItem, fetchUserReviews, saveUserReview } from '../lib/reviewsService';
+import { type User } from './useAuth';
 
-export interface ReviewedItem {
-  name: string;
-  verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
-  pr: number | null;
-  date: Date;
-  result: AnalysisResult;
-}
+export type { ReviewedItem };
 
-export function useAnalysis() {
+export function useAnalysis(user?: User | null) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
@@ -21,6 +17,25 @@ export function useAnalysis() {
   const [fileContents, setFileContents] = useState<Map<string, string>>(new Map());
 
   const [reviewedItems, setReviewedItems] = useState<ReviewedItem[]>([]);
+
+  // Fetch reviews from Supabase when user logs in or user changes
+  useEffect(() => {
+    if (!user?.id) {
+      setReviewedItems([]);
+      return;
+    }
+
+    let isMounted = true;
+    fetchUserReviews(user.id).then(items => {
+      if (isMounted) {
+        setReviewedItems(items);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   const handleFileUpload = useCallback((files: File[]) => {
     const MAX_SIZE = 2 * 1024 * 1024; // 2MB
@@ -93,15 +108,42 @@ export function useAnalysis() {
     const name = uploadedFiles.length > 0
       ? uploadedFiles.map(f => f.name).join(', ')
       : 'Pasted Code';
-      
-    setReviewedItems(prev => [{
-      name: name.length > 40 ? name.slice(0, 37) + '...' : name,
-      verdict: finalResult.verdict || 'NOT_VERIFIED',
+    const displayName = name.length > 40 ? name.slice(0, 37) + '...' : name;
+    const verdict = finalResult?.verdict || 'NOT_VERIFIED';
+    const reviewType = uploadedFiles.length > 0 ? 'upload' : 'paste';
+
+    const localItem: ReviewedItem = {
+      name: displayName,
+      verdict,
       pr: null,
       date: new Date(),
       result: finalResult,
-    }, ...prev]);
-  }, [fileContents, pastedCode, uploadedFiles]);
+      reviewType
+    };
+
+    // Optimistically update local state
+    setReviewedItems(prev => [localItem, ...prev]);
+
+    // Persist to Supabase if authenticated
+    if (user?.id) {
+      saveUserReview({
+        userId: user.id,
+        name: displayName,
+        reviewType,
+        verdict,
+        report: finalResult
+      }).then(savedItem => {
+        if (savedItem?.id) {
+          setReviewedItems(prev => [
+            savedItem,
+            ...prev.filter(item => item !== localItem)
+          ]);
+        }
+      }).catch(err => {
+        console.error('Failed to persist review:', err);
+      });
+    }
+  }, [fileContents, pastedCode, uploadedFiles, user?.id]);
 
   const filteredFindings = Array.isArray(analysisResult?.findings) 
     ? analysisResult.findings.filter((f: any) => activeCategory === 'all' || f.category === activeCategory)

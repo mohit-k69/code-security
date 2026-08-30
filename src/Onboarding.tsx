@@ -9,8 +9,10 @@ import {
   OnboardingSignupSuccess
 } from './components/auth/onboarding/OnboardingSteps';
 
+import { type User } from './hooks/useAuth';
+
 interface OnboardingProps {
-  onLogin: (user: { name: string; email: string; avatar?: string }) => void;
+  onLogin: (user: User) => void;
 }
 
 export default function Onboarding({ onLogin }: OnboardingProps) {
@@ -87,6 +89,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
         if (data.user) {
           onLogin({
+            id: data.user.id,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
             email: data.user.email || email,
           });

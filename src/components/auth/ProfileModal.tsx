@@ -184,6 +184,7 @@ export function ProfileModal({ user, setUser, isOpen, setIsOpen }: ProfileModalP
       if (data.user) {
         const meta = data.user.user_metadata;
         setUser({
+          id: data.user.id,
           name: meta?.full_name || meta?.first_name || data.user.email?.split('@')[0] || 'User',
           email: data.user.email || '',
           avatar: meta?.avatar_url,

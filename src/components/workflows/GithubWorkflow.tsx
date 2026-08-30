@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { GithubRepo } from '../../hooks/useGithub';
+import { saveUserReview, type ReviewedItem } from '../../lib/reviewsService';
+import { type User } from '../../hooks/useAuth';
 
 // Extracted Components
 import { GithubHeader } from './github/GithubHeader';
@@ -10,7 +12,8 @@ import { SetupIncompleteError, ConnectionError, GenericError } from './github/Gi
 import { GithubRepoList } from './github/GithubRepoList';
 import { GithubAnalysisModals, AnalysisState } from './github/GithubAnalysisModals';
 
-  interface GithubWorkflowProps {
+interface GithubWorkflowProps {
+  user?: User | null;
   setActiveWorkflow: (workflow: 'none') => void;
   isFetchingRepos: boolean;
   githubReposError: string;
@@ -22,7 +25,7 @@ import { GithubAnalysisModals, AnalysisState } from './github/GithubAnalysisModa
   setSelectedRepoId: (id: number | null) => void;
   providerTokenSetupError?: string | null;
   retryProviderTokenSetup?: () => void;
-  setReviewedItems: React.Dispatch<React.SetStateAction<any[]>>;
+  setReviewedItems: React.Dispatch<React.SetStateAction<ReviewedItem[]>>;
   analysisResult: any;
   setAnalysisResult: (result: any) => void;
   isAnalyzing: boolean;
@@ -30,6 +33,7 @@ import { GithubAnalysisModals, AnalysisState } from './github/GithubAnalysisModa
 }
 
 export function GithubWorkflow({
+  user,
   setActiveWorkflow,
   isFetchingRepos,
   githubReposError,
@@ -100,13 +104,45 @@ export function GithubWorkflow({
         setAnalysisState({ status: 'success', report: data.report });
         setAnalysisResult(data.report);
         setIsAnalyzing(false);
-        setReviewedItems(prev => [{
-          name: `${repo.owner.login}/${repo.name}`,
-          verdict: data.report.verdict || 'NOT_VERIFIED',
+
+        const repoName = `${repo.owner.login}/${repo.name}`;
+        const verdict = data.report.verdict || 'NOT_VERIFIED';
+        const localItem: ReviewedItem = {
+          name: repoName,
+          verdict,
           pr: prNumber || null,
           date: new Date(),
-          result: data.report
-        }, ...prev]);
+          result: data.report,
+          reviewType: 'github',
+          repoOwner: repo.owner.login,
+          repoName: repo.name,
+          commitSha: data.commitSha || data.report?.commitSha || null
+        };
+
+        setReviewedItems(prev => [localItem, ...prev]);
+
+        if (user?.id) {
+          saveUserReview({
+            userId: user.id,
+            name: repoName,
+            reviewType: 'github',
+            repositoryOwner: repo.owner.login,
+            repositoryName: repo.name,
+            prNumber: prNumber || null,
+            commitSha: data.commitSha || data.report?.commitSha || null,
+            verdict,
+            report: data.report
+          }).then(savedItem => {
+            if (savedItem?.id) {
+              setReviewedItems(prev => [
+                savedItem,
+                ...prev.filter(item => item !== localItem)
+              ]);
+            }
+          }).catch(err => {
+            console.error('Failed to persist GitHub review to Supabase:', err);
+          });
+        }
       } else {
         throw new Error('Unknown response from server');
       }

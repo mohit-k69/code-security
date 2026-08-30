@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface User {
+  id: string;
   name: string;
   email: string;
   avatar?: string;
@@ -60,6 +61,7 @@ export function useAuth() {
         if (session?.user) {
           const meta = session.user.user_metadata;
           setUser({
+            id: session.user.id,
             name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
             avatar: meta?.avatar_url,
@@ -137,6 +139,7 @@ export function useAuth() {
       if (session?.user) {
         const meta = session.user.user_metadata;
         setUser({
+          id: session.user.id,
           name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           avatar: meta?.avatar_url,

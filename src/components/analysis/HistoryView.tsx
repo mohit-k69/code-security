@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, ChevronDown, FileText, ChevronRight } from 'lucide-react';
 
 interface ReviewedItem {
+  id?: string;
   name: string;
   verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
   pr: number | null;
@@ -101,11 +102,14 @@ export function HistoryView({
         <div className="flex flex-col">
           {reviewedItems
             .filter(item => Date.now() - item.date.getTime() <= 30 * 24 * 60 * 60 * 1000)
-            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .sort((a, b) => filterOption === 'Alphabetically' ? a.name.localeCompare(b.name) : b.date.getTime() - a.date.getTime())
             .map((item, i) => (
             <div 
-              key={i} 
-              onClick={() => setAnalysisResult(item.result)}
+              key={item.id || i} 
+              onClick={() => {
+                setAnalysisResult(item.result);
+                setActiveTab('new');
+              }}
               className="flex items-center justify-between px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer"
             >
               <div className="flex-1 flex items-center gap-3">

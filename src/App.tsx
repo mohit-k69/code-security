@@ -58,7 +58,7 @@ export default function App() {
     handleFileUpload,
     handleCheckVibe,
     filteredFindings
-  } = useAnalysis();
+  } = useAnalysis(user);
 
   const {
     githubRepos,
@@ -223,6 +223,7 @@ export default function App() {
 
                         {activeWorkflow === 'github' && (
                           <GithubWorkflow 
+                            user={user}
                             setActiveWorkflow={handleReturnHome}
                             isFetchingRepos={isFetchingRepos}
                             githubReposError={githubReposError}
