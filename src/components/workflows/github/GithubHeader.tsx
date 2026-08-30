@@ -11,6 +11,7 @@ interface GithubHeaderProps {
   viewStyle: 'grid' | 'list';
   setViewStyle: (style: 'grid' | 'list') => void;
   onRefresh: () => void;
+  isAnalysisMode?: boolean;
 }
 
 export function GithubHeader({
@@ -21,7 +22,8 @@ export function GithubHeader({
   setGithubSearchQuery,
   viewStyle,
   setViewStyle,
-  onRefresh
+  onRefresh,
+  isAnalysisMode = false
 }: GithubHeaderProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -65,63 +67,79 @@ export function GithubHeader({
       </AnimatePresence>
 
       <div className="absolute right-0 flex items-center justify-end h-10 top-1/2 -translate-y-1/2 gap-2">
-        <AnimatePresence>
-          {isSearchExpanded ? (
-            <motion.div
-              key="search-input"
-              initial={{ width: 40, opacity: 0 }}
-              animate={{ width: 624, maxWidth: 'calc(100vw - 32px)', opacity: 1 }}
-              exit={{ width: 40, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="relative h-full overflow-hidden rounded-full"
-            >
-              <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={githubSearchQuery}
-                onChange={(e) => setGithubSearchQuery(e.target.value)}
-                placeholder="Search repositories..."
-                className="w-full h-full bg-white border border-gray-200 rounded-full pl-11 pr-4 text-[14px] outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-sm"
-              />
-            </motion.div>
-          ) : (
-            <div key="actions" className="flex items-center gap-1">
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => setViewStyle(viewStyle === 'grid' ? 'list' : 'grid')}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
-                title={`Switch to ${viewStyle === 'grid' ? 'list' : 'grid'} view`}
-              >
-                {viewStyle === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
-              </motion.button>
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={onRefresh}
-                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
-                title="Refresh repositories"
-              >
-                <RefreshCw className="w-5 h-5" />
-              </motion.button>
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+        {isAnalysisMode ? (
+          <div key="actions-analysis" className="flex items-center gap-1">
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setIsSearchExpanded(true)}
+              onClick={onRefresh}
               className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
+              title="Refresh repositories"
             >
-              <Search className="w-5 h-5" />
-              </motion.button>
-            </div>
-          )}
-        </AnimatePresence>
+              <RefreshCw className="w-5 h-5" />
+            </motion.button>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {isSearchExpanded ? (
+              <motion.div
+                key="search-input"
+                initial={{ width: 40, opacity: 0 }}
+                animate={{ width: 624, maxWidth: 'calc(100vw - 32px)', opacity: 1 }}
+                exit={{ width: 40, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="relative h-full overflow-hidden rounded-full"
+              >
+                <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={githubSearchQuery}
+                  onChange={(e) => setGithubSearchQuery(e.target.value)}
+                  placeholder="Search repositories..."
+                  className="w-full h-full bg-white border border-gray-200 rounded-full pl-11 pr-4 text-[14px] outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 shadow-sm"
+                />
+              </motion.div>
+            ) : (
+              <div key="actions" className="flex items-center gap-1">
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setViewStyle(viewStyle === 'grid' ? 'list' : 'grid')}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
+                  title={`Switch to ${viewStyle === 'grid' ? 'list' : 'grid'} view`}
+                >
+                  {viewStyle === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={onRefresh}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
+                  title="Refresh repositories"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors h-10 w-10 flex items-center justify-center"
+                >
+                  <Search className="w-5 h-5" />
+                </motion.button>
+              </div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );

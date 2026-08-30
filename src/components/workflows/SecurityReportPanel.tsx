@@ -9,7 +9,7 @@ interface SecurityReportPanelProps {
 export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanelProps) {
   if (isAnalyzing) {
     return (
-      <div className="w-[400px] bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
+      <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
         <h3 className="text-gray-900 font-medium text-lg">Running Security Analysis...</h3>
         <p className="text-gray-500 text-sm mt-2">Checking your code against our security checkpoints.</p>
@@ -19,7 +19,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
 
   if (!report) {
     return (
-      <div className="w-[400px] bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
+      <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
         <div className="mb-32 flex flex-col items-center">
           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
             <ShieldCheck className="w-8 h-8 text-gray-300" />
@@ -43,7 +43,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
   const infoCount = report.findings?.info?.length || 0;
 
   return (
-    <div className="w-[400px] bg-white border-l border-gray-200 flex flex-col h-full shrink-0">
+    <div className="w-full bg-white border-l border-gray-200 flex flex-col h-full shrink-0">
       {/* 1. Verdict - Highest visual priority */}
       <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
         {report.verdict === 'PASS' && (

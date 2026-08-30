@@ -133,9 +133,10 @@ export function GithubWorkflow({
         viewStyle={viewStyle}
         setViewStyle={setViewStyle}
         onRefresh={fetchGithubRepositories}
+        isAnalysisMode={selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict)}
       />
       
-      <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full pt-4 h-[calc(100vh-200px)]">
+      <div className={`flex-1 flex flex-col ${selectedRepoId !== null ? 'max-w-full' : 'max-w-6xl'} mx-auto w-full pt-4 h-[calc(100vh-200px)]`}>
         {isFetchingRepos ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />

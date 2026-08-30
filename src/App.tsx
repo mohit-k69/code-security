@@ -160,85 +160,98 @@ export default function App() {
             />
           ) : (
             <div className="flex-1 flex min-h-0 bg-white w-full">
-              <div className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] ${activeWorkflow === 'github' ? '' : 'border-r border-gray-200'}`}>
-                <div className="min-h-full flex flex-col items-center py-12 px-6">
-                  <div 
-                    className={`w-full ${activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-8 pb-32`}
-                    onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
-                  >
-                    {activeWorkflow === 'none' && (
-                    <WorkflowSelector 
-                      setActiveWorkflow={setActiveWorkflow}
-                      hasUploadedCode={hasUploadedCode}
-                      uploadedFilesCount={uploadedFiles.length}
-                      hasPastedCode={hasPastedCode}
-                      githubConnected={githubConnected}
-                      onClearState={handleReturnHome}
-                    />
-                  )}
+              {(() => {
+                const isGithubAnalysisActive = activeWorkflow === 'github' && (selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict));
+                return (
+                  <>
+                    <div className={`overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] transition-all duration-300 ${
+                      isGithubAnalysisActive 
+                        ? 'w-full lg:w-[38%] shrink-0 border-r border-gray-200' 
+                        : activeWorkflow === 'github' 
+                          ? 'flex-1' 
+                          : 'flex-1 border-r border-gray-200'
+                    }`}>
+                      <div className={`min-h-full flex flex-col items-center ${isGithubAnalysisActive ? 'py-8 px-4' : 'py-12 px-6'}`}>
+                        <div 
+                          className={`w-full ${isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-8 pb-32`}
+                          onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
+                        >
+                          {activeWorkflow === 'none' && (
+                          <WorkflowSelector 
+                            setActiveWorkflow={setActiveWorkflow}
+                            hasUploadedCode={hasUploadedCode}
+                            uploadedFilesCount={uploadedFiles.length}
+                            hasPastedCode={hasPastedCode}
+                            githubConnected={githubConnected}
+                            onClearState={handleReturnHome}
+                          />
+                        )}
 
-                  {activeWorkflow === 'upload' && (
-                    <UploadWorkflow 
-                      setActiveWorkflow={handleReturnHome}
-                      uploadedFiles={uploadedFiles}
-                      setUploadedFiles={setUploadedFiles}
-                      setFileContents={setFileContents}
-                      handleFileUpload={handleFileUpload}
-                    />
-                  )}
+                        {activeWorkflow === 'upload' && (
+                          <UploadWorkflow 
+                            setActiveWorkflow={handleReturnHome}
+                            uploadedFiles={uploadedFiles}
+                            setUploadedFiles={setUploadedFiles}
+                            setFileContents={setFileContents}
+                            handleFileUpload={handleFileUpload}
+                          />
+                        )}
 
-                  {activeWorkflow === 'paste' && (
-                    <PasteWorkflow 
-                      setActiveWorkflow={handleReturnHome}
-                      pastedCode={pastedCode}
-                      setPastedCode={setPastedCode}
-                      handleCheckVibe={handleCheckVibe}
-                      isAnalyzing={isAnalyzing}
-                    />
-                  )}
+                        {activeWorkflow === 'paste' && (
+                          <PasteWorkflow 
+                            setActiveWorkflow={handleReturnHome}
+                            pastedCode={pastedCode}
+                            setPastedCode={setPastedCode}
+                            handleCheckVibe={handleCheckVibe}
+                            isAnalyzing={isAnalyzing}
+                          />
+                        )}
 
-                  {activeWorkflow === 'github' && (
-                    <GithubWorkflow 
-                      setActiveWorkflow={handleReturnHome}
-                      isFetchingRepos={isFetchingRepos}
-                      githubReposError={githubReposError}
-                      fetchGithubRepositories={fetchGithubRepositories}
-                      githubSearchQuery={githubSearchQuery}
-                      setGithubSearchQuery={setGithubSearchQuery}
-                      githubRepos={githubRepos}
-                      selectedRepoId={selectedRepoId}
-                      setSelectedRepoId={setSelectedRepoId}
-                      providerTokenSetupError={providerTokenSetupError}
-                      retryProviderTokenSetup={retryProviderTokenSetup}
-                      setReviewedItems={setReviewedItems}
-                      analysisResult={analysisResult}
-                      setAnalysisResult={setAnalysisResult}
-                      isAnalyzing={isAnalyzing}
-                      setIsAnalyzing={setIsAnalyzing}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Analysis Results Panel */}
-            <AnimatePresence mode="wait">
-              {(activeWorkflow !== 'github' || isAnalyzing || Boolean(analysisResult?.verdict)) && (
-                <motion.div
-                  key="results-panel"
-                  initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
-                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full flex shrink-0"
-                >
-                  <SecurityReportPanel 
-                    report={analysisResult?.verdict ? analysisResult : null}
-                    isAnalyzing={isAnalyzing}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                        {activeWorkflow === 'github' && (
+                          <GithubWorkflow 
+                            setActiveWorkflow={handleReturnHome}
+                            isFetchingRepos={isFetchingRepos}
+                            githubReposError={githubReposError}
+                            fetchGithubRepositories={fetchGithubRepositories}
+                            githubSearchQuery={githubSearchQuery}
+                            setGithubSearchQuery={setGithubSearchQuery}
+                            githubRepos={githubRepos}
+                            selectedRepoId={selectedRepoId}
+                            setSelectedRepoId={setSelectedRepoId}
+                            providerTokenSetupError={providerTokenSetupError}
+                            retryProviderTokenSetup={retryProviderTokenSetup}
+                            setReviewedItems={setReviewedItems}
+                            analysisResult={analysisResult}
+                            setAnalysisResult={setAnalysisResult}
+                            isAnalyzing={isAnalyzing}
+                            setIsAnalyzing={setIsAnalyzing}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Analysis Results Panel */}
+                  <AnimatePresence mode="wait">
+                    {(activeWorkflow !== 'github' || isAnalyzing || Boolean(analysisResult?.verdict)) && (
+                      <motion.div
+                        key="results-panel"
+                        initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
+                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[62%]' : 'w-[420px] lg:w-[460px]'}`}
+                      >
+                        <SecurityReportPanel 
+                          report={analysisResult?.verdict ? analysisResult : null}
+                          isAnalyzing={isAnalyzing}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              );
+            })()}
           </div>
           )}
         </div>
