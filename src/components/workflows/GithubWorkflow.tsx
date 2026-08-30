@@ -79,10 +79,17 @@ export function GithubWorkflow({
     setIsConnectingGithub(true);
     setLinkError('');
     try {
+      console.log('[GITHUB_OAUTH] button clicked');
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUser = userData?.user;
+      console.log('[GITHUB_OAUTH] current user:', currentUser?.id, currentUser?.email);
+
       const redirectUrl = new URL(window.location.origin);
       redirectUrl.pathname = window.location.pathname;
       redirectUrl.searchParams.set('workflow', 'github');
+      console.log('[GITHUB_OAUTH] redirect URL:', redirectUrl.toString());
 
+      console.log('[GITHUB_OAUTH] calling linkIdentity');
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {
@@ -90,6 +97,8 @@ export function GithubWorkflow({
           scopes: 'repo read:user user:email'
         }
       });
+      console.log('[GITHUB_OAUTH] linkIdentity result:', { data, error });
+
       if (error) {
         setIsConnectingGithub(false);
         if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
@@ -100,12 +109,13 @@ export function GithubWorkflow({
         return;
       }
       if (data?.url) {
+        console.log('[GITHUB_OAUTH] redirecting to GitHub:', data.url);
         window.location.assign(data.url);
       } else {
         setIsConnectingGithub(false);
       }
     } catch (err: any) {
-      console.error('Failed to link GitHub:', err);
+      console.error('[GITHUB_OAUTH] Failed to link GitHub:', err);
       setIsConnectingGithub(false);
       setLinkError('An unexpected error occurred while connecting GitHub.');
     }
@@ -185,16 +195,6 @@ export function GithubWorkflow({
     }
   };
 
-  const isConnectionError = 
-    !githubReposError ||
-    githubReposError.toLowerCase().includes('connect') || 
-    githubReposError.toLowerCase().includes('oauth') ||
-    githubReposError.toLowerCase().includes('not found') ||
-    githubReposError.toLowerCase().includes('404') ||
-    githubReposError.toLowerCase().includes('token') ||
-    githubReposError.toLowerCase().includes('unauthorized') ||
-    githubReposError.toLowerCase().includes('non-2xx');
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
@@ -231,19 +231,10 @@ export function GithubWorkflow({
             retryProviderTokenSetup={retryProviderTokenSetup || (() => {})} 
           />
         ) : githubReposError ? (
-          isConnectionError ? (
-            <ConnectionError 
-              githubReposError={githubReposError} 
-              handleConnectGithub={handleConnectGithub} 
-              linkError={linkError} 
-              isConnecting={isConnectingGithub}
-            />
-          ) : (
-            <GenericError 
-              githubReposError={githubReposError} 
-              fetchGithubRepositories={fetchGithubRepositories} 
-            />
-          )
+          <GenericError 
+            githubReposError={githubReposError} 
+            fetchGithubRepositories={fetchGithubRepositories} 
+          />
         ) : (
           <div className="flex flex-col h-full">
             <GithubRepoList 
