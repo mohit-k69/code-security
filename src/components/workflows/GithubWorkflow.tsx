@@ -10,7 +10,7 @@ import { SetupIncompleteError, ConnectionError, GenericError } from './github/Gi
 import { GithubRepoList } from './github/GithubRepoList';
 import { GithubAnalysisModals, AnalysisState } from './github/GithubAnalysisModals';
 
-interface GithubWorkflowProps {
+  interface GithubWorkflowProps {
   setActiveWorkflow: (workflow: 'none') => void;
   isFetchingRepos: boolean;
   githubReposError: string;
@@ -23,6 +23,10 @@ interface GithubWorkflowProps {
   providerTokenSetupError?: string | null;
   retryProviderTokenSetup?: () => void;
   setReviewedItems: React.Dispatch<React.SetStateAction<any[]>>;
+  analysisResult: any;
+  setAnalysisResult: (result: any) => void;
+  isAnalyzing: boolean;
+  setIsAnalyzing: (isAnalyzing: boolean) => void;
 }
 
 export function GithubWorkflow({
@@ -37,7 +41,11 @@ export function GithubWorkflow({
   setSelectedRepoId,
   providerTokenSetupError,
   retryProviderTokenSetup,
-  setReviewedItems
+  setReviewedItems,
+  analysisResult,
+  setAnalysisResult,
+  isAnalyzing,
+  setIsAnalyzing
 }: GithubWorkflowProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [viewStyle, setViewStyle] = useState<'grid' | 'list'>('grid');
@@ -69,6 +77,8 @@ export function GithubWorkflow({
 
   const handleAnalyze = async (repo: GithubRepo, prNumber?: number) => {
     setSelectedRepoId(repo.id);
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
     setAnalysisState({ status: 'loading' });
     try {
       const { data, error } = await supabase.functions.invoke('analyze-repository', {
@@ -82,10 +92,14 @@ export function GithubWorkflow({
 
       if (data.status === 'no_prs') {
         setAnalysisState({ status: 'no_prs' });
+        setIsAnalyzing(false);
       } else if (data.status === 'select_pr') {
         setAnalysisState({ status: 'select_pr', prs: data.prs });
+        setIsAnalyzing(false);
       } else if (data.report) {
         setAnalysisState({ status: 'success', report: data.report });
+        setAnalysisResult(data.report);
+        setIsAnalyzing(false);
         setReviewedItems(prev => [{
           name: `${repo.owner.login}/${repo.name}`,
           verdict: data.report.verdict || 'NOT_VERIFIED',
@@ -98,6 +112,7 @@ export function GithubWorkflow({
       }
     } catch (err: any) {
       console.error('Analyze Error:', err);
+      setIsAnalyzing(false);
       setAnalysisState({ status: 'error', message: err.message || 'Failed to start analysis.' });
     }
   };
@@ -120,7 +135,7 @@ export function GithubWorkflow({
         onRefresh={fetchGithubRepositories}
       />
       
-      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full pt-4 h-[calc(100vh-200px)]">
+      <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full pt-4 h-[calc(100vh-200px)]">
         {isFetchingRepos ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />

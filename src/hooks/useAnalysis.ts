@@ -109,6 +109,7 @@ export function useAnalysis() {
 
   return {
     isAnalyzing,
+    setIsAnalyzing,
     analysisResult,
     setAnalysisResult,
     activeCategory,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Search, ChevronDown, FileText, ChevronRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import Onboarding from './Onboarding';
@@ -40,6 +40,7 @@ export default function App() {
 
   const {
     isAnalyzing,
+    setIsAnalyzing,
     analysisResult,
     setAnalysisResult,
     activeCategory,
@@ -82,6 +83,7 @@ export default function App() {
     }
   }, [setActiveWorkflow]);
 
+  const shouldReduceMotion = useReducedMotion();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Derived states
@@ -107,6 +109,7 @@ export default function App() {
   const handleReturnHome = () => {
     setActiveWorkflow('none');
     setAnalysisResult(null);
+    setIsAnalyzing(false);
     setPastedCode('');
     setUploadedFiles([]);
     setFileContents([]);
@@ -157,10 +160,10 @@ export default function App() {
             />
           ) : (
             <div className="flex-1 flex min-h-0 bg-white w-full">
-              <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] border-r border-gray-200">
+              <div className={`flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] ${activeWorkflow === 'github' ? '' : 'border-r border-gray-200'}`}>
                 <div className="min-h-full flex flex-col items-center py-12 px-6">
                   <div 
-                    className="w-full max-w-4xl mx-auto space-y-8 pb-32"
+                    className={`w-full ${activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-8 pb-32`}
                     onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
                   >
                     {activeWorkflow === 'none' && (
@@ -208,18 +211,35 @@ export default function App() {
                       providerTokenSetupError={providerTokenSetupError}
                       retryProviderTokenSetup={retryProviderTokenSetup}
                       setReviewedItems={setReviewedItems}
+                      analysisResult={analysisResult}
+                      setAnalysisResult={setAnalysisResult}
+                      isAnalyzing={isAnalyzing}
+                      setIsAnalyzing={setIsAnalyzing}
                     />
                   )}
                 </div>
               </div>
             </div>
             
-            {/* Persistent Analysis Results Panel */}
-              <SecurityReportPanel 
-                report={analysisResult?.verdict ? analysisResult : null}
-                isAnalyzing={isAnalyzing}
-              />
-            </div>
+            {/* Analysis Results Panel */}
+            <AnimatePresence mode="wait">
+              {(activeWorkflow !== 'github' || isAnalyzing || Boolean(analysisResult?.verdict)) && (
+                <motion.div
+                  key="results-panel"
+                  initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full flex shrink-0"
+                >
+                  <SecurityReportPanel 
+                    report={analysisResult?.verdict ? analysisResult : null}
+                    isAnalyzing={isAnalyzing}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           )}
         </div>
       </div>
