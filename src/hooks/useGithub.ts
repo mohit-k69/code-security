@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { type User } from './useAuth';
 
 export interface GithubRepo {
   id: number;
@@ -18,19 +19,22 @@ export interface GithubRepo {
 
 export type GithubConnectionStatus = 'checking' | 'disconnected' | 'connected';
 
-export function useGithub(activeWorkflow: string) {
+export function useGithub(activeWorkflow: string, user?: User | null) {
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
   const [githubReposError, setGithubReposError] = useState('');
   const [githubSearchQuery, setGithubSearchQuery] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
-  const [githubConnectionStatus, setGithubConnectionStatus] = useState<GithubConnectionStatus>('checking');
-  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+
+  const isGithubConnected = Boolean(user?.isGithubLinked);
+  const githubConnectionStatus: GithubConnectionStatus = isGithubConnected ? 'connected' : 'disconnected';
 
   const fetchGithubRepositories = useCallback(async () => {
+    if (!user?.isGithubLinked) {
+      return;
+    }
     setIsFetchingRepos(true);
     setGithubReposError('');
-    setGithubConnectionStatus('checking');
     try {
       const { data, error } = await supabase.functions.invoke('fetch-github-repositories');
       if (error) {
@@ -47,32 +51,26 @@ export function useGithub(activeWorkflow: string) {
       }
       if (data?.error) throw new Error(data.error);
       setGithubRepos(data || []);
-      setGithubConnectionStatus('connected');
       setGithubReposError('');
     } catch (err: any) {
       console.error('Fetch GitHub Repositories Error:', err);
       setGithubReposError(err.message || 'Failed to fetch repositories.');
-      setGithubConnectionStatus('disconnected');
     } finally {
       setIsFetchingRepos(false);
     }
-  }, []);
+  }, [user?.isGithubLinked]);
 
   useEffect(() => {
-    if (activeWorkflow === 'github') {
-      if (!hasAttemptedFetch && !isFetchingRepos && githubConnectionStatus === 'checking') {
-        setHasAttemptedFetch(true);
+    if (activeWorkflow === 'github' && isGithubConnected) {
+      if (githubRepos.length === 0 && !isFetchingRepos && !githubReposError) {
         fetchGithubRepositories();
       }
-    } else {
-      setHasAttemptedFetch(false);
     }
-  }, [activeWorkflow, hasAttemptedFetch, isFetchingRepos, githubConnectionStatus, fetchGithubRepositories]);
+  }, [activeWorkflow, isGithubConnected, githubRepos.length, isFetchingRepos, githubReposError, fetchGithubRepositories]);
 
   // Listen for connection completion event from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
-      setGithubConnectionStatus('checking');
       fetchGithubRepositories();
     };
     window.addEventListener('codevibe_github_connected', handleConnected);
@@ -92,11 +90,7 @@ export function useGithub(activeWorkflow: string) {
     setGithubReposError('');
     setGithubSearchQuery('');
     setSelectedRepoId(null);
-    setGithubConnectionStatus('checking');
-    setHasAttemptedFetch(false);
   }, []);
-
-  const isGithubConnected = githubConnectionStatus === 'connected';
 
   return {
     githubRepos,

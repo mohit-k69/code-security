@@ -9,6 +9,7 @@ export interface User {
   created_at?: string;
   last_name_updated_at?: string;
   last_password_updated_at?: string;
+  isGithubLinked?: boolean;
 }
 
 export function useAuth() {
@@ -60,6 +61,11 @@ export function useAuth() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const meta = session.user.user_metadata;
+          const isGithubLinked = Boolean(
+            session.user.app_metadata?.providers?.includes('github') ||
+            session.user.app_metadata?.provider === 'github' ||
+            session.user.identities?.some((id: any) => id.provider === 'github')
+          );
           setUser({
             id: session.user.id,
             name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
@@ -68,6 +74,7 @@ export function useAuth() {
             created_at: session.user.created_at,
             last_name_updated_at: meta?.last_name_updated_at,
             last_password_updated_at: meta?.last_password_updated_at,
+            isGithubLinked,
           });
         } else {
           setUser(null);
@@ -138,6 +145,11 @@ export function useAuth() {
 
       if (session?.user) {
         const meta = session.user.user_metadata;
+        const isGithubLinked = Boolean(
+          session.user.app_metadata?.providers?.includes('github') ||
+          session.user.app_metadata?.provider === 'github' ||
+          session.user.identities?.some((id: any) => id.provider === 'github')
+        );
         setUser({
           id: session.user.id,
           name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
@@ -146,6 +158,7 @@ export function useAuth() {
           created_at: session.user.created_at,
           last_name_updated_at: meta?.last_name_updated_at,
           last_password_updated_at: meta?.last_password_updated_at,
+          isGithubLinked,
         });
 
         try {

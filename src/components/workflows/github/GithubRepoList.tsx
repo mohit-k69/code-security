@@ -21,7 +21,7 @@ export function GithubRepoList({
   const shouldReduceMotion = useReducedMotion();
   const transitionConfig = shouldReduceMotion 
     ? { duration: 0 } 
-    : { duration: 0.5, ease: [0.16, 1, 0.3, 1] };
+    : { duration: 0.45, ease: [0.16, 1, 0.3, 1] };
 
   if (githubRepos.length === 0) {
     return (
@@ -61,7 +61,8 @@ export function GithubRepoList({
               animate={{ opacity: 1 }}
               exit={{ 
                 opacity: 0,
-                transition: shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
+                scale: 0.96,
+                transition: shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }
               }}
               transition={transitionConfig}
               className={`relative bg-white border rounded-xl hover:shadow-md ${
@@ -69,9 +70,14 @@ export function GithubRepoList({
               } ${isFullCard ? 'p-5 flex flex-col gap-4' : 'p-4 flex items-center gap-4'}`}
             >
               {isSelected && (
-                <div className="absolute bg-emerald-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white -top-2.5 -right-2.5 w-6 h-6 z-10">
+                <motion.div 
+                  initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={transitionConfig}
+                  className="absolute bg-emerald-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white -top-2.5 -right-2.5 w-6 h-6 z-10"
+                >
                   <Check className="text-white stroke-[3] w-3.5 h-3.5" />
-                </div>
+                </motion.div>
               )}
 
               {isFullCard ? (

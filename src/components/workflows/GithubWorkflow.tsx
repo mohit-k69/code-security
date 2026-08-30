@@ -18,6 +18,7 @@ interface GithubWorkflowProps {
   isFetchingRepos: boolean;
   githubReposError: string;
   githubConnectionStatus?: GithubConnectionStatus;
+  isGithubConnected?: boolean;
   fetchGithubRepositories: () => void;
   githubSearchQuery: string;
   setGithubSearchQuery: (query: string) => void;
@@ -38,7 +39,8 @@ export function GithubWorkflow({
   setActiveWorkflow,
   isFetchingRepos,
   githubReposError,
-  githubConnectionStatus = 'checking',
+  githubConnectionStatus = 'disconnected',
+  isGithubConnected = false,
   fetchGithubRepositories,
   githubSearchQuery,
   setGithubSearchQuery,
@@ -157,6 +159,7 @@ export function GithubWorkflow({
   };
 
   const isConnectionError = 
+    !githubReposError ||
     githubReposError.toLowerCase().includes('connect') || 
     githubReposError.toLowerCase().includes('oauth') ||
     githubReposError.toLowerCase().includes('not found') ||
@@ -164,8 +167,6 @@ export function GithubWorkflow({
     githubReposError.toLowerCase().includes('token') ||
     githubReposError.toLowerCase().includes('unauthorized') ||
     githubReposError.toLowerCase().includes('non-2xx');
-
-  const isCheckingStatus = isFetchingRepos || (githubConnectionStatus === 'checking' && !githubReposError && githubRepos.length === 0);
 
   return (
     <motion.div 
@@ -185,7 +186,13 @@ export function GithubWorkflow({
       />
       
       <div className={`flex-1 flex flex-col ${selectedRepoId !== null ? 'max-w-full' : 'max-w-6xl'} mx-auto w-full pt-4 h-[calc(100vh-200px)]`}>
-        {isCheckingStatus ? (
+        {!isGithubConnected ? (
+          <ConnectionError 
+            githubReposError={githubReposError} 
+            handleConnectGithub={handleConnectGithub} 
+            linkError={linkError} 
+          />
+        ) : isFetchingRepos ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />
             <p className="text-[14px]">Fetching your repositories...</p>
@@ -195,7 +202,7 @@ export function GithubWorkflow({
             providerTokenSetupError={providerTokenSetupError} 
             retryProviderTokenSetup={retryProviderTokenSetup || (() => {})} 
           />
-        ) : githubReposError || githubConnectionStatus === 'disconnected' ? (
+        ) : githubReposError ? (
           isConnectionError ? (
             <ConnectionError 
               githubReposError={githubReposError} 
