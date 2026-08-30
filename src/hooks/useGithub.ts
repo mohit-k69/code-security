@@ -16,18 +16,21 @@ export interface GithubRepo {
   };
 }
 
+export type GithubConnectionStatus = 'checking' | 'disconnected' | 'connected';
+
 export function useGithub(activeWorkflow: string) {
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
   const [githubReposError, setGithubReposError] = useState('');
   const [githubSearchQuery, setGithubSearchQuery] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
-  const [isGithubConnected, setIsGithubConnected] = useState(false);
+  const [githubConnectionStatus, setGithubConnectionStatus] = useState<GithubConnectionStatus>('checking');
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   const fetchGithubRepositories = useCallback(async () => {
     setIsFetchingRepos(true);
     setGithubReposError('');
+    setGithubConnectionStatus('checking');
     try {
       const { data, error } = await supabase.functions.invoke('fetch-github-repositories');
       if (error) {
@@ -44,12 +47,12 @@ export function useGithub(activeWorkflow: string) {
       }
       if (data?.error) throw new Error(data.error);
       setGithubRepos(data || []);
-      setIsGithubConnected(true);
+      setGithubConnectionStatus('connected');
       setGithubReposError('');
     } catch (err: any) {
       console.error('Fetch GitHub Repositories Error:', err);
       setGithubReposError(err.message || 'Failed to fetch repositories.');
-      setIsGithubConnected(false);
+      setGithubConnectionStatus('disconnected');
     } finally {
       setIsFetchingRepos(false);
     }
@@ -57,18 +60,19 @@ export function useGithub(activeWorkflow: string) {
 
   useEffect(() => {
     if (activeWorkflow === 'github') {
-      if (!hasAttemptedFetch && !isFetchingRepos) {
+      if (!hasAttemptedFetch && !isFetchingRepos && githubConnectionStatus === 'checking') {
         setHasAttemptedFetch(true);
         fetchGithubRepositories();
       }
     } else {
       setHasAttemptedFetch(false);
     }
-  }, [activeWorkflow, hasAttemptedFetch, isFetchingRepos, fetchGithubRepositories]);
+  }, [activeWorkflow, hasAttemptedFetch, isFetchingRepos, githubConnectionStatus, fetchGithubRepositories]);
 
   // Listen for connection completion event from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
+      setGithubConnectionStatus('checking');
       fetchGithubRepositories();
     };
     window.addEventListener('codevibe_github_connected', handleConnected);
@@ -88,8 +92,11 @@ export function useGithub(activeWorkflow: string) {
     setGithubReposError('');
     setGithubSearchQuery('');
     setSelectedRepoId(null);
-    setIsGithubConnected(false);
+    setGithubConnectionStatus('checking');
+    setHasAttemptedFetch(false);
   }, []);
+
+  const isGithubConnected = githubConnectionStatus === 'connected';
 
   return {
     githubRepos,
@@ -100,6 +107,7 @@ export function useGithub(activeWorkflow: string) {
     selectedRepoId,
     setSelectedRepoId,
     fetchGithubRepositories,
+    githubConnectionStatus,
     isGithubConnected,
     clearGithubSelection,
     clearGithubCache

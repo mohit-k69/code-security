@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { GithubRepo } from '../../hooks/useGithub';
+import { GithubRepo, GithubConnectionStatus } from '../../hooks/useGithub';
 import { saveUserReview, type ReviewedItem } from '../../lib/reviewsService';
 import { type User } from '../../hooks/useAuth';
 
@@ -17,6 +17,7 @@ interface GithubWorkflowProps {
   setActiveWorkflow: (workflow: 'none') => void;
   isFetchingRepos: boolean;
   githubReposError: string;
+  githubConnectionStatus?: GithubConnectionStatus;
   fetchGithubRepositories: () => void;
   githubSearchQuery: string;
   setGithubSearchQuery: (query: string) => void;
@@ -37,6 +38,7 @@ export function GithubWorkflow({
   setActiveWorkflow,
   isFetchingRepos,
   githubReposError,
+  githubConnectionStatus = 'checking',
   fetchGithubRepositories,
   githubSearchQuery,
   setGithubSearchQuery,
@@ -163,6 +165,8 @@ export function GithubWorkflow({
     githubReposError.toLowerCase().includes('unauthorized') ||
     githubReposError.toLowerCase().includes('non-2xx');
 
+  const isCheckingStatus = isFetchingRepos || (githubConnectionStatus === 'checking' && !githubReposError && githubRepos.length === 0);
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
@@ -181,7 +185,7 @@ export function GithubWorkflow({
       />
       
       <div className={`flex-1 flex flex-col ${selectedRepoId !== null ? 'max-w-full' : 'max-w-6xl'} mx-auto w-full pt-4 h-[calc(100vh-200px)]`}>
-        {isFetchingRepos ? (
+        {isCheckingStatus ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />
             <p className="text-[14px]">Fetching your repositories...</p>
@@ -191,7 +195,7 @@ export function GithubWorkflow({
             providerTokenSetupError={providerTokenSetupError} 
             retryProviderTokenSetup={retryProviderTokenSetup || (() => {})} 
           />
-        ) : githubReposError ? (
+        ) : githubReposError || githubConnectionStatus === 'disconnected' ? (
           isConnectionError ? (
             <ConnectionError 
               githubReposError={githubReposError} 

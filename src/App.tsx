@@ -69,6 +69,7 @@ export default function App() {
     selectedRepoId,
     setSelectedRepoId,
     fetchGithubRepositories,
+    githubConnectionStatus,
     isGithubConnected,
     clearGithubSelection,
     clearGithubCache
@@ -161,16 +162,19 @@ export default function App() {
           ) : (
             <div className="flex-1 flex min-h-0 bg-white w-full">
               {(() => {
-                const isGithubAnalysisActive = activeWorkflow === 'github' && (selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict));
+                const isGithubAnalysisActive = activeWorkflow === 'github' && selectedRepoId !== null && (isAnalyzing || Boolean(analysisResult?.verdict));
+                const shouldShowResultsPanel = (activeWorkflow === 'upload' || activeWorkflow === 'paste') || isGithubAnalysisActive;
+
+                let leftContainerClass = 'flex-1';
+                if (isGithubAnalysisActive) {
+                  leftContainerClass = 'w-full lg:w-[30%] shrink-0 border-r border-gray-200';
+                } else if (activeWorkflow === 'upload' || activeWorkflow === 'paste') {
+                  leftContainerClass = 'flex-1 border-r border-gray-200';
+                }
+
                 return (
                   <>
-                    <div className={`overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] transition-all duration-300 ${
-                      isGithubAnalysisActive 
-                        ? 'w-full lg:w-[30%] shrink-0 border-r border-gray-200' 
-                        : activeWorkflow === 'github' 
-                          ? 'flex-1' 
-                          : 'flex-1 border-r border-gray-200'
-                    }`}>
+                    <div className={`overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] transition-all duration-300 ${leftContainerClass}`}>
                       {/* Scanning Line Animation during active analysis */}
                       {isAnalyzing && (
                         <div 
@@ -227,6 +231,7 @@ export default function App() {
                             setActiveWorkflow={handleReturnHome}
                             isFetchingRepos={isFetchingRepos}
                             githubReposError={githubReposError}
+                            githubConnectionStatus={githubConnectionStatus}
                             fetchGithubRepositories={fetchGithubRepositories}
                             githubSearchQuery={githubSearchQuery}
                             setGithubSearchQuery={setGithubSearchQuery}
@@ -247,14 +252,14 @@ export default function App() {
                   </div>
                   
                   {/* Analysis Results Panel */}
-                  <AnimatePresence mode="wait">
-                    {(activeWorkflow !== 'github' || isAnalyzing || Boolean(analysisResult?.verdict)) && (
+                  <AnimatePresence>
+                    {shouldShowResultsPanel && (
                       <motion.div
-                        key="results-panel"
+                        key={isGithubAnalysisActive ? 'github-results' : 'standard-results'}
                         initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
-                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                         className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[70%]' : 'w-[420px] lg:w-[460px]'}`}
                       >
                         <SecurityReportPanel 
