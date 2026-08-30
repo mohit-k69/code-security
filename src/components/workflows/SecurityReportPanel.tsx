@@ -118,6 +118,64 @@ function getRealWorldScenario(finding: any): string {
 }
 
 /**
+ * Formats the issue display title combining the rule/title and file location
+ * e.g. "SECRET_EXPOSURE: test-vulnerability.js:4"
+ */
+function getFindingDisplayTitle(finding: any): string {
+  const rawTitle = finding.title || finding.rule || 'Security Finding';
+  const fileName = finding.primaryLocation?.file || finding.file;
+  const lineNum = finding.primaryLocation?.line || finding.line;
+
+  // If rawTitle already contains the filename, use as-is
+  if (fileName && rawTitle.includes(fileName)) {
+    return rawTitle;
+  }
+
+  // If fileName exists, format as "TITLE: file:line" or "TITLE: file"
+  if (fileName) {
+    return `${rawTitle}: ${fileName}${lineNum ? `:${lineNum}` : ''}`;
+  }
+
+  return rawTitle;
+}
+
+/**
+ * Strips file paths, line numbers, or location suffixes from the issue title/rule
+ * so that only the pure issue name (e.g. "SECRET_EXPOSURE") is shown without redundancy in prompts.
+ */
+function getCleanIssueName(finding: any): string {
+  let name = finding.title || finding.rule || 'Security Finding';
+  const fileName = finding.primaryLocation?.file || finding.file;
+  const lineNum = finding.primaryLocation?.line || finding.line;
+
+  // 1. If name contains fileName explicitly, strip everything from the colon or fileName onward
+  if (fileName && name.includes(fileName)) {
+    const idx = name.indexOf(fileName);
+    let before = name.substring(0, idx).trim();
+    if (before.endsWith(':')) {
+      before = before.slice(0, -1).trim();
+    }
+    if (before) {
+      return before;
+    }
+  }
+
+  // 2. Remove trailing :<file>:<line> or :<file> or :<line> or : line <num>
+  // e.g. "SECRET_EXPOSURE: test-vulnerability.js:4" -> "SECRET_EXPOSURE"
+  // e.g. "XSS: test.js" -> "XSS"
+  // e.g. "INJECTION:4" -> "INJECTION"
+  // e.g. "SQL_INJECTION: line 12" -> "SQL_INJECTION"
+  name = name.replace(/:\s*([a-zA-Z0-9_\-./\\]+\.[a-zA-Z0-9]+(?::\d+)?|\d+|line\s*\d+)\s*$/i, '').trim();
+
+  // 3. If line number is appended like ":4" or ": 4"
+  if (lineNum && name.endsWith(`:${lineNum}`)) {
+    name = name.slice(0, -(String(lineNum).length + 1)).trim();
+  }
+
+  return name || finding.title || finding.rule || 'Security Finding';
+}
+
+/**
  * Builds a structured, concise, and actionable prompt for an AI coding agent.
  */
 function getCodingAgentPrompt(finding: any): string {
@@ -128,7 +186,7 @@ function getCodingAgentPrompt(finding: any): string {
     lineNum ? `Line: ${lineNum}` : null
   ].filter(Boolean).join('\n');
 
-  const title = finding.title || finding.rule || 'Security Vulnerability';
+  const title = getCleanIssueName(finding);
   const description = finding.description || finding.message || 'Vulnerability detected in the source code.';
   const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
   const suggestion = finding.suggestion || finding.remediation || 'Refactor the code according to security best practices to resolve the vulnerability.';
@@ -266,9 +324,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
               const isHigh = finding._severityLabel === 'HIGH';
               const isMedium = finding._severityLabel === 'MEDIUM';
               
-              const issueName = finding.title || finding.rule || 'Security Finding';
-              const fileName = finding.primaryLocation?.file || finding.file;
-              const lineNum = finding.primaryLocation?.line || finding.line;
+              const displayTitle = getFindingDisplayTitle(finding);
               const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
               const explanation = finding.description || finding.message;
               const scenario = getRealWorldScenario(finding);
@@ -301,9 +357,9 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                     </span>
                   </div>
 
-                  {/* A. Issue Name */}
+                  {/* Issue Title with location */}
                   <h4 
-                    className={`text-lg font-bold mb-1 ${
+                    className={`text-lg font-bold mb-3.5 ${
                       isHigh 
                         ? 'text-red-950' 
                         : isMedium 
@@ -311,15 +367,8 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                           : 'text-blue-950'
                     }`}
                   >
-                    {issueName}
+                    {displayTitle}
                   </h4>
-                  
-                  {/* B. Location */}
-                  {(fileName || lineNum) && (
-                    <p className="text-xs font-medium text-gray-500 mb-3.5">
-                      {fileName ? fileName : 'Source'} {lineNum ? `· Line ${lineNum}` : ''}
-                    </p>
-                  )}
 
                   {/* C. Exact Problematic Code */}
                   {snippet && (

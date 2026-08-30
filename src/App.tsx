@@ -166,7 +166,7 @@ export default function App() {
                   <>
                     <div className={`overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] transition-all duration-300 ${
                       isGithubAnalysisActive 
-                        ? 'w-full lg:w-[38%] shrink-0 border-r border-gray-200' 
+                        ? 'w-full lg:w-[30%] shrink-0 border-r border-gray-200' 
                         : activeWorkflow === 'github' 
                           ? 'flex-1' 
                           : 'flex-1 border-r border-gray-200'
@@ -240,7 +240,7 @@ export default function App() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
                         transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[62%]' : 'w-[420px] lg:w-[460px]'}`}
+                        className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[70%]' : 'w-[420px] lg:w-[460px]'}`}
                       >
                         <SecurityReportPanel 
                           report={analysisResult?.verdict ? analysisResult : null}
