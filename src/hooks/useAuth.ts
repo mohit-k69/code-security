@@ -114,9 +114,20 @@ export function useAuth() {
             } catch {}
           }
 
-          const isPrimaryEmailUser = session.user.app_metadata?.provider === 'email' ||
-            identities.some((id: any) => id.provider === 'email') ||
-            Boolean(session.user.email && session.user.app_metadata?.provider !== 'github');
+          // Determine primary authentication provider:
+          // A user who authenticated via "Continue with GitHub" has:
+          //   - app_metadata.provider === 'github'
+          //   - only 'github' in app_metadata.providers (no 'email' provider)
+          //   - NO identity with provider === 'email'
+          // An email/password user has:
+          //   - app_metadata.provider === 'email' OR
+          //   - app_metadata.providers contains 'email' OR
+          //   - an identity with provider === 'email'
+          const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
+          const hasEmailProvider = session.user.app_metadata?.providers?.includes('email');
+          const isPrimaryEmailProvider = session.user.app_metadata?.provider === 'email';
+          
+          const isPrimaryEmailUser = isPrimaryEmailProvider || hasEmailIdentity || hasEmailProvider;
           const authProvider: 'email' | 'github' = isPrimaryEmailUser ? 'email' : 'github';
 
           const githubIdentity = identities.find((id: any) => id.provider === 'github');
@@ -262,9 +273,12 @@ export function useAuth() {
           isGithubLinked = true;
         }
 
-        const isPrimaryEmailUser = session.user.app_metadata?.provider === 'email' ||
-          identities.some((id: any) => id.provider === 'email') ||
-          Boolean(session.user.email && session.user.app_metadata?.provider !== 'github');
+        // Determine primary authentication provider:
+        const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
+        const hasEmailProvider = session.user.app_metadata?.providers?.includes('email');
+        const isPrimaryEmailProvider = session.user.app_metadata?.provider === 'email';
+        
+        const isPrimaryEmailUser = isPrimaryEmailProvider || hasEmailIdentity || hasEmailProvider;
         const authProvider: 'email' | 'github' = isPrimaryEmailUser ? 'email' : 'github';
 
         const githubIdentity = identities.find((id: any) => id.provider === 'github');
