@@ -224,6 +224,15 @@ export function GithubWorkflow({
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
       className="flex-1 flex flex-col h-full"
     >
+      {(() => {
+        const showSwitchAccount = Boolean(isGithubConnected && user?.authProvider === 'email');
+        console.log('[GithubWorkflow Debug]', {
+          authProvider: user?.authProvider,
+          isGithubLinked: user?.isGithubLinked,
+          showSwitchAccount
+        });
+        return null;
+      })()}
       <GithubHeader 
         setActiveWorkflow={setActiveWorkflow}
         isSearchExpanded={isSearchExpanded}
