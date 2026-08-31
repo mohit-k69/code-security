@@ -115,20 +115,34 @@ export function useAuth() {
           }
 
           // Determine primary authentication provider:
-          // A user who authenticated via "Continue with GitHub" has:
-          //   - app_metadata.provider === 'github'
-          //   - only 'github' in app_metadata.providers (no 'email' provider)
-          //   - NO identity with provider === 'email'
-          // An email/password user has:
-          //   - app_metadata.provider === 'email' OR
-          //   - app_metadata.providers contains 'email' OR
-          //   - an identity with provider === 'email'
+          // In Supabase GoTrue:
+          // 1. app_metadata.provider is the authoritative initial signup provider ('email' or 'github').
+          // 2. An email/password signup has app_metadata.provider === 'email'.
+          // 3. A "Continue with GitHub" signup has app_metadata.provider === 'github'.
+          // 4. An email/password user linking GitHub gets 'github' added to identities, but their app_metadata.provider stays 'email' (or identity[0].provider === 'email').
+          // 5. A GitHub-first user who only signed in via GitHub will have app_metadata.provider === 'github' and NO email identity.
+          let authProvider: 'email' | 'github' = 'email';
+
+          const primaryAppProvider = session.user.app_metadata?.provider || fetchedUserData?.app_metadata?.provider;
+          const providersList: string[] = session.user.app_metadata?.providers || fetchedUserData?.app_metadata?.providers || [];
           const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
-          const hasEmailProvider = session.user.app_metadata?.providers?.includes('email');
-          const isPrimaryEmailProvider = session.user.app_metadata?.provider === 'email';
-          
-          const isPrimaryEmailUser = isPrimaryEmailProvider || hasEmailIdentity || hasEmailProvider;
-          const authProvider: 'email' | 'github' = isPrimaryEmailUser ? 'email' : 'github';
+          const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
+
+          if (primaryAppProvider === 'github') {
+            // User originally signed up via GitHub
+            authProvider = 'github';
+          } else if (primaryAppProvider === 'email') {
+            // User originally signed up via email/password
+            authProvider = 'email';
+          } else if (hasGithubIdentity && !hasEmailIdentity && providersList.length === 1 && providersList[0] === 'github') {
+            // Only GitHub identity/provider exists
+            authProvider = 'github';
+          } else if (hasEmailIdentity) {
+            authProvider = 'email';
+          } else if (identities.length > 0) {
+            // If identities exist, the first identity created corresponds to the primary provider
+            authProvider = identities[0]?.provider === 'github' ? 'github' : 'email';
+          }
 
           const githubIdentity = identities.find((id: any) => id.provider === 'github');
           const githubUsername = githubIdentity?.identity_data?.user_name ||
@@ -280,12 +294,28 @@ export function useAuth() {
         }
 
         // Determine primary authentication provider:
+        let authProvider: 'email' | 'github' = 'email';
+
+        const primaryAppProvider = session.user.app_metadata?.provider;
+        const providersList: string[] = session.user.app_metadata?.providers || [];
         const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
-        const hasEmailProvider = session.user.app_metadata?.providers?.includes('email');
-        const isPrimaryEmailProvider = session.user.app_metadata?.provider === 'email';
-        
-        const isPrimaryEmailUser = isPrimaryEmailProvider || hasEmailIdentity || hasEmailProvider;
-        const authProvider: 'email' | 'github' = isPrimaryEmailUser ? 'email' : 'github';
+        const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
+
+        if (primaryAppProvider === 'github') {
+          // User originally signed up via GitHub
+          authProvider = 'github';
+        } else if (primaryAppProvider === 'email') {
+          // User originally signed up via email/password
+          authProvider = 'email';
+        } else if (hasGithubIdentity && !hasEmailIdentity && providersList.length === 1 && providersList[0] === 'github') {
+          // Only GitHub identity/provider exists
+          authProvider = 'github';
+        } else if (hasEmailIdentity) {
+          authProvider = 'email';
+        } else if (identities.length > 0) {
+          // If identities exist, the first identity created corresponds to the primary provider
+          authProvider = identities[0]?.provider === 'github' ? 'github' : 'email';
+        }
 
         const githubIdentity = identities.find((id: any) => id.provider === 'github');
         const githubUsername = githubIdentity?.identity_data?.user_name ||
