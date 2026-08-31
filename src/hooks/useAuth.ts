@@ -14,6 +14,73 @@ export interface User {
   authProvider?: 'email' | 'github';
 }
 
+function resolveAuthProvider(
+  user: any,
+  fetchedUserData: any,
+  identities: any[]
+): 'email' | 'github' | undefined {
+  // 1. Authoritative initial signup provider from Supabase app_metadata
+  const primaryProvider =
+    user.app_metadata?.provider ||
+    fetchedUserData?.app_metadata?.provider;
+
+  if (primaryProvider === 'github') {
+    return 'github';
+  }
+  if (primaryProvider === 'email') {
+    return 'email';
+  }
+
+  // 2. Providers list from app_metadata
+  const providers: string[] =
+    user.app_metadata?.providers ||
+    fetchedUserData?.app_metadata?.providers ||
+    [];
+
+  // If only GitHub is in the providers list, it's definitely GitHub
+  if (providers.length === 1 && providers[0] === 'github') {
+    return 'github';
+  }
+
+  // If only email is in the providers list, it's definitely email
+  if (providers.length === 1 && providers[0] === 'email') {
+    return 'email';
+  }
+
+  // 3. Check identities list
+  const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
+  const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
+
+  if (hasGithubIdentity && !hasEmailIdentity && !providers.includes('email')) {
+    return 'github';
+  }
+
+  if (hasEmailIdentity && !hasGithubIdentity) {
+    return 'email';
+  }
+
+  if (hasEmailIdentity && hasGithubIdentity) {
+    // If both identities exist, the first created identity represents the initial provider
+    return identities[0]?.provider === 'github' ? 'github' : 'email';
+  }
+
+  if (identities.length > 0) {
+    return identities[0]?.provider === 'github' ? 'github' : 'email';
+  }
+
+  // Fallback: If GitHub is present in providers and email is not
+  if (providers.includes('github') && !providers.includes('email')) {
+    return 'github';
+  }
+
+  if (providers.includes('email') && !providers.includes('github')) {
+    return 'email';
+  }
+
+  // Unresolved/unknown: return undefined instead of assuming email
+  return undefined;
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -97,12 +164,12 @@ export function useAuth() {
           );
 
           let fetchedUserData: any = null;
-          if (!isGithubLinked || identities.length === 0) {
+          if (!isGithubLinked || identities.length === 0 || !session.user.app_metadata?.provider) {
             try {
               const { data: userData } = await supabase.auth.getUser();
               if (userData?.user) {
                 fetchedUserData = userData.user;
-                if (userData.user.identities) {
+                if (userData.user.identities && userData.user.identities.length > 0) {
                   identities = userData.user.identities;
                 }
                 isGithubLinked = Boolean(
@@ -114,35 +181,7 @@ export function useAuth() {
             } catch {}
           }
 
-          // Determine primary authentication provider:
-          // In Supabase GoTrue:
-          // 1. app_metadata.provider is the authoritative initial signup provider ('email' or 'github').
-          // 2. An email/password signup has app_metadata.provider === 'email'.
-          // 3. A "Continue with GitHub" signup has app_metadata.provider === 'github'.
-          // 4. An email/password user linking GitHub gets 'github' added to identities, but their app_metadata.provider stays 'email' (or identity[0].provider === 'email').
-          // 5. A GitHub-first user who only signed in via GitHub will have app_metadata.provider === 'github' and NO email identity.
-          let authProvider: 'email' | 'github' = 'email';
-
-          const primaryAppProvider = session.user.app_metadata?.provider || fetchedUserData?.app_metadata?.provider;
-          const providersList: string[] = session.user.app_metadata?.providers || fetchedUserData?.app_metadata?.providers || [];
-          const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
-          const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
-
-          if (primaryAppProvider === 'github') {
-            // User originally signed up via GitHub
-            authProvider = 'github';
-          } else if (primaryAppProvider === 'email') {
-            // User originally signed up via email/password
-            authProvider = 'email';
-          } else if (hasGithubIdentity && !hasEmailIdentity && providersList.length === 1 && providersList[0] === 'github') {
-            // Only GitHub identity/provider exists
-            authProvider = 'github';
-          } else if (hasEmailIdentity) {
-            authProvider = 'email';
-          } else if (identities.length > 0) {
-            // If identities exist, the first identity created corresponds to the primary provider
-            authProvider = identities[0]?.provider === 'github' ? 'github' : 'email';
-          }
+          const authProvider = resolveAuthProvider(session.user, fetchedUserData, identities);
 
           const githubIdentity = identities.find((id: any) => id.provider === 'github');
           const githubUsername = githubIdentity?.identity_data?.user_name ||
@@ -282,7 +321,7 @@ export function useAuth() {
         });
 
         const meta = session.user.user_metadata;
-        const identities = session.user.identities || [];
+        let identities = session.user.identities || [];
         let isGithubLinked = Boolean(
           session.user.app_metadata?.providers?.includes('github') ||
           session.user.app_metadata?.provider === 'github' ||
@@ -293,35 +332,34 @@ export function useAuth() {
           isGithubLinked = true;
         }
 
-        // Determine primary authentication provider:
-        let authProvider: 'email' | 'github' = 'email';
-
-        const primaryAppProvider = session.user.app_metadata?.provider;
-        const providersList: string[] = session.user.app_metadata?.providers || [];
-        const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
-        const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
-
-        if (primaryAppProvider === 'github') {
-          // User originally signed up via GitHub
-          authProvider = 'github';
-        } else if (primaryAppProvider === 'email') {
-          // User originally signed up via email/password
-          authProvider = 'email';
-        } else if (hasGithubIdentity && !hasEmailIdentity && providersList.length === 1 && providersList[0] === 'github') {
-          // Only GitHub identity/provider exists
-          authProvider = 'github';
-        } else if (hasEmailIdentity) {
-          authProvider = 'email';
-        } else if (identities.length > 0) {
-          // If identities exist, the first identity created corresponds to the primary provider
-          authProvider = identities[0]?.provider === 'github' ? 'github' : 'email';
+        let fetchedUserData: any = null;
+        if (!isGithubLinked || identities.length === 0 || !session.user.app_metadata?.provider) {
+          try {
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData?.user) {
+              fetchedUserData = userData.user;
+              if (userData.user.identities && userData.user.identities.length > 0) {
+                identities = userData.user.identities;
+              }
+              isGithubLinked = Boolean(
+                userData.user.app_metadata?.providers?.includes('github') ||
+                userData.user.app_metadata?.provider === 'github' ||
+                identities.some((id: any) => id.provider === 'github') ||
+                session.provider_token
+              );
+            }
+          } catch {}
         }
+
+        const authProvider = resolveAuthProvider(session.user, fetchedUserData, identities);
 
         const githubIdentity = identities.find((id: any) => id.provider === 'github');
         const githubUsername = githubIdentity?.identity_data?.user_name ||
           githubIdentity?.identity_data?.preferred_username ||
           session.user.user_metadata?.user_name ||
-          session.user.user_metadata?.preferred_username;
+          session.user.user_metadata?.preferred_username ||
+          fetchedUserData?.user_metadata?.user_name ||
+          fetchedUserData?.user_metadata?.preferred_username;
 
         console.log('[AUTH_DIAGNOSTIC]', {
           source: 'onAuthStateChange',
