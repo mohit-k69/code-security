@@ -54,6 +54,14 @@ export function useAuth() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const oauthError = searchParams.get('error_description') || hashParams.get('error_description') || searchParams.get('error') || hashParams.get('error');
 
+    if (window.location.search.includes('code=') || window.location.hash.includes('access_token=') || oauthError) {
+      console.log('[GITHUB_OAUTH] CALLBACK_DETECTED', {
+        search: window.location.search,
+        hash: window.location.hash,
+        oauthError
+      });
+    }
+
     if (oauthError) {
       const cleanUrl = window.location.pathname + (window.location.search.includes('workflow=github') ? '?workflow=github' : '');
       window.history.replaceState({}, document.title, cleanUrl);
@@ -70,6 +78,14 @@ export function useAuth() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          console.log('[GITHUB_OAUTH] SESSION_AFTER_CALLBACK', {
+            source: 'syncSession',
+            hasSession: true,
+            userId: session.user.id,
+            email: session.user.email,
+            hasProviderToken: Boolean(session.provider_token)
+          });
+
           const meta = session.user.user_metadata;
           let isGithubLinked = Boolean(
             session.user.app_metadata?.providers?.includes('github') ||
@@ -90,6 +106,12 @@ export function useAuth() {
             } catch {}
           }
 
+          console.log('[GITHUB_OAUTH] GITHUB_IDENTITY_DETECTED', {
+            isGithubLinked,
+            identities: session.user.identities,
+            providers: session.user.app_metadata?.providers
+          });
+
           setUser({
             id: session.user.id,
             name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
@@ -101,6 +123,12 @@ export function useAuth() {
             isGithubLinked,
           });
 
+          console.log('[GITHUB_OAUTH] PROVIDER_TOKEN_DETECTED', {
+            source: 'syncSession',
+            hasProviderToken: Boolean(session.provider_token),
+            hasRefreshToken: Boolean(session.provider_refresh_token)
+          });
+
           if (session.provider_token) {
             try {
               const { error, data } = await supabase.functions.invoke('store-provider-token', {
@@ -109,12 +137,14 @@ export function useAuth() {
                   providerRefreshToken: session.provider_refresh_token
                 }
               });
+              console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'syncSession', data, error });
               if (error) throw error;
               if (data?.error) throw new Error(data.error);
               setProviderTokenSetupError(null);
               window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
             } catch (err: any) {
               console.error('Failed to trigger token storage from syncSession:', err);
+              console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'syncSession', error: err });
               setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
             }
           }
@@ -186,6 +216,15 @@ export function useAuth() {
       }
 
       if (session?.user) {
+        console.log('[GITHUB_OAUTH] SESSION_AFTER_CALLBACK', {
+          source: 'onAuthStateChange',
+          event: _event,
+          hasSession: true,
+          userId: session.user.id,
+          email: session.user.email,
+          hasProviderToken: Boolean(session.provider_token)
+        });
+
         const meta = session.user.user_metadata;
         let isGithubLinked = Boolean(
           session.user.app_metadata?.providers?.includes('github') ||
@@ -196,6 +235,13 @@ export function useAuth() {
         if (!isGithubLinked && session.provider_token) {
           isGithubLinked = true;
         }
+
+        console.log('[GITHUB_OAUTH] GITHUB_IDENTITY_DETECTED', {
+          source: 'onAuthStateChange',
+          isGithubLinked,
+          identities: session.user.identities,
+          providers: session.user.app_metadata?.providers
+        });
 
         setUser({
           id: session.user.id,
@@ -212,6 +258,12 @@ export function useAuth() {
           authChannel?.postMessage({ type: 'AUTH_STATE_CHANGED' });
         } catch {}
 
+        console.log('[GITHUB_OAUTH] PROVIDER_TOKEN_DETECTED', {
+          source: 'onAuthStateChange',
+          hasProviderToken: Boolean(session.provider_token),
+          hasRefreshToken: Boolean(session.provider_refresh_token)
+        });
+
         // Securely capture the provider token immediately after the OAuth redirect
         if (session.provider_token) {
           try {
@@ -221,12 +273,14 @@ export function useAuth() {
                 providerRefreshToken: session.provider_refresh_token
               }
             });
+            console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'onAuthStateChange', data, error });
             if (error) throw error;
             if (data?.error) throw new Error(data.error);
             setProviderTokenSetupError(null);
             window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
           } catch (err: any) {
             console.error('Failed to trigger token storage:', err);
+            console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'onAuthStateChange', error: err });
             setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
           }
         }

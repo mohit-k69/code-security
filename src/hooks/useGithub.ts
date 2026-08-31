@@ -32,8 +32,19 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const fetchGithubRepositories = useCallback(async () => {
     setIsFetchingRepos(true);
     setGithubReposError('');
+    console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_START', {
+      isGithubConnected,
+      user: user?.id,
+      email: user?.email
+    });
     try {
       const { data, error } = await supabase.functions.invoke('fetch-github-repositories');
+      console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_RESULT', {
+        success: !error && !data?.error,
+        count: Array.isArray(data) ? data.length : undefined,
+        data,
+        error
+      });
       if (error) {
         let errorMsg = error.message;
         if (error.context) {
@@ -51,11 +62,15 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       setGithubReposError('');
     } catch (err: any) {
       console.error('Fetch GitHub Repositories Error:', err);
+      console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_RESULT', {
+        success: false,
+        error: err.message || err
+      });
       setGithubReposError(err.message || 'Failed to fetch repositories.');
     } finally {
       setIsFetchingRepos(false);
     }
-  }, []);
+  }, [isGithubConnected, user?.id, user?.email]);
 
   useEffect(() => {
     if (activeWorkflow === 'github' && isGithubConnected) {

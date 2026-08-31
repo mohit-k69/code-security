@@ -79,17 +79,26 @@ export function GithubWorkflow({
     setIsConnectingGithub(true);
     setLinkError('');
     try {
-      console.log('[GITHUB_OAUTH] button clicked');
+      console.log('[GITHUB_OAUTH] BUTTON_CLICKED');
       const { data: userData } = await supabase.auth.getUser();
       const currentUser = userData?.user;
-      console.log('[GITHUB_OAUTH] current user:', currentUser?.id, currentUser?.email);
+      console.log('[GITHUB_OAUTH] CURRENT_USER', {
+        id: currentUser?.id,
+        email: currentUser?.email,
+        identities: currentUser?.identities,
+        app_metadata: currentUser?.app_metadata
+      });
 
       const redirectUrl = new URL(window.location.origin);
       redirectUrl.pathname = window.location.pathname;
       redirectUrl.searchParams.set('workflow', 'github');
-      console.log('[GITHUB_OAUTH] redirect URL:', redirectUrl.toString());
 
-      console.log('[GITHUB_OAUTH] calling linkIdentity');
+      console.log('[GITHUB_OAUTH] LINK_IDENTITY_START', {
+        provider: 'github',
+        redirectTo: redirectUrl.toString(),
+        scopes: 'repo read:user user:email'
+      });
+
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {
@@ -97,7 +106,7 @@ export function GithubWorkflow({
           scopes: 'repo read:user user:email'
         }
       });
-      console.log('[GITHUB_OAUTH] linkIdentity result:', { data, error });
+      console.log('[GITHUB_OAUTH] LINK_IDENTITY_RESULT', { data, error });
 
       if (error) {
         setIsConnectingGithub(false);
@@ -109,13 +118,13 @@ export function GithubWorkflow({
         return;
       }
       if (data?.url) {
-        console.log('[GITHUB_OAUTH] redirecting to GitHub:', data.url);
+        console.log('[GITHUB_OAUTH] OAUTH_REDIRECT_URL', data.url);
         window.location.assign(data.url);
       } else {
         setIsConnectingGithub(false);
       }
     } catch (err: any) {
-      console.error('[GITHUB_OAUTH] Failed to link GitHub:', err);
+      console.error('[GITHUB_OAUTH] LINK_IDENTITY_ERROR', err);
       setIsConnectingGithub(false);
       setLinkError('An unexpected error occurred while connecting GitHub.');
     }
