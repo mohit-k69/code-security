@@ -97,7 +97,8 @@ export function GithubWorkflow({
       console.log('[GITHUB_OAUTH] LINK_IDENTITY_START', {
         provider: 'github',
         redirectTo: redirectUrl.toString(),
-        scopes: 'repo read:user user:email'
+        scopes: 'repo read:user user:email',
+        queryParams: { prompt: 'select_account' }
       });
 
       const { data, error } = await supabase.auth.linkIdentity({
@@ -105,7 +106,10 @@ export function GithubWorkflow({
         options: {
           redirectTo: redirectUrl.toString(),
           scopes: 'repo read:user user:email',
-          skipBrowserRedirect: true
+          skipBrowserRedirect: true,
+          queryParams: {
+            prompt: 'select_account'
+          }
         }
       });
       console.log('[GITHUB_OAUTH] LINK_IDENTITY_RESULT', { data, error });
