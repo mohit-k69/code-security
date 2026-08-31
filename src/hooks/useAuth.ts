@@ -138,12 +138,18 @@ export function useAuth() {
             fetchedUserData?.user_metadata?.user_name ||
             fetchedUserData?.user_metadata?.preferred_username;
 
-          console.log('[GITHUB_OAUTH] GITHUB_IDENTITY_DETECTED', {
+          console.log('[AUTH_DIAGNOSTIC]', {
+            source: 'syncSession',
+            userId: session.user.id,
+            app_metadata_provider: session.user.app_metadata?.provider,
+            app_metadata_providers: session.user.app_metadata?.providers,
+            identities: identities.map((id: any) => ({
+              provider: id.provider,
+              id: id.id
+            })),
+            calculated_authProvider: authProvider,
             isGithubLinked,
-            authProvider,
-            githubUsername,
-            identities,
-            providers: session.user.app_metadata?.providers
+            showSwitchAccount_candidate: isGithubLinked && authProvider !== 'github'
           });
 
           setUser({
@@ -287,13 +293,18 @@ export function useAuth() {
           session.user.user_metadata?.user_name ||
           session.user.user_metadata?.preferred_username;
 
-        console.log('[GITHUB_OAUTH] GITHUB_IDENTITY_DETECTED', {
+        console.log('[AUTH_DIAGNOSTIC]', {
           source: 'onAuthStateChange',
+          userId: session.user.id,
+          app_metadata_provider: session.user.app_metadata?.provider,
+          app_metadata_providers: session.user.app_metadata?.providers,
+          identities: identities.map((id: any) => ({
+            provider: id.provider,
+            id: id.id
+          })),
+          calculated_authProvider: authProvider,
           isGithubLinked,
-          authProvider,
-          githubUsername,
-          identities,
-          providers: session.user.app_metadata?.providers
+          showSwitchAccount_candidate: isGithubLinked && authProvider !== 'github'
         });
 
         setUser({
