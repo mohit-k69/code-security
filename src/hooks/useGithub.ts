@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { type User } from './useAuth';
+import { trackEvent } from '../lib/posthog';
 
 export interface GithubRepo {
   id: number;
@@ -83,6 +84,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   // Listen for connection completion event from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
+      trackEvent('github_connected');
       fetchGithubRepositories();
     };
     window.addEventListener('codevibe_github_connected', handleConnected);

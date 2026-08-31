@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { GithubRepo, GithubConnectionStatus } from '../../hooks/useGithub';
 import { saveUserReview, type ReviewedItem } from '../../lib/reviewsService';
 import { type User } from '../../hooks/useAuth';
+import { trackEvent } from '../../lib/posthog';
 
 // Extracted Components
 import { GithubHeader } from './github/GithubHeader';
@@ -135,6 +136,7 @@ export function GithubWorkflow({
     setIsAnalyzing(true);
     setAnalysisResult(null);
     setAnalysisState({ status: 'loading' });
+    trackEvent('analysis_started', { review_type: 'github' });
     try {
       const { data, error } = await supabase.functions.invoke('analyze-repository', {
         body: { owner: repo.owner.login, repo: repo.name, prNumber }
@@ -155,6 +157,13 @@ export function GithubWorkflow({
         setAnalysisState({ status: 'success', report: data.report });
         setAnalysisResult(data.report);
         setIsAnalyzing(false);
+
+        const findingCount = Array.isArray(data.report.findings) ? data.report.findings.length : 0;
+        trackEvent('analysis_completed', {
+          review_type: 'github',
+          verdict: data.report.verdict || 'NOT_VERIFIED',
+          finding_count: findingCount,
+        });
 
         const repoName = `${repo.owner.login}/${repo.name}`;
         const verdict = data.report.verdict || 'NOT_VERIFIED';
@@ -199,6 +208,7 @@ export function GithubWorkflow({
       }
     } catch (err: any) {
       console.error('Analyze Error:', err);
+      trackEvent('analysis_failed', { review_type: 'github' });
       setIsAnalyzing(false);
       setAnalysisState({ status: 'error', message: err.message || 'Failed to start analysis.' });
     }

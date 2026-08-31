@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain } from './components/auth/onboarding/emailUtils';
+import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
 
 import {
   OnboardingEmailStep,
@@ -28,6 +29,11 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   
+  // Track onboarding view
+  useEffect(() => {
+    trackPageView('/onboarding', 'Code Vibe - Welcome');
+  }, []);
+
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -88,6 +94,8 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         }
 
         if (data.user) {
+          identifyUser(data.user.id);
+          trackEvent('user_logged_in', { method: 'email' });
           onLogin({
             id: data.user.id,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
@@ -123,6 +131,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           return;
         }
 
+        trackEvent('user_signed_up', { method: 'email' });
         setSignupSuccess(true);
       } catch (err: any) {
         setEmailError(err.message || 'An unexpected signup error occurred.');

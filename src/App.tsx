@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Search, ChevronDown, FileText, ChevronRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import Onboarding from './Onboarding';
+import { identifyUser, resetUser, trackPageView, trackEvent } from './lib/posthog';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -84,6 +85,27 @@ export default function App() {
     }
   }, [setActiveWorkflow]);
 
+  // Identify user in PostHog upon authentication
+  useEffect(() => {
+    if (user?.id) {
+      identifyUser(user.id);
+    }
+  }, [user?.id]);
+
+  // Track page views and review history navigation
+  useEffect(() => {
+    if (!user) return;
+
+    if (activeTab === 'reviewed') {
+      trackPageView('/reviewed', 'Code Vibe - Review History');
+      trackEvent('review_history_opened');
+    } else {
+      const path = activeWorkflow === 'none' ? '/home' : `/${activeWorkflow}`;
+      const title = `Code Vibe - ${activeWorkflow === 'none' ? 'Home' : activeWorkflow.toUpperCase()}`;
+      trackPageView(path, title);
+    }
+  }, [activeTab, activeWorkflow, user]);
+
   const shouldReduceMotion = useReducedMotion();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
@@ -94,6 +116,8 @@ export default function App() {
 
   const handleSignOut = async () => {
     try {
+      trackEvent('user_signed_out');
+      resetUser();
       await supabase.auth.signOut();
       clearGithubCache();
       setUser(null);

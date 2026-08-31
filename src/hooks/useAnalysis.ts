@@ -3,6 +3,7 @@ import { analyzeCode, type AnalysisResult, type Category, type Finding } from '.
 import { supabase } from '../lib/supabase';
 import { type ReviewedItem, fetchUserReviews, saveUserReview } from '../lib/reviewsService';
 import { type User } from './useAuth';
+import { trackEvent } from '../lib/posthog';
 
 export type { ReviewedItem };
 
@@ -98,6 +99,9 @@ export function useAnalysis(user?: User | null) {
 
     if (!allCode.trim()) return;
 
+    const reviewType: 'upload' | 'paste' = uploadedFiles.length > 0 ? 'upload' : 'paste';
+    trackEvent('analysis_started', { review_type: reviewType });
+
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
@@ -119,11 +123,24 @@ export function useAnalysis(user?: User | null) {
       setAnalysisResult(finalResult);
     } catch (err: any) {
       console.error('Analysis failed:', err);
-      // Fallback to legacy analyzer if the edge function fails or isn't deployed yet
-      finalResult = analyzeCode(allCode);
-      setAnalysisResult(finalResult as any);
+      try {
+        // Fallback to legacy analyzer if the edge function fails or isn't deployed yet
+        finalResult = analyzeCode(allCode);
+        setAnalysisResult(finalResult as any);
+      } catch (fallbackErr) {
+        trackEvent('analysis_failed', { review_type: reviewType });
+      }
     } finally {
       setIsAnalyzing(false);
+    }
+
+    if (finalResult) {
+      const findingCount = Array.isArray(finalResult.findings) ? finalResult.findings.length : 0;
+      trackEvent('analysis_completed', {
+        review_type: reviewType,
+        verdict: finalResult.verdict || 'NOT_VERIFIED',
+        finding_count: findingCount,
+      });
     }
 
     const name = uploadedFiles.length > 0
@@ -131,7 +148,6 @@ export function useAnalysis(user?: User | null) {
       : 'Pasted Code';
     const displayName = name.length > 40 ? name.slice(0, 37) + '...' : name;
     const verdict = finalResult?.verdict || 'NOT_VERIFIED';
-    const reviewType = uploadedFiles.length > 0 ? 'upload' : 'paste';
 
     const localItem: ReviewedItem = {
       name: displayName,
