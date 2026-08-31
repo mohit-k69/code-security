@@ -119,7 +119,7 @@ export function GithubHeader({
               </motion.div>
             ) : (
               <div key="actions" className="flex items-center gap-1.5">
-                {showSwitchAccount && onSwitchAccount && (
+                {showSwitchAccount === true && onSwitchAccount && (
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
