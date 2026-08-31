@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Search, LayoutGrid, List, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Search, LayoutGrid, List, RefreshCw, ArrowLeftRight } from 'lucide-react';
 
 interface GithubHeaderProps {
   setActiveWorkflow: (workflow: 'none') => void;
@@ -12,6 +12,10 @@ interface GithubHeaderProps {
   setViewStyle: (style: 'grid' | 'list') => void;
   onRefresh: () => void;
   isAnalysisMode?: boolean;
+  githubUsername?: string;
+  showSwitchAccount?: boolean;
+  onSwitchAccount?: () => void;
+  isConnectingGithub?: boolean;
 }
 
 export function GithubHeader({
@@ -23,7 +27,11 @@ export function GithubHeader({
   viewStyle,
   setViewStyle,
   onRefresh,
-  isAnalysisMode = false
+  isAnalysisMode = false,
+  githubUsername,
+  showSwitchAccount = false,
+  onSwitchAccount,
+  isConnectingGithub = false
 }: GithubHeaderProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +69,14 @@ export function GithubHeader({
             <button onClick={() => setActiveWorkflow('none')} className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
               <ChevronLeft className="w-6 h-6" />
             </button>
-            <h2 className="text-[18px] font-semibold text-gray-900">GitHub Repository</h2>
+            <div className="flex flex-col">
+              <h2 className="text-[18px] font-semibold text-gray-900 leading-tight">GitHub Repository</h2>
+              {githubUsername && (
+                <span className="text-[12px] text-gray-500 font-normal">
+                  Connected as <span className="font-medium text-gray-700">@{githubUsername}</span>
+                </span>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -103,7 +118,23 @@ export function GithubHeader({
                 />
               </motion.div>
             ) : (
-              <div key="actions" className="flex items-center gap-1">
+              <div key="actions" className="flex items-center gap-1.5">
+                {showSwitchAccount && onSwitchAccount && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={onSwitchAccount}
+                    disabled={isConnectingGithub}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 text-[13px] font-medium transition-colors shadow-xs h-9 disabled:opacity-50"
+                    title="Switch GitHub Account"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="hidden sm:inline">Switch GitHub Account</span>
+                    <span className="sm:hidden">Switch</span>
+                  </motion.button>
+                )}
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

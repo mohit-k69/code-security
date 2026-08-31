@@ -234,6 +234,10 @@ export function GithubWorkflow({
         setViewStyle={setViewStyle}
         onRefresh={fetchGithubRepositories}
         isAnalysisMode={selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict)}
+        githubUsername={user?.githubUsername}
+        showSwitchAccount={isGithubConnected && user?.authProvider !== 'github'}
+        onSwitchAccount={handleConnectGithub}
+        isConnectingGithub={isConnectingGithub}
       />
       
       <div className={`flex-1 flex flex-col ${selectedRepoId !== null ? 'max-w-full' : 'max-w-6xl'} mx-auto w-full pt-4 h-[calc(100vh-200px)]`}>

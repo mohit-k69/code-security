@@ -10,6 +10,8 @@ export interface User {
   last_name_updated_at?: string;
   last_password_updated_at?: string;
   isGithubLinked?: boolean;
+  githubUsername?: string;
+  authProvider?: 'email' | 'github';
 }
 
 export function useAuth() {
@@ -87,28 +89,49 @@ export function useAuth() {
           });
 
           const meta = session.user.user_metadata;
+          let identities = session.user.identities || [];
           let isGithubLinked = Boolean(
             session.user.app_metadata?.providers?.includes('github') ||
             session.user.app_metadata?.provider === 'github' ||
-            session.user.identities?.some((id: any) => id.provider === 'github')
+            identities.some((id: any) => id.provider === 'github')
           );
 
-          if (!isGithubLinked) {
+          let fetchedUserData: any = null;
+          if (!isGithubLinked || identities.length === 0) {
             try {
               const { data: userData } = await supabase.auth.getUser();
               if (userData?.user) {
+                fetchedUserData = userData.user;
+                if (userData.user.identities) {
+                  identities = userData.user.identities;
+                }
                 isGithubLinked = Boolean(
                   userData.user.app_metadata?.providers?.includes('github') ||
                   userData.user.app_metadata?.provider === 'github' ||
-                  userData.user.identities?.some((id: any) => id.provider === 'github')
+                  identities.some((id: any) => id.provider === 'github')
                 );
               }
             } catch {}
           }
 
+          const isPrimaryEmailUser = session.user.app_metadata?.provider === 'email' ||
+            identities.some((id: any) => id.provider === 'email') ||
+            Boolean(session.user.email && session.user.app_metadata?.provider !== 'github');
+          const authProvider: 'email' | 'github' = isPrimaryEmailUser ? 'email' : 'github';
+
+          const githubIdentity = identities.find((id: any) => id.provider === 'github');
+          const githubUsername = githubIdentity?.identity_data?.user_name ||
+            githubIdentity?.identity_data?.preferred_username ||
+            session.user.user_metadata?.user_name ||
+            session.user.user_metadata?.preferred_username ||
+            fetchedUserData?.user_metadata?.user_name ||
+            fetchedUserData?.user_metadata?.preferred_username;
+
           console.log('[GITHUB_OAUTH] GITHUB_IDENTITY_DETECTED', {
             isGithubLinked,
-            identities: session.user.identities,
+            authProvider,
+            githubUsername,
+            identities,
             providers: session.user.app_metadata?.providers
           });
 
@@ -121,6 +144,8 @@ export function useAuth() {
             last_name_updated_at: meta?.last_name_updated_at,
             last_password_updated_at: meta?.last_password_updated_at,
             isGithubLinked,
+            githubUsername,
+            authProvider,
           });
 
           console.log('[GITHUB_OAUTH] PROVIDER_TOKEN_DETECTED', {
@@ -226,20 +251,34 @@ export function useAuth() {
         });
 
         const meta = session.user.user_metadata;
+        const identities = session.user.identities || [];
         let isGithubLinked = Boolean(
           session.user.app_metadata?.providers?.includes('github') ||
           session.user.app_metadata?.provider === 'github' ||
-          session.user.identities?.some((id: any) => id.provider === 'github')
+          identities.some((id: any) => id.provider === 'github')
         );
 
         if (!isGithubLinked && session.provider_token) {
           isGithubLinked = true;
         }
 
+        const isPrimaryEmailUser = session.user.app_metadata?.provider === 'email' ||
+          identities.some((id: any) => id.provider === 'email') ||
+          Boolean(session.user.email && session.user.app_metadata?.provider !== 'github');
+        const authProvider: 'email' | 'github' = isPrimaryEmailUser ? 'email' : 'github';
+
+        const githubIdentity = identities.find((id: any) => id.provider === 'github');
+        const githubUsername = githubIdentity?.identity_data?.user_name ||
+          githubIdentity?.identity_data?.preferred_username ||
+          session.user.user_metadata?.user_name ||
+          session.user.user_metadata?.preferred_username;
+
         console.log('[GITHUB_OAUTH] GITHUB_IDENTITY_DETECTED', {
           source: 'onAuthStateChange',
           isGithubLinked,
-          identities: session.user.identities,
+          authProvider,
+          githubUsername,
+          identities,
           providers: session.user.app_metadata?.providers
         });
 
@@ -252,6 +291,8 @@ export function useAuth() {
           last_name_updated_at: meta?.last_name_updated_at,
           last_password_updated_at: meta?.last_password_updated_at,
           isGithubLinked,
+          githubUsername,
+          authProvider,
         });
 
         try {

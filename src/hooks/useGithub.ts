@@ -85,6 +85,10 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   useEffect(() => {
     const handleConnected = () => {
       trackEvent('github_connected');
+      setGithubRepos([]);
+      setSelectedRepoId(null);
+      setGithubSearchQuery('');
+      setGithubReposError('');
       fetchGithubRepositories();
     };
     window.addEventListener('codevibe_github_connected', handleConnected);
