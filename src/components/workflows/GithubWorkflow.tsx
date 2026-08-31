@@ -104,7 +104,8 @@ export function GithubWorkflow({
         provider: 'github',
         options: {
           redirectTo: redirectUrl.toString(),
-          scopes: 'repo read:user user:email'
+          scopes: 'repo read:user user:email',
+          skipBrowserRedirect: true
         }
       });
       console.log('[GITHUB_OAUTH] LINK_IDENTITY_RESULT', { data, error });
