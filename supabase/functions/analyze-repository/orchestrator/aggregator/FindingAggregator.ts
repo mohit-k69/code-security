@@ -47,30 +47,74 @@ export class FindingAggregator {
         const f1 = canonical;
         const f2 = item.finding;
 
-        const isSameFile = f1.primaryLocation.file === f2.primaryLocation.file;
+        const normalizeFile = (file?: string) => (file || "").replace(/^(\.\/|\/)/, "").trim();
+        const f1File = normalizeFile(f1.primaryLocation?.file);
+        const f2File = normalizeFile(f2.primaryLocation?.file);
+        const isSameFile = f1File === f2File || !f1File || !f2File || f1File.endsWith(f2File) || f2File.endsWith(f1File);
         if (!isSameFile) continue;
 
+        const f1Snippet = (f1.evidence?.[0]?.snippet || "").trim();
+        const f2Snippet = (f2.evidence?.[0]?.snippet || "").trim();
+        const hasIdenticalSnippet = f1Snippet.length > 5 && f2Snippet.length > 5 && (f1Snippet === f2Snippet || f1Snippet.includes(f2Snippet) || f2Snippet.includes(f1Snippet));
+
+        const lineDiff = Math.abs(f1.primaryLocation.line - f2.primaryLocation.line);
+        const isSameLine = lineDiff === 0;
+        const isNearby = lineDiff <= 3;
         const isSameClass = f1.vulnerabilityClass === f2.vulnerabilityClass;
-        const isNearby = Math.abs(f1.primaryLocation.line - f2.primaryLocation.line) <= 3;
-        
-        // If they share the exact same vulnerability class and are within 3 lines of each other,
-        // they are deterministically the same finding (e.g. two checkpoints finding XSS on the same line).
-        // EXCEPTION: Distinct hardcoded secrets on nearby lines are separate vulnerabilities and MUST NOT be merged unless on the exact same line.
-        if (isSameClass && isNearby) {
-          if (f1.vulnerabilityClass === "SECRET_EXPOSURE" && f1.primaryLocation.line !== f2.primaryLocation.line) {
-            // Do not merge distinct secrets on different lines
-          } else {
+
+        // 1. SECRET_EXPOSURE specific deduplication
+        if (f1.vulnerabilityClass === "SECRET_EXPOSURE" && f2.vulnerabilityClass === "SECRET_EXPOSURE") {
+          if (isSameLine) {
             matchedCluster = cluster;
             break;
           }
+          if (isNearby) {
+            const isRedacted1 = /REDACTED/i.test(f1.description) || f1.evidence?.some(e => /REDACTED/i.test(e.snippet));
+            const isRedacted2 = /REDACTED/i.test(f2.description) || f2.evidence?.some(e => /REDACTED/i.test(e.snippet));
+            if (isRedacted1 || isRedacted2 || hasIdenticalSnippet) {
+              matchedCluster = cluster;
+              break;
+            }
+          }
+          continue;
         }
-        
-        // If they are on the exact same line, but have different classes, we check for CWE overlap
-        // to see if they are actually the same fundamental issue classified differently.
-        const isSameLine = f1.primaryLocation.line === f2.primaryLocation.line;
-        const sameCwe = Boolean(f1.cwes?.length > 0 && f2.cwes?.length > 0 && f1.cwes.some(c => f2.cwes?.includes(c)));
-        
+
+        // 2. Same vulnerability class matching
+        if (isSameClass) {
+          if (isSameLine) {
+            if (f1.vulnerabilityClass === "JWT_SECURITY") {
+              const f1IsExp = /expir/i.test(f1.title + ' ' + f1.description);
+              const f2IsExp = /expir/i.test(f2.title + ' ' + f2.description);
+              if (f1IsExp === f2IsExp) {
+                matchedCluster = cluster;
+                break;
+              }
+            } else {
+              matchedCluster = cluster;
+              break;
+            }
+          } else if (hasIdenticalSnippet) {
+            matchedCluster = cluster;
+            break;
+          } else if (isNearby && computeSemanticSimilarity(f1.description, f2.description) > 0.65) {
+            matchedCluster = cluster;
+            break;
+          }
+          continue;
+        }
+
+        // 3. Different classes on the exact same line with shared CWEs
+        const sameCwe = Boolean(f1.cwes?.length && f2.cwes?.length && f1.cwes.some(c => f2.cwes?.includes(c)));
         if (isSameLine && sameCwe) {
+          matchedCluster = cluster;
+          break;
+        }
+
+        // 4. Compatible classes (INPUT_VALIDATION and SQL_INJECTION) with identical snippet on nearby lines (LLM jitter)
+        const isInputValidationAndSqlInjection = 
+          (f1.vulnerabilityClass === "INPUT_VALIDATION" && f2.vulnerabilityClass === "SQL_INJECTION") ||
+          (f1.vulnerabilityClass === "SQL_INJECTION" && f2.vulnerabilityClass === "INPUT_VALIDATION");
+        if (isNearby && isInputValidationAndSqlInjection && hasIdenticalSnippet) {
           matchedCluster = cluster;
           break;
         }

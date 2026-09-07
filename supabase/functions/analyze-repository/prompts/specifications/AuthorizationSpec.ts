@@ -216,8 +216,8 @@ export const AuthorizationSpec: ReviewSpecification = {
     "- **NOT_VERIFIED vs PASS**: If a middleware with a name suggesting authentication/authorization (like `requireAdmin`, `checkAuth`, `isAuthenticated`) is explicitly applied to the route in the snippet, you MUST return PASS for the respective criteria, not NOT_VERIFIED.\n\n" +
 
     "### Authorization Evaluation Rules\n\n" +
-    "- Only report vulnerabilities that are directly proven by the supplied code. Do not infer missing authentication, authorization, middleware, database constraints, infrastructure, or runtime behavior.\n" +
-    "- Do NOT flag database queries or client-supplied parameters for missing authorization or IDOR (BUSINESS_LOGIC_FLAW) unless broken access control or an explicit bypass is directly demonstrated in the code. If authorization context is simply not visible, use NOT_VERIFIED or PASS, not FAIL.\n" +
+    "- Only report vulnerabilities that are directly proven by the supplied code. Do not infer missing authentication, authorization, middleware, database constraints, infrastructure, or runtime behavior on partial helper snippets.\n" +
+    "- When an API endpoint or route definition (e.g. `/api/profile`, `app.post`, `router.put`) is visible and directly uses client-controlled identifiers (e.g. `req.body.userId`) to access, update, or mutate user records without any authorization or ownership check, report a **FAIL** (AUTHZ-C1, `BUSINESS_LOGIC_FLAW`).\n" +
     "- You must verify that the authorization check happens **before** the sensitive action. A check-then-act race condition or an action followed by a check is a **FAIL**.\n\n" +
 
     "### Authorization vs Authentication\n\n" +

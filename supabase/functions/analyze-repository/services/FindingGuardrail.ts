@@ -156,6 +156,7 @@ export class FindingGuardrail {
       // Strip comments to prevent matching auth keywords in explanatory text
       const cleanCodeContext = codeContext.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
 
+      const isRouteDefinition = /\b(app|router)\.(get|post|put|delete|patch)\b/i.test(cleanCodeContext) || /\/api\//i.test(cleanCodeContext);
       const isClientControlledId = /req\.(body|query|params)/i.test(cleanCodeContext);
       const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query|db\.\w+\.(find|update|delete|query))/i.test(cleanCodeContext);
       
@@ -163,7 +164,7 @@ export class FindingGuardrail {
       const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify)\b/i.test(cleanCodeContext);
       const hasExplicitAuthLogic = hasExplicitBypass || hasExplicitAuthCheck;
 
-      if ((isClientControlledId || isDbOperation) && !hasExplicitAuthLogic) {
+      if (!isRouteDefinition && (isClientControlledId || isDbOperation) && !hasExplicitAuthLogic) {
         return true;
       }
     }
