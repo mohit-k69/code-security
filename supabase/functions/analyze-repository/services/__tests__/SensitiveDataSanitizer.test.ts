@@ -100,3 +100,55 @@ Deno.test("SensitiveDataDetector - Arbitrary 40-char hex string (like git sha) i
     "A 40-character hex string should not trigger the AWS Secret Access Key regex"
   );
 });
+
+Deno.test("SensitiveDataDetector - Valid Stripe-style secret is detected and redacted", () => {
+  const detector = new SensitiveDataDetector(new PatternRegistry());
+  const sanitizer = new SensitiveDataSanitizer(new PlaceholderRegistry());
+  
+  const content = 'const stripeKey = "sk_live_1234567890abcdefghijklmn";';
+  const context = createMockContext(content);
+  const detection = detector.detect(context);
+  const result = sanitizer.sanitize(detection);
+  
+  assertEquals(detection.secretDetectionReport.findings.length, 1);
+  assertEquals(detection.secretDetectionReport.findings[0].category, "API Keys");
+  assertEquals(
+    result.changedFiles[0].content,
+    'const stripeKey = "<REDACTED_API_KEY>";',
+    "Valid Stripe secret key must be detected and redacted"
+  );
+});
+
+Deno.test("SensitiveDataDetector - Hardcoded API credential with test tokens is detected", () => {
+  const detector = new SensitiveDataDetector(new PatternRegistry());
+  const sanitizer = new SensitiveDataSanitizer(new PlaceholderRegistry());
+  
+  const content = 'const API_KEY = "sk_live_TEST_SECRET_123456789";';
+  const context = createMockContext(content);
+  const detection = detector.detect(context);
+  const result = sanitizer.sanitize(detection);
+  
+  assertEquals(detection.secretDetectionReport.findings.length, 1);
+  assertEquals(detection.secretDetectionReport.findings[0].category, "API Keys");
+  assertEquals(
+    result.changedFiles[0].content,
+    'const API_KEY = "<REDACTED_API_KEY>";',
+    "Hardcoded credential must be detected and redacted"
+  );
+});
+
+Deno.test("SensitiveDataDetector - Normal string is NOT detected as secret", () => {
+  const detector = new SensitiveDataDetector(new PatternRegistry());
+  const sanitizer = new SensitiveDataSanitizer(new PlaceholderRegistry());
+  
+  const content = `const message = "Hello world";
+const description = "This is a normal user greeting message.";
+const endpoint = "https://api.example.com/v1/users";`;
+  const context = createMockContext(content);
+  const detection = detector.detect(context);
+  const result = sanitizer.sanitize(detection);
+  
+  assertEquals(detection.secretDetectionReport.findings.length, 0);
+  assertEquals(result.changedFiles[0].content, content, "Normal strings must not be modified or flagged");
+});
+

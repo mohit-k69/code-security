@@ -329,6 +329,52 @@ console.log("\n── Test 10: Per-checkpoint model selection ──");
   assert(provider.requestedModels.includes("google/gemini-3.1-flash-lite"), "Standard checkpoint used google/gemini-3.1-flash-lite");
 }
 
+// ── Test 11: Secret inside a normally named source file in GitHub PR mode ──
+console.log("\n── Test 11: Secret inside a normally named source file in GitHub PR mode ──");
+{
+  const provider = new MockProvider();
+  const orchestrator = new ReviewOrchestrator({ provider });
+  
+  // A normally named source file like "test-vulnerabilities.js" with a hardcoded API key
+  const pkg: SanitizedContextPackage = {
+    repository: "owner/repo",
+    prNumber: 123,
+    commitSha: "sha123",
+    changedFiles: [{
+      path: "test-vulnerabilities.js",
+      content: 'const API_KEY = "<REDACTED_API_KEY>";',
+      deleted: false,
+    }],
+    dependencies: [],
+    metadata: {
+      totalSecretsReplaced: 1,
+      replacementTypes: { "API Keys": 1 },
+      ignoredReplacements: 0,
+      processingTimeMs: 5,
+      secretFindings: [
+        {
+          id: "secret-1",
+          file: "test-vulnerabilities.js",
+          line: 1,
+          category: "API Keys",
+          pattern: "Stripe Secret Key",
+          matchedValue: "sk_live_TEST_SECRET_123456789",
+          startColumn: 18,
+          endColumn: 47,
+        }
+      ]
+    }
+  };
+
+  const result = await orchestrator.review(pkg);
+  const report = result.report;
+
+  const secretFindings = report.findings.critical.filter(f => f.vulnerabilityClass === "SECRET_EXPOSURE");
+  assert(secretFindings.length === 1, "SECRET_EXPOSURE finding is present in report for normal file");
+  assert(secretFindings[0].primaryLocation.file === "test-vulnerabilities.js", "Primary location points to test-vulnerabilities.js");
+  assert(report.checkpoints.some(c => c.checkpointId === "SEC-SECRET-001"), "SEC-SECRET-001 executed or completed");
+}
+
 // ─── Summary ────────────────────────────────────────────────────
 
 console.log("\n═══════════════════════════════════════════════════");

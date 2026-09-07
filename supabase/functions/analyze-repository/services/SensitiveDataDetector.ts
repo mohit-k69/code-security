@@ -42,6 +42,7 @@ export class SensitiveDataDetector implements SecretScanner {
       
       lines.forEach((lineText, lineIndex) => {
         const currentLineNumber = lineIndex + 1; // 1-indexed
+        const lineFindings: SecretFinding[] = [];
 
         for (const pattern of patterns) {
           // Reset the global regex index before scanning a new line
@@ -49,13 +50,10 @@ export class SensitiveDataDetector implements SecretScanner {
           let match;
 
           while ((match = pattern.regex.exec(lineText)) !== null) {
-            // Edge Case: Duplicate secrets -> Record each occurrence.
-            // Edge Case: Continue scanning after every detection.
-            
             // Generate a secure UUID for the finding
             const findingId = crypto.randomUUID();
 
-            findings.push({
+            lineFindings.push({
               id: findingId,
               file: filePath,
               line: currentLineNumber,
@@ -67,6 +65,19 @@ export class SensitiveDataDetector implements SecretScanner {
             });
           }
         }
+
+        // Filter out overlapping findings on the exact same line span (favor earlier/more specific patterns)
+        const nonOverlapping: SecretFinding[] = [];
+        for (const finding of lineFindings) {
+          const overlaps = nonOverlapping.some(existing =>
+            (finding.startColumn < existing.endColumn && finding.endColumn > existing.startColumn)
+          );
+          if (!overlaps) {
+            nonOverlapping.push(finding);
+          }
+        }
+
+        findings.push(...nonOverlapping);
       });
     };
 

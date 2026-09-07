@@ -105,8 +105,13 @@ export class ReviewOrchestrator {
     const routingDecision = await router.route(routingInputs, isPasteCode);
 
     // 3. Resolve selected checkpoint implementations
+    const selectedCheckpointIds = new Set(routingDecision.selectedCheckpointIds);
+    if (sanitizedPackage.metadata.secretFindings && sanitizedPackage.metadata.secretFindings.length > 0) {
+      selectedCheckpointIds.add("SEC-SECRET-001");
+    }
+
     const selectedCheckpoints = allCheckpoints.filter((cp) =>
-      routingDecision.selectedCheckpointIds.includes(cp.id)
+      selectedCheckpointIds.has(cp.id)
     );
 
     // 4. Execute selected checkpoints in parallel (tolerating failures)
