@@ -42,7 +42,7 @@ export const InputValidationSpec: ReviewSpecification = {
         "or escaped) before being stored or processed. Focus on whether the input is " +
         "prepared safely for its destination context. Note: Detailed XSS reviews are " +
         "covered in a dedicated checkpoint, but this checkpoint explicitly owns specific " +
-        "backend injection reviews (such as SQL Injection or Path Traversal, where `SQL_INJECTION` and `PATH_TRAVERSAL` are allowed classes).\n\n" +
+        "backend injection reviews (such as SQL Injection, Path Traversal, or SSRF, where `SQL_INJECTION`, `PATH_TRAVERSAL`, and `SSRF` are allowed classes).\n\n" +
         "PASS: Input is safely sanitized, type-cast, or encoded before storage or " +
         "processing (e.g., using DOMPurify for rich text, stripping null bytes, or using `path.basename()` to prevent path traversal). " +
         "Parameterized/prepared SQL queries (e.g., using `?`, `$1`, or named parameters) " +
@@ -50,7 +50,7 @@ export const InputValidationSpec: ReviewSpecification = {
         "unless the supplied code also demonstrates unsafe string interpolation/concatenation.\n" +
         "FAIL: Concrete evidence of raw user input being explicitly passed directly " +
         "to a dangerous sink or sensitive mechanism (e.g., via string interpolation or concatenation " +
-        "into a SQL statement, or directly to `fs.readFile` without directory traversal sanitization). Do not FAIL simply because sanitization logic is absent from a partial snippet.\n" +
+        "into a SQL statement, directly to `fs.readFile` without directory traversal sanitization, or to an outbound HTTP request like `axios.get(url)` or `fetch(url)` enabling SSRF). Do not FAIL simply because sanitization logic is absent from a partial snippet.\n" +
         "NOT_VERIFIED: Sanitization happens in an external service, middleware, or " +
         "ORM layer not visible in the provided context, or is simply absent.",
     },
@@ -158,7 +158,8 @@ export const InputValidationSpec: ReviewSpecification = {
     "- Unrestricted file uploads (INPUT-C5) are almost always **critical** severity.\n" +
     "- Client-only validation without backend enforcement (INPUT-C3) is a **FAIL** and " +
     "typically **critical**.\n" +
-    "- **Specific Vulnerability Classification**: For INPUT-C2, if you identify concrete evidence of an injection attack (such as SQL Injection or Path Traversal), you MUST classify the finding using the specific class (e.g., `SQL_INJECTION` or `PATH_TRAVERSAL`). However, for OS Command Injection, you MUST use the generic `INPUT_VALIDATION` class.\n" +
-    "- **Deduplication**: If a specific injection vulnerability (like `SQL_INJECTION` or `PATH_TRAVERSAL`) is identified under ANY criterion, it supersedes all other generic missing validation findings for that operation. Do NOT report a redundant `INPUT_VALIDATION` finding under C1, C5, or any other criterion for the exact same input field or operation. Report the specific injection finding EXACTLY ONCE.\n" +
+    "- **Specific Vulnerability Classification**: For INPUT-C2 / INPUT-C4, if you identify concrete evidence of a specific attack (such as SQL Injection, Path Traversal, or SSRF), you MUST classify the finding using the specific class (e.g., `SQL_INJECTION`, `PATH_TRAVERSAL`, or `SSRF`). However, for OS Command Injection, you MUST use the generic `INPUT_VALIDATION` class.\n" +
+    "- **CRITICAL LOCATION RULE FOR SSRF**: When reporting a Server-Side Request Forgery (`SSRF`) vulnerability where untrusted user input is passed to an outbound HTTP/network request (e.g., `axios.get(url)`, `axios.post(url)`, `fetch(url)`, `http.get(url)`, `request(url)`), the primary location and evidence MUST point to the actual outbound request sink (e.g., `const response = await axios.get(url);`). You MUST NOT attach the finding to innocent data-flow lines where user input is extracted or assigned (e.g., `const url = req.query.url;`).\n" +
+    "- **Deduplication**: If a specific injection vulnerability (like `SQL_INJECTION`, `PATH_TRAVERSAL`, or `SSRF`) is identified under ANY criterion, it supersedes all other generic missing validation findings for that operation. Do NOT report a redundant `INPUT_VALIDATION` finding under C1, C5, or any other criterion for the exact same input field or operation. Report the specific injection finding EXACTLY ONCE.\n" +
     "- **NOT_VERIFIED vs PASS**: If explicit defense logic is visible (e.g., path traversal checks like `startsWith(baseDir)`), you MUST return PASS for that criterion, not NOT_VERIFIED.",
 };

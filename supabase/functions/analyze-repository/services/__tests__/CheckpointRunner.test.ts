@@ -506,4 +506,62 @@ Deno.test("CheckpointRunner - Regression Test: AUTH_BYPASS location points to to
   assertEquals(result.findings[0].evidence[0].snippet, "const token = createSessionToken(user.id);");
 });
 
+Deno.test("CheckpointRunner - Regression Test: SSRF location points to outbound request sink instead of req.query extraction", async () => {
+  const ssrfContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "controllers/proxy.js",
+        content: [
+          "const url = req.query.url;",
+          "const response = await axios.get(url);",
+          "res.json(response.data);"
+        ].join("\n"),
+        deleted: false
+      }
+    ]
+  };
+
+  // Mock LLM mistakenly returning line 1 (const url = req.query.url;) instead of line 2 (axios.get)
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.95,
+    "summary": "Server-Side Request Forgery (SSRF): untrusted user URL fetched directly with axios",
+    "findings": [
+      {
+        "criterionId": "INPUT-C2",
+        "vulnerabilityClass": "SSRF",
+        "primaryLocation": { "file": "controllers/proxy.js", "line": 1 },
+        "title": "Server-Side Request Forgery (SSRF)",
+        "severity": "critical",
+        "description": "User-supplied query parameter url is passed to an outbound HTTP request without validation or allowlisting.",
+        "suggestion": "Validate and allowlist URLs before making outbound HTTP requests.",
+        "evidence": [
+          {
+            "file": "controllers/proxy.js",
+            "line": 1,
+            "snippet": "const url = req.query.url;",
+            "explanation": "URL parameter extracted from user query"
+          }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(ssrfContext, "framework", mockSpec);
+
+  // Must preserve SSRF detection (FAIL verdict)
+  assertEquals(result.verdict, "FAIL", "Legitimate SSRF must not be suppressed");
+  assertEquals(result.findings.length, 1, "Must have exactly 1 SSRF finding");
+  assertEquals(result.findings[0].vulnerabilityClass, "SSRF");
+
+  // Must refine location to the actual outbound request sink (line 2) instead of extraction line (line 1)
+  assertEquals(result.findings[0].primaryLocation.line, 2, "Finding location must point to axios.get sink line (line 2)");
+  assertEquals(result.findings[0].evidence[0].line, 2, "Primary evidence line must point to line 2");
+  assertEquals(result.findings[0].evidence[0].snippet, "const response = await axios.get(url);");
+});
+
+
 
