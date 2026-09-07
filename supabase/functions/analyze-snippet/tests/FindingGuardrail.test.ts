@@ -702,3 +702,102 @@ Deno.test("Guardrail: Regression - Multi-endpoint file preserves jwt.decode, sup
   assertEquals(guarded.findings[0].evidence[0].snippet, "const decoded = jwt.decode(token);");
 });
 
+
+Deno.test("Guardrail: Regression - Multi-endpoint file preserves real AUTH_BYPASS login flow, suppresses spurious ones", () => {
+  const fileContent = [
+    "// Endpoint 1: Admin route without visible middleware",
+    "app.get('/admin', (req, res) => {",
+    "  res.send('admin dashboard');",
+    "});",
+    "",
+    "// Endpoint 2: Vulnerable login flow (AUTH_BYPASS)",
+    "app.post('/login', (req, res) => {",
+    "  const user = getUserByUsername(req.body.username);",
+    "  if (user) {",
+    "    const token = createSessionToken(user.id);",
+    "    res.json({ token });",
+    "  }",
+    "});",
+    "",
+    "// Endpoint 3: Standalone user fetch without auth decision",
+    "app.get('/user/:id', (req, res) => {",
+    "  const user = getUserByUsername(req.params.id);",
+    "  res.json(user);",
+    "});"
+  ].join("\n");
+
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test-auth.js",
+      content: fileContent
+    }]
+  };
+
+  // 1. Spurious finding on /admin route
+  const adminFinding: CheckpointFinding = {
+    findingId: "f-admin",
+    criterionId: "AUTH-C1",
+    vulnerabilityClass: "AUTH_BYPASS" as any,
+    cwes: ["CWE-285"],
+    primaryLocation: { file: "test-auth.js", line: 2 },
+    title: "Missing Authentication on /admin",
+    severity: "warning",
+    description: "The /admin route lacks authentication middleware.",
+    suggestion: "Add authentication middleware.",
+    evidence: [{
+      file: "test-auth.js",
+      line: 2,
+      snippet: "app.get('/admin', (req, res) => {",
+      explanation: "Admin route without verification"
+    }]
+  };
+
+  // 2. Real finding on login flow (placed initially on the input extraction)
+  const loginFinding: CheckpointFinding = {
+    findingId: "f-login",
+    criterionId: "AUTH-C1",
+    vulnerabilityClass: "AUTH_BYPASS" as any,
+    cwes: ["CWE-287"],
+    primaryLocation: { file: "test-auth.js", line: 8 },
+    title: "Authentication Bypass in Login",
+    severity: "critical",
+    description: "User is authenticated without verifying a password.",
+    suggestion: "Verify password before issuing token.",
+    evidence: [{
+      file: "test-auth.js",
+      line: 8,
+      snippet: "const user = getUserByUsername(req.body.username);",
+      explanation: "Extracts user"
+    }]
+  };
+
+  // 3. Spurious finding on standalone fetch
+  const fetchFinding: CheckpointFinding = {
+    findingId: "f-fetch",
+    criterionId: "AUTH-C1",
+    vulnerabilityClass: "AUTH_BYPASS" as any,
+    cwes: ["CWE-285"],
+    primaryLocation: { file: "test-auth.js", line: 16 },
+    title: "Missing Authentication on User Fetch",
+    severity: "warning",
+    description: "User data is fetched without authentication.",
+    suggestion: "Authenticate before fetching.",
+    evidence: [{
+      file: "test-auth.js",
+      line: 16,
+      snippet: "const user = getUserByUsername(req.params.id);",
+      explanation: "Fetches user"
+    }]
+  };
+
+  const result = createMockResult([adminFinding, loginFinding, fetchFinding]);
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+
+  // Exactly one finding must remain: login flow
+  assertEquals(guarded.findings.length, 1);
+  assertEquals(guarded.findings[0].findingId, "f-login");
+  
+  // It should have been refined from line 8 down to the token creation (line 10)
+  assertEquals(guarded.findings[0].primaryLocation.line, 10);
+  assertEquals(guarded.findings[0].evidence[0].snippet.trim(), "const token = createSessionToken(user.id);");
+});

@@ -219,28 +219,51 @@ export class FindingGuardrail {
        finding.vulnerabilityClass === "BUSINESS_LOGIC_FLAW") &&
       finding.criterionId !== "AUTH-C6"
     ) {
-      let codeContext = combinedEvidenceSnippet;
-      
-      if (contextPackage && finding.primaryLocation?.file) {
-        const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
-        if (fileData && fileData.content) {
-          codeContext = fileData.content;
+      if (finding.vulnerabilityClass === "AUTH_BYPASS") {
+        let localContext = combinedEvidenceSnippet;
+        
+        if (contextPackage && finding.primaryLocation?.file) {
+          const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
+          if (fileData && fileData.content && typeof finding.primaryLocation.line === "number") {
+            const lines = fileData.content.split("\n");
+            const lineIdx = finding.primaryLocation.line - 1;
+            const { startIdx, endIdx } = this.getLocalContextRange(lines, lineIdx);
+            localContext = lines.slice(startIdx, endIdx + 1).join("\n");
+          }
         }
-      }
 
-      // Strip comments to prevent matching auth keywords in explanatory text
-      const cleanCodeContext = codeContext.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
+        const cleanLocalContext = localContext.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
+        
+        const hasExplicitBypass = /(bypass|admin|role)\s*===?|req\.body\.(admin|role)|req\.query\.bypass/i.test(cleanLocalContext);
+        const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify|createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession)\b/i.test(cleanLocalContext);
+        
+        if (!hasExplicitAuthCheck && !hasExplicitBypass) {
+          return true;
+        }
+      } else {
+        let codeContext = combinedEvidenceSnippet;
+        
+        if (contextPackage && finding.primaryLocation?.file) {
+          const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
+          if (fileData && fileData.content) {
+            codeContext = fileData.content;
+          }
+        }
 
-      const isRouteDefinition = /\b(app|router)\.(get|post|put|delete|patch)\b/i.test(cleanCodeContext) || /\/api\//i.test(cleanCodeContext);
-      const isClientControlledId = /req\.(body|query|params)/i.test(cleanCodeContext);
-      const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query|db\.\w+\.(find|update|delete|query))/i.test(cleanCodeContext);
-      
-      const hasExplicitBypass = /(bypass|admin|role)\s*===?|req\.body\.(admin|role)|req\.query\.bypass/i.test(cleanCodeContext);
-      const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify|createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession)\b/i.test(cleanCodeContext);
-      const hasExplicitAuthLogic = hasExplicitBypass || hasExplicitAuthCheck;
+        // Strip comments to prevent matching auth keywords in explanatory text
+        const cleanCodeContext = codeContext.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
 
-      if (!isRouteDefinition && (isClientControlledId || isDbOperation) && !hasExplicitAuthLogic) {
-        return true;
+        const isRouteDefinition = /\b(app|router)\.(get|post|put|delete|patch)\b/i.test(cleanCodeContext) || /\/api\//i.test(cleanCodeContext);
+        const isClientControlledId = /req\.(body|query|params)/i.test(cleanCodeContext);
+        const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query|db\.\w+\.(find|update|delete|query))/i.test(cleanCodeContext);
+        
+        const hasExplicitBypass = /(bypass|admin|role)\s*===?|req\.body\.(admin|role)|req\.query\.bypass/i.test(cleanCodeContext);
+        const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify|createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession)\b/i.test(cleanCodeContext);
+        const hasExplicitAuthLogic = hasExplicitBypass || hasExplicitAuthCheck;
+
+        if (!isRouteDefinition && (isClientControlledId || isDbOperation) && !hasExplicitAuthLogic) {
+          return true;
+        }
       }
     }
 
@@ -287,22 +310,24 @@ export class FindingGuardrail {
     const currentLineText = lines[currentLineIdx] || "";
 
     if (finding.vulnerabilityClass === "AUTH_BYPASS") {
-      // Check if the current location points to an input extraction or user query/data retrieval line
-      const isInputExtractionOrQuery =
+      // Check if the current location points to an input extraction, route declaration, or user query/data retrieval line
+      const isInputExtractionOrRoute =
         /^\s*(const|let|var)?\s*(\{[^}]*\}|\w+)\s*=\s*(req\.(body|query|params)|await\s+(getUser|findUser|fetchUser|db\..*query|db\..*find|User\.find|User\.get|User\.getBy)).*;/i.test(currentLineText) ||
         /^\s*(const|let|var)?\s*user\s*=\s*.*getUser/i.test(currentLineText) ||
         /getUserByUsername\s*\(/i.test(currentLineText) ||
-        /^\s*(const|let|var)\s+\w+\s*=\s*req\.body/i.test(currentLineText);
+        /^\s*(const|let|var)\s+\w+\s*=\s*req\.body/i.test(currentLineText) ||
+        /^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/i.test(currentLineText);
 
       // Check if the current line itself already has the token creation / session setting / auth decision
       const hasAuthDecisionOnCurrentLine =
         /(createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession|req\.session\.\w+\s*=|setAuthCookie|setSessionCookie|grantAccess)/i.test(currentLineText);
 
-      if (isInputExtractionOrQuery && !hasAuthDecisionOnCurrentLine) {
-        // Look for the auth decision / token creation line in the file (preferring lines after currentLineIdx)
+      if (isInputExtractionOrRoute && !hasAuthDecisionOnCurrentLine) {
+        // Look for the auth decision / token creation line within local context (preferring lines after currentLineIdx)
+        const { startIdx, endIdx } = this.getLocalContextRange(lines, currentLineIdx);
         let targetLineIdx = -1;
 
-        for (let i = currentLineIdx + 1; i < lines.length; i++) {
+        for (let i = currentLineIdx + 1; i <= endIdx; i++) {
           if (
             /(createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession|req\.session\.\w+\s*=|setAuthCookie|setSessionCookie|grantAccess|res\.(json|send)\s*\(\s*\{.*token)/i.test(lines[i])
           ) {
@@ -311,9 +336,8 @@ export class FindingGuardrail {
           }
         }
 
-        // If not found after, search whole file
         if (targetLineIdx === -1) {
-          for (let i = 0; i < lines.length; i++) {
+          for (let i = startIdx; i < currentLineIdx; i++) {
             if (
               /(createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession|req\.session\.\w+\s*=|setAuthCookie|setSessionCookie|grantAccess|res\.(json|send)\s*\(\s*\{.*token)/i.test(lines[i])
             ) {
