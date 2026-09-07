@@ -1,5 +1,4 @@
-import assert from "node:assert";
-const assertEquals = assert.strictEqual;
+import { assertEquals } from "https://deno.land/std@0.220.0/assert/mod.ts";
 import { CheckpointRunner } from "../CheckpointRunner.ts";
 import type { ILLMProvider } from "../../orchestrator/providers/ILLMProvider.ts";
 import type { SanitizedContextPackage } from "../types.ts";
@@ -339,3 +338,113 @@ Deno.test("CheckpointRunner - Regression Test: vulnerable JWT -> FAIL", async ()
   
   assertEquals(result.verdict, "FAIL", "Should remain FAIL when concrete vulnerability is found");
 });
+
+Deno.test("CheckpointRunner - Regression Test: Hardcoded API key -> SECRET_EXPOSURE", async () => {
+  const apiKeyContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "config.js",
+        content: "const stripeApiKey = 'sk_live_99887766554433221100';",
+        deleted: false
+      }
+    ]
+  };
+
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 1.0,
+    "summary": "Hardcoded Stripe secret key found in source code",
+    "findings": [
+      {
+        "criterionId": "SECRET-C1",
+        "vulnerabilityClass": "SECRET_EXPOSURE",
+        "primaryLocation": { "file": "config.js", "line": 1 },
+        "title": "Hardcoded Stripe API Key",
+        "severity": "critical",
+        "description": "A live Stripe API key is hardcoded in config.js.",
+        "suggestion": "Move Stripe API key to environment variables.",
+        "evidence": [
+          { "file": "config.js", "line": 1, "snippet": "const stripeApiKey = 'sk_live_99887766554433221100';", "explanation": "Live API key assignment" }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(apiKeyContext, "framework", mockSpec);
+  
+  assertEquals(result.verdict, "FAIL", "Hardcoded API key must result in FAIL");
+  assertEquals(result.findings.length, 1);
+  assertEquals(result.findings[0].vulnerabilityClass, "SECRET_EXPOSURE");
+});
+
+Deno.test("CheckpointRunner - Regression Test: API returning password_hash/ssn -> should NOT be SECRET_EXPOSURE", async () => {
+  const piiContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "routes/user.js",
+        content: "app.get('/api/user/:id', async (req, res) => { const user = await db.query('SELECT ssn, password_hash, email FROM users WHERE id = $1', [req.params.id]); res.json(user); });",
+        deleted: false
+      }
+    ]
+  };
+
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.8,
+    "summary": "API queries and returns user record with ssn and password_hash",
+    "findings": [
+      {
+        "criterionId": "SECRET-C3",
+        "vulnerabilityClass": "SECRET_EXPOSURE",
+        "primaryLocation": { "file": "routes/user.js", "line": 1 },
+        "title": "Secret Exposure in User Endpoint",
+        "severity": "critical",
+        "description": "Endpoint returns ssn and password_hash to caller.",
+        "suggestion": "Omit ssn and password_hash from response payload.",
+        "evidence": [
+          { "file": "routes/user.js", "line": 1, "snippet": "const user = await db.query('SELECT ssn, password_hash, email FROM users WHERE id = $1', [req.params.id]); res.json(user);", "explanation": "DB query and response" }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(piiContext, "framework", mockSpec);
+  
+  // Guardrail should suppress this finding from being classified as SECRET_EXPOSURE
+  assertEquals(result.verdict, "NOT_VERIFIED", "Returning ssn/password_hash in business query is not SECRET_EXPOSURE and should be suppressed");
+  assertEquals(result.findings.length, 0, "Non-secret database query findings must not produce SECRET_EXPOSURE");
+});
+
+Deno.test("CheckpointRunner - Regression Test: Clean code -> no finding", async () => {
+  const cleanContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "math.js",
+        content: "export function add(a, b) { return a + b; }",
+        deleted: false
+      }
+    ]
+  };
+
+  const mockLLMResponse = `{
+    "verdict": "PASS",
+    "applicability": "APPLICABLE",
+    "confidence": 1.0,
+    "summary": "No security vulnerabilities detected in pure mathematical utility functions.",
+    "findings": []
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(cleanContext, "framework", mockSpec);
+  
+  assertEquals(result.verdict, "PASS", "Clean code should return PASS verdict");
+  assertEquals(result.findings.length, 0, "Clean code should produce 0 findings");
+});
+
