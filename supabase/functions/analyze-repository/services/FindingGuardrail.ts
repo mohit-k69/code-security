@@ -77,6 +77,40 @@ export class FindingGuardrail {
       }
     }
 
+    // 3.5. Suppression: Spurious JWT_SECURITY on route declaration or benign header/token extraction
+    if (finding.vulnerabilityClass === "JWT_SECURITY") {
+      let codeContext = combinedEvidenceSnippet;
+      if (contextPackage && finding.primaryLocation?.file) {
+        const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
+        if (fileData && fileData.content) {
+          codeContext = fileData.content;
+        }
+      }
+
+      const hasConcreteJwtOperation =
+        /\bjwt\.(decode|verify|sign)\s*\(/i.test(codeContext) ||
+        /\balgorithm\s*:\s*['"]none['"]/i.test(codeContext);
+
+      // Case A: Route declaration flagged as JWT_SECURITY without JWT operations
+      const isRouteDeclaration =
+        /^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/im.test(combinedEvidenceSnippet) ||
+        /['"]\/(admin|api\/admin|dashboard)['"]/i.test(combinedEvidenceSnippet);
+
+      if (isRouteDeclaration && !hasConcreteJwtOperation) {
+        return true;
+      }
+
+      // Case B: Pure req.headers.authorization or bearer token extraction without JWT operations
+      const isOnlyHeaderExtraction =
+        /^\s*(const|let|var)?\s*(\{[^}]*\}|\w+)\s*=\s*(req\.headers(\.authorization|\[['"]authorization['"]\]|\.get\(['"]authorization['"]\)|;\s*$)|authHeader)/im.test(combinedEvidenceSnippet.trim()) ||
+        /^\s*(const|let|var)?\s*\w+\s*=\s*authHeader\.split/im.test(combinedEvidenceSnippet.trim()) ||
+        /req\.headers(\.authorization|\[['"]authorization['"]\])/i.test(combinedEvidenceSnippet);
+
+      if (isOnlyHeaderExtraction && !hasConcreteJwtOperation) {
+        return true;
+      }
+    }
+
     // 4. Suppression: Absence of context (Genuinely speculative findings)
     // Suppress findings where the vulnerability claim itself is based purely on missing context / absence of code,
     // rather than concrete affirmative insecure patterns visible in the evidence snippet.
@@ -227,7 +261,7 @@ export class FindingGuardrail {
       return finding;
     }
 
-    if (finding.vulnerabilityClass !== "AUTH_BYPASS" && finding.vulnerabilityClass !== "SSRF") {
+    if (finding.vulnerabilityClass !== "AUTH_BYPASS" && finding.vulnerabilityClass !== "SSRF" && finding.vulnerabilityClass !== "JWT_SECURITY") {
       return finding;
     }
 
@@ -375,6 +409,75 @@ export class FindingGuardrail {
               line: targetLineNumber,
               snippet: targetSnippet,
               explanation: "Outbound HTTP request executed with untrusted user-controlled URL/input (SSRF sink)"
+            });
+          }
+
+          return {
+            ...finding,
+            primaryLocation: {
+              file: finding.primaryLocation.file,
+              line: targetLineNumber
+            },
+            evidence: updatedEvidence
+          };
+        }
+      }
+    }
+
+    if (finding.vulnerabilityClass === "JWT_SECURITY") {
+      // Check if current location points to header reading, token extraction, or route declaration
+      const isHeaderExtractionOrRoute =
+        /req\.headers(\.authorization|\[['"]authorization['"]\]|\.get\(['"]authorization['"]\))/i.test(currentLineText) ||
+        /authHeader(\.split|\.replace|\.substring|\.slice|\s*=)/i.test(currentLineText) ||
+        /^\s*(const|let|var)\s+\w+\s*=\s*req\.headers/i.test(currentLineText) ||
+        /^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/i.test(currentLineText);
+
+      // Check if current line already has the jwt.decode or verification operation
+      const hasJwtOperationOnCurrentLine =
+        /\b(jwt\.decode|jwt\.verify|jwt\.sign)\b/i.test(currentLineText);
+
+      if (isHeaderExtractionOrRoute && !hasJwtOperationOnCurrentLine) {
+        // Look for jwt.decode or trust decision in the file (preferring lines after currentLineIdx)
+        let targetLineIdx = -1;
+
+        for (let i = currentLineIdx + 1; i < lines.length; i++) {
+          if (/\bjwt\.decode\s*\(/i.test(lines[i]) || /req\.(user|session)\s*=\s*(decoded|jwt\.decode|token|payload|user)/i.test(lines[i])) {
+            targetLineIdx = i;
+            break;
+          }
+        }
+
+        if (targetLineIdx === -1) {
+          for (let i = 0; i < lines.length; i++) {
+            if (/\bjwt\.decode\s*\(/i.test(lines[i]) || /req\.(user|session)\s*=\s*(decoded|jwt\.decode|token|payload|user)/i.test(lines[i])) {
+              targetLineIdx = i;
+              break;
+            }
+          }
+        }
+
+        if (targetLineIdx !== -1) {
+          const targetLineNumber = targetLineIdx + 1;
+          const targetSnippet = lines[targetLineIdx].trim();
+
+          const updatedEvidence = finding.evidence.map(e => {
+            if (e.file === finding.primaryLocation.file && (e.line === finding.primaryLocation.line || /req\.headers|authHeader|app\.|router\./i.test(e.snippet))) {
+              return {
+                file: finding.primaryLocation.file,
+                line: targetLineNumber,
+                snippet: targetSnippet,
+                explanation: "Unverified token decoded or trusted for authentication context (actual JWT vulnerability sink)"
+              };
+            }
+            return e;
+          });
+
+          if (!updatedEvidence.some(e => e.line === targetLineNumber)) {
+            updatedEvidence.unshift({
+              file: finding.primaryLocation.file,
+              line: targetLineNumber,
+              snippet: targetSnippet,
+              explanation: "Unverified token decoded or trusted for authentication context (actual JWT vulnerability sink)"
             });
           }
 

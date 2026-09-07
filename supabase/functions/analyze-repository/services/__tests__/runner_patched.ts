@@ -1,4 +1,11 @@
-import { assertEquals } from "https://deno.land/std@0.220.0/assert/mod.ts";
+
+import assert from "node:assert";
+const assertEquals = assert.deepStrictEqual;
+const tests = [];
+globalThis.Deno = {
+  test: (name, fn) => { tests.push({name, fn}); }
+};
+
 import { CheckpointRunner } from "../CheckpointRunner.ts";
 import type { ILLMProvider } from "../../orchestrator/providers/ILLMProvider.ts";
 import type { SanitizedContextPackage } from "../types.ts";
@@ -812,3 +819,19 @@ Deno.test("CheckpointRunner - Regression Test: Refine JWT_SECURITY location from
 
 
 
+
+;(async () => {
+  let passed = 0, failed = 0;
+  for (const t of tests) {
+    try {
+      await t.fn();
+      console.log('✅ ' + t.name);
+      passed++;
+    } catch (e) {
+      console.error('❌ ' + t.name);
+      console.error(e.message);
+      failed++;
+    }
+  }
+  console.log(`Results: ${passed} passed, ${failed} failed`);
+})();

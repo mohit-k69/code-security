@@ -149,7 +149,12 @@ export const SessionJwtSpec: ReviewSpecification = {
     "- JWT-specific issues such as missing expiration, weak signing configuration, or JWT validation problems MUST be mapped to the `JWT_SECURITY` vulnerability class.\n" +
     "- **CRITICAL**: Trusting `jwt.decode` without signature verification (SESSION-C2) is a JWT validation problem and MUST be mapped to `JWT_SECURITY`, not `AUTH_BYPASS`.\n\n" +
 
-    "### JWT Specifics\n\n" +
+    "### JWT Specifics & Strict Scope Rules (CRITICAL)\n\n" +
+    "- **Reading headers / extracting bearer tokens is NOT a JWT vulnerability**: Reading `req.headers.authorization`, extracting a bearer token string (e.g. `authHeader.split(' ')[1]`), or parsing an authorization header is standard HTTP handling and is NOT a JWT vulnerability by itself.\n" +
+    "- **Route naming / /admin is NOT a JWT vulnerability**: A route being named `/admin`, `/api/admin`, or similar is NOT proof of a JWT vulnerability. Do not flag route declarations (e.g., `app.get('/admin', ...)` or `router.get('/admin', ...)`) as JWT_SECURITY.\n" +
+    "- **Do not infer missing middleware**: Do NOT infer missing authentication, authorization, or session middleware from this JWT checkpoint. Authorization and route access control belong strictly to SEC-AUTHZ-001 or SEC-AUTH-001.\n" +
+    "- **Direct code evidence required**: `JWT_SECURITY` requires direct code evidence of an actual JWT security defect, such as decoding/trusting an unverified token, accepting the 'none' algorithm, or omitting token expiration.\n" +
+    "- **Location Anchoring (CRITICAL)**: When `jwt.decode()` is used and its claims are subsequently trusted without verification, you MUST anchor the finding (primaryLocation and evidence) to the `jwt.decode()` operation or the actual trust decision, NEVER to token extraction (`req.headers.authorization`) or route declaration (`/admin`).\n" +
     "- If a token is verified and immediately trusted for sensitive actions without additional authorization checks, or if it's a completely unauthenticated route minting tokens from query parameters (e.g., `jwt.sign({user: req.query.user})`), it MUST be flagged as AUTH_BYPASS.\n" +
     "- Do not evaluate authorization (e.g., whether the user has permission to perform an action) — that belongs to SEC-AUTHZ-001.\n",
 };

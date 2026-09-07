@@ -508,3 +508,94 @@ Deno.test("Guardrail: Preserve generic missing validation if unsafe concatenatio
   
   assertEquals(guarded.findings.length, 1);
 });
+
+Deno.test("Guardrail: Suppress JWT_SECURITY on req.headers.authorization reading by itself", () => {
+  const finding = createMockFinding(
+    "SESSION-C2",
+    "JWT_SECURITY",
+    "warning",
+    "Insecure Token Extraction",
+    "Reading req.headers.authorization without verification on extraction line.",
+    "const authHeader = req.headers.authorization;\nconst token = authHeader.split(' ')[1];",
+    "Token is extracted from header."
+  );
+  const result = createMockResult([finding]);
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test.js",
+      content: "const authHeader = req.headers.authorization;\nconst token = authHeader.split(' ')[1];\nconsole.log(token);"
+    }]
+  };
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+  
+  assertEquals(guarded.findings.length, 0);
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
+});
+
+Deno.test("Guardrail: Suppress JWT_SECURITY on /admin route declaration by itself", () => {
+  const finding = createMockFinding(
+    "SESSION-C2",
+    "JWT_SECURITY",
+    "critical",
+    "Unprotected Admin Route",
+    "Route /admin is declared without authentication middleware.",
+    "app.get('/admin', (req, res) => { res.send('admin'); });",
+    "The /admin endpoint is missing auth middleware."
+  );
+  const result = createMockResult([finding]);
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test.js",
+      content: "app.get('/admin', (req, res) => {\n  res.send('admin');\n});"
+    }]
+  };
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+  
+  assertEquals(guarded.findings.length, 0);
+  assertEquals(guarded.verdict, "NOT_VERIFIED");
+});
+
+Deno.test("Guardrail: Refine JWT_SECURITY location from header extraction to jwt.decode trust sink", () => {
+  const fileContent = [
+    "app.get('/profile', (req, res) => {",
+    "  const token = req.headers.authorization.split(' ')[1];", // line 2
+    "  const decoded = jwt.decode(token);",                     // line 3
+    "  req.user = decoded;",                                    // line 4
+    "  res.json(req.user);",
+    "});"
+  ].join("\n");
+
+  const finding: CheckpointFinding = {
+    findingId: "f-jwt-1",
+    criterionId: "SESSION-C2",
+    vulnerabilityClass: "JWT_SECURITY",
+    cwes: ["CWE-347"],
+    primaryLocation: { file: "test.js", line: 2 }, // incorrectly pointing to header extraction
+    title: "Unverified JWT Decoded",
+    severity: "critical",
+    description: "Token is decoded without signature verification.",
+    suggestion: "Use jwt.verify instead of jwt.decode.",
+    evidence: [{
+      file: "test.js",
+      line: 2,
+      snippet: "const token = req.headers.authorization.split(' ')[1];",
+      explanation: "Extracts authorization header"
+    }]
+  };
+
+  const result = createMockResult([finding]);
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test.js",
+      content: fileContent
+    }]
+  };
+
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+  
+  assertEquals(guarded.findings.length, 1);
+  assertEquals(guarded.findings[0].primaryLocation.line, 3); // Refined to line 3 (jwt.decode)
+  assertEquals(guarded.findings[0].evidence[0].line, 3);
+  assertEquals(guarded.findings[0].evidence[0].snippet, "const decoded = jwt.decode(token);");
+});
+
