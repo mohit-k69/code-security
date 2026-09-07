@@ -17,8 +17,11 @@ export class FindingGuardrail {
         continue;
       }
       
+      // Refine location for AUTH_BYPASS if incorrectly attached to data extraction/query line
+      const locationRefinedFinding = this.refineFindingLocation(finding, contextPackage);
+
       // Apply severity sanity checks/downgrades if necessary
-      const sanityCheckedFinding = this.applySeveritySanityCheck(finding);
+      const sanityCheckedFinding = this.applySeveritySanityCheck(locationRefinedFinding);
       filteredFindings.push(sanityCheckedFinding);
     }
 
@@ -161,7 +164,7 @@ export class FindingGuardrail {
       const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query|db\.\w+\.(find|update|delete|query))/i.test(cleanCodeContext);
       
       const hasExplicitBypass = /(bypass|admin|role)\s*===?|req\.body\.(admin|role)|req\.query\.bypass/i.test(cleanCodeContext);
-      const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify)\b/i.test(cleanCodeContext);
+      const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify|createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession)\b/i.test(cleanCodeContext);
       const hasExplicitAuthLogic = hasExplicitBypass || hasExplicitAuthCheck;
 
       if (!isRouteDefinition && (isClientControlledId || isDbOperation) && !hasExplicitAuthLogic) {
@@ -187,6 +190,100 @@ export class FindingGuardrail {
 
   private static applySeveritySanityCheck(finding: CheckpointFinding): CheckpointFinding {
     // Implement any future severity downgrades here if needed
+    return finding;
+  }
+
+  private static refineFindingLocation(
+    finding: CheckpointFinding,
+    contextPackage?: SanitizedContextPackage
+  ): CheckpointFinding {
+    if (finding.vulnerabilityClass !== "AUTH_BYPASS" || !contextPackage || !finding.primaryLocation?.file) {
+      return finding;
+    }
+
+    const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
+    if (!fileData || !fileData.content) {
+      return finding;
+    }
+
+    const lines = fileData.content.split("\n");
+    const currentLineIdx = finding.primaryLocation.line - 1;
+    const currentLineText = lines[currentLineIdx] || "";
+
+    // Check if the current location points to an input extraction or user query/data retrieval line
+    const isInputExtractionOrQuery =
+      /^\s*(const|let|var)?\s*(\{[^}]*\}|\w+)\s*=\s*(req\.(body|query|params)|await\s+(getUser|findUser|fetchUser|db\..*query|db\..*find|User\.find|User\.get|User\.getBy)).*;/i.test(currentLineText) ||
+      /^\s*(const|let|var)?\s*user\s*=\s*.*getUser/i.test(currentLineText) ||
+      /getUserByUsername\s*\(/i.test(currentLineText) ||
+      /^\s*(const|let|var)\s+\w+\s*=\s*req\.body/i.test(currentLineText);
+
+    // Check if the current line itself already has the token creation / session setting / auth decision
+    const hasAuthDecisionOnCurrentLine =
+      /(createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession|req\.session\.\w+\s*=|setAuthCookie|setSessionCookie|grantAccess)/i.test(currentLineText);
+
+    if (isInputExtractionOrQuery && !hasAuthDecisionOnCurrentLine) {
+      // Look for the auth decision / token creation line in the file (preferring lines after currentLineIdx)
+      let targetLineIdx = -1;
+
+      for (let i = currentLineIdx + 1; i < lines.length; i++) {
+        if (
+          /(createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession|req\.session\.\w+\s*=|setAuthCookie|setSessionCookie|grantAccess|res\.(json|send)\s*\(\s*\{.*token)/i.test(lines[i])
+        ) {
+          targetLineIdx = i;
+          break;
+        }
+      }
+
+      // If not found after, search whole file
+      if (targetLineIdx === -1) {
+        for (let i = 0; i < lines.length; i++) {
+          if (
+            /(createSessionToken|generateToken|createToken|issueToken|signToken|jwt\.sign|createSession|req\.session\.\w+\s*=|setAuthCookie|setSessionCookie|grantAccess|res\.(json|send)\s*\(\s*\{.*token)/i.test(lines[i])
+          ) {
+            targetLineIdx = i;
+            break;
+          }
+        }
+      }
+
+      if (targetLineIdx !== -1) {
+        const targetLineNumber = targetLineIdx + 1;
+        const targetSnippet = lines[targetLineIdx].trim();
+
+        // Update evidence to point to the decision line
+        const updatedEvidence = finding.evidence.map(e => {
+          if (e.file === finding.primaryLocation.file && (e.line === finding.primaryLocation.line || /getUserByUsername|req\.body/i.test(e.snippet))) {
+            return {
+              file: finding.primaryLocation.file,
+              line: targetLineNumber,
+              snippet: targetSnippet,
+              explanation: "Authentication decision / session token creation performed without credential verification"
+            };
+          }
+          return e;
+        });
+
+        // Ensure at least one evidence points to targetLineNumber
+        if (!updatedEvidence.some(e => e.line === targetLineNumber)) {
+          updatedEvidence.unshift({
+            file: finding.primaryLocation.file,
+            line: targetLineNumber,
+            snippet: targetSnippet,
+            explanation: "Authentication decision / session token creation performed without credential verification"
+          });
+        }
+
+        return {
+          ...finding,
+          primaryLocation: {
+            file: finding.primaryLocation.file,
+            line: targetLineNumber
+          },
+          evidence: updatedEvidence
+        };
+      }
+    }
+
     return finding;
   }
 }

@@ -448,3 +448,62 @@ Deno.test("CheckpointRunner - Regression Test: Clean code -> no finding", async 
   assertEquals(result.findings.length, 0, "Clean code should produce 0 findings");
 });
 
+Deno.test("CheckpointRunner - Regression Test: AUTH_BYPASS location points to token creation decision instead of getUserByUsername", async () => {
+  const authBypassContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "controllers/auth.js",
+        content: [
+          "const username = req.body.username;",
+          "const user = await getUserByUsername(username);",
+          "const token = createSessionToken(user.id);",
+          "res.json({ token });"
+        ].join("\n"),
+        deleted: false
+      }
+    ]
+  };
+
+  // Mock LLM mistakenly returning line 2 (getUserByUsername) instead of line 3 (createSessionToken)
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.95,
+    "summary": "User authentication bypassed: session token generated without password validation",
+    "findings": [
+      {
+        "criterionId": "AUTH-C4",
+        "vulnerabilityClass": "AUTH_BYPASS",
+        "primaryLocation": { "file": "controllers/auth.js", "line": 2 },
+        "title": "Authentication Bypass in Login Flow",
+        "severity": "critical",
+        "description": "Session token is issued after querying user by username without verifying password.",
+        "suggestion": "Verify user credentials before issuing session token.",
+        "evidence": [
+          {
+            "file": "controllers/auth.js",
+            "line": 2,
+            "snippet": "const user = await getUserByUsername(username);",
+            "explanation": "User looked up by username"
+          }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(authBypassContext, "framework", mockSpec);
+
+  // Must preserve AUTH_BYPASS detection (FAIL verdict)
+  assertEquals(result.verdict, "FAIL", "Legitimate AUTH_BYPASS must not be suppressed");
+  assertEquals(result.findings.length, 1, "Must have exactly 1 AUTH_BYPASS finding");
+  assertEquals(result.findings[0].vulnerabilityClass, "AUTH_BYPASS");
+  
+  // Must refine location to the actual token creation decision (line 3) instead of query line (line 2)
+  assertEquals(result.findings[0].primaryLocation.line, 3, "Finding location must point to createSessionToken line (line 3)");
+  assertEquals(result.findings[0].evidence[0].line, 3, "Primary evidence line must point to line 3");
+  assertEquals(result.findings[0].evidence[0].snippet, "const token = createSessionToken(user.id);");
+});
+
+
