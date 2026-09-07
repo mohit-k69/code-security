@@ -568,7 +568,7 @@ Deno.test("Guardrail: Refine JWT_SECURITY location from header extraction to jwt
   const finding: CheckpointFinding = {
     findingId: "f-jwt-1",
     criterionId: "SESSION-C2",
-    vulnerabilityClass: "JWT_SECURITY",
+    vulnerabilityClass: "JWT_SECURITY" as any,
     cwes: ["CWE-347"],
     primaryLocation: { file: "test.js", line: 2 }, // incorrectly pointing to header extraction
     title: "Unverified JWT Decoded",
@@ -596,6 +596,109 @@ Deno.test("Guardrail: Refine JWT_SECURITY location from header extraction to jwt
   assertEquals(guarded.findings.length, 1);
   assertEquals(guarded.findings[0].primaryLocation.line, 3); // Refined to line 3 (jwt.decode)
   assertEquals(guarded.findings[0].evidence[0].line, 3);
+  assertEquals(guarded.findings[0].evidence[0].snippet, "const decoded = jwt.decode(token);");
+});
+
+Deno.test("Guardrail: Regression - Multi-endpoint file preserves jwt.decode, suppresses /admin route and header extraction", () => {
+  // Controlled multi-endpoint file containing:
+  // 1. A real jwt.decode() vulnerability
+  // 2. An /admin route declaration
+  // 3. req.headers.authorization extraction
+  const fileContent = [
+    "// Endpoint 1: Vulnerable JWT decode endpoint",
+    "app.get('/profile', (req, res) => {",
+    "  const auth = req.headers.authorization;",
+    "  const token = auth.split(' ')[1];",
+    "  const decoded = jwt.decode(token);",
+    "  req.user = decoded;",
+    "  res.json(req.user);",
+    "});",
+    "",
+    "// Endpoint 2: Route declaration without JWT operations",
+    "app.get('/admin', (req, res) => {",
+    "  res.send('admin dashboard');",
+    "});",
+    "",
+    "// Endpoint 3: Benign authorization header extraction",
+    "app.get('/public', (req, res) => {",
+    "  const token = req.headers.authorization;",
+    "  res.send('ok');",
+    "});"
+  ].join("\n");
+
+  const mockContextPackage: any = {
+    changedFiles: [{
+      path: "test-vulnerabilities.js",
+      content: fileContent
+    }]
+  };
+
+  // 1. Finding on actual jwt.decode() vulnerability (line 5)
+  const realFinding: CheckpointFinding = {
+    findingId: "f-jwt-real",
+    criterionId: "SESSION-C2",
+    vulnerabilityClass: "JWT_SECURITY" as any,
+    cwes: ["CWE-347"],
+    primaryLocation: { file: "test-vulnerabilities.js", line: 5 },
+    title: "Unverified JWT Decoded",
+    severity: "critical",
+    description: "Token is decoded without signature verification.",
+    suggestion: "Use jwt.verify instead.",
+    evidence: [{
+      file: "test-vulnerabilities.js",
+      line: 5,
+      snippet: "const decoded = jwt.decode(token);",
+      explanation: "Unverified token decoded"
+    }]
+  };
+
+  // 2. Spurious finding on /admin route declaration (line 11)
+  const routeFinding: CheckpointFinding = {
+    findingId: "f-jwt-admin",
+    criterionId: "SESSION-C2",
+    vulnerabilityClass: "JWT_SECURITY" as any,
+    cwes: ["CWE-347"],
+    primaryLocation: { file: "test-vulnerabilities.js", line: 11 },
+    title: "Missing JWT Authentication on /admin",
+    severity: "warning",
+    description: "The /admin route lacks JWT authentication.",
+    suggestion: "Add JWT middleware.",
+    evidence: [{
+      file: "test-vulnerabilities.js",
+      line: 11,
+      snippet: 'app.get("/admin", (req, res) => {',
+      explanation: "Admin route without verification"
+    }]
+  };
+
+  // 3. Spurious finding on req.headers.authorization extraction (line 17)
+  const headerFinding: CheckpointFinding = {
+    findingId: "f-jwt-header",
+    criterionId: "SESSION-C2",
+    vulnerabilityClass: "JWT_SECURITY" as any,
+    cwes: ["CWE-347"],
+    primaryLocation: { file: "test-vulnerabilities.js", line: 17 },
+    title: "Insecure JWT Extraction",
+    severity: "warning",
+    description: "Authorization header read without validation.",
+    suggestion: "Validate token.",
+    evidence: [{
+      file: "test-vulnerabilities.js",
+      line: 17,
+      snippet: "const token = req.headers.authorization;",
+      explanation: "Authorization header read"
+    }]
+  };
+
+  // Run all three findings through the guardrail simultaneously
+  const result = createMockResult([realFinding, routeFinding, headerFinding]);
+  const guarded = FindingGuardrail.applyGuardrails(result, mockContextPackage);
+
+  // Exactly one finding must remain: jwt.decode()
+  // /admin route declaration and authorization header extraction must be suppressed
+  assertEquals(guarded.findings.length, 1);
+  assertEquals(guarded.findings[0].findingId, "f-jwt-real");
+  assertEquals(guarded.findings[0].primaryLocation.line, 5);
   assertEquals(guarded.findings[0].evidence[0].snippet, "const decoded = jwt.decode(token);");
 });
 

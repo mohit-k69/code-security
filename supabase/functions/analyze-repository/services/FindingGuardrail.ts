@@ -79,22 +79,32 @@ export class FindingGuardrail {
 
     // 3.5. Suppression: Spurious JWT_SECURITY on route declaration or benign header/token extraction
     if (finding.vulnerabilityClass === "JWT_SECURITY") {
-      let codeContext = combinedEvidenceSnippet;
+      let localContext = combinedEvidenceSnippet;
+      let currentLineText = "";
+
       if (contextPackage && finding.primaryLocation?.file) {
         const fileData = contextPackage.changedFiles.find(f => f.path === finding.primaryLocation.file);
-        if (fileData && fileData.content) {
-          codeContext = fileData.content;
+        if (fileData && fileData.content && typeof finding.primaryLocation.line === "number") {
+          const lines = fileData.content.split("\n");
+          const lineIdx = finding.primaryLocation.line - 1;
+          currentLineText = lines[lineIdx] || "";
+          const { startIdx, endIdx } = this.getLocalContextRange(lines, lineIdx);
+          localContext = lines.slice(startIdx, endIdx + 1).join("\n");
         }
       }
 
       const hasConcreteJwtOperation =
-        /\bjwt\.(decode|verify|sign)\s*\(/i.test(codeContext) ||
-        /\balgorithm\s*:\s*['"]none['"]/i.test(codeContext);
+        /\bjwt\.(decode|verify|sign)\s*\(/i.test(combinedEvidenceSnippet) ||
+        /\bjwt\.(decode|verify|sign)\s*\(/i.test(localContext) ||
+        /\balgorithm\s*:\s*['"]none['"]/i.test(combinedEvidenceSnippet) ||
+        /\balgorithm\s*:\s*['"]none['"]/i.test(localContext);
 
       // Case A: Route declaration flagged as JWT_SECURITY without JWT operations
       const isRouteDeclaration =
         /^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/im.test(combinedEvidenceSnippet) ||
-        /['"]\/(admin|api\/admin|dashboard)['"]/i.test(combinedEvidenceSnippet);
+        /^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/im.test(currentLineText) ||
+        /['"]\/(admin|api\/admin|dashboard)['"]/i.test(combinedEvidenceSnippet) ||
+        /['"]\/(admin|api\/admin|dashboard)['"]/i.test(currentLineText);
 
       if (isRouteDeclaration && !hasConcreteJwtOperation) {
         return true;
@@ -104,7 +114,9 @@ export class FindingGuardrail {
       const isOnlyHeaderExtraction =
         /^\s*(const|let|var)?\s*(\{[^}]*\}|\w+)\s*=\s*(req\.headers(\.authorization|\[['"]authorization['"]\]|\.get\(['"]authorization['"]\)|;\s*$)|authHeader)/im.test(combinedEvidenceSnippet.trim()) ||
         /^\s*(const|let|var)?\s*\w+\s*=\s*authHeader\.split/im.test(combinedEvidenceSnippet.trim()) ||
-        /req\.headers(\.authorization|\[['"]authorization['"]\])/i.test(combinedEvidenceSnippet);
+        /req\.headers(\.authorization|\[['"]authorization['"]\])/i.test(combinedEvidenceSnippet) ||
+        /req\.headers(\.authorization|\[['"]authorization['"]\])/i.test(currentLineText) ||
+        /authHeader\s*=\s*req\.headers/i.test(currentLineText);
 
       if (isOnlyHeaderExtraction && !hasConcreteJwtOperation) {
         return true;
@@ -437,10 +449,11 @@ export class FindingGuardrail {
         /\b(jwt\.decode|jwt\.verify|jwt\.sign)\b/i.test(currentLineText);
 
       if (isHeaderExtractionOrRoute && !hasJwtOperationOnCurrentLine) {
-        // Look for jwt.decode or trust decision in the file (preferring lines after currentLineIdx)
+        // Look for jwt.decode or trust decision within local context (preferring lines after currentLineIdx)
+        const { startIdx, endIdx } = this.getLocalContextRange(lines, currentLineIdx);
         let targetLineIdx = -1;
 
-        for (let i = currentLineIdx + 1; i < lines.length; i++) {
+        for (let i = currentLineIdx + 1; i <= endIdx; i++) {
           if (/\bjwt\.decode\s*\(/i.test(lines[i]) || /req\.(user|session)\s*=\s*(decoded|jwt\.decode|token|payload|user)/i.test(lines[i])) {
             targetLineIdx = i;
             break;
@@ -448,7 +461,7 @@ export class FindingGuardrail {
         }
 
         if (targetLineIdx === -1) {
-          for (let i = 0; i < lines.length; i++) {
+          for (let i = startIdx; i < currentLineIdx; i++) {
             if (/\bjwt\.decode\s*\(/i.test(lines[i]) || /req\.(user|session)\s*=\s*(decoded|jwt\.decode|token|payload|user)/i.test(lines[i])) {
               targetLineIdx = i;
               break;
@@ -494,5 +507,61 @@ export class FindingGuardrail {
     }
 
     return finding;
+  }
+
+  /**
+   * Scopes code context to the immediate enclosing route handler, function, or local block
+   * around lineIdx, preventing leaks across endpoints in multi-endpoint files.
+   */
+  private static getLocalContextRange(lines: string[], lineIdx: number): { startIdx: number; endIdx: number } {
+    if (lineIdx < 0 || lineIdx >= lines.length) {
+      return { startIdx: 0, endIdx: 0 };
+    }
+
+    const currentLine = lines[lineIdx] || "";
+    const isRouteDecl = /^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/i.test(currentLine);
+
+    let startIdx = lineIdx;
+    if (!isRouteDecl) {
+      // Scan upward to find the start of the current route or function
+      for (let i = lineIdx - 1; i >= 0 && i >= lineIdx - 30; i--) {
+        const line = lines[i];
+        if (/^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/i.test(line)) {
+          startIdx = i;
+          break;
+        }
+        if (/^\s*(async\s+)?function\s*\w*\s*\(/i.test(line) || /^\s*(const|let|var)\s+\w+\s*=\s*(async\s*)?\([^)]*\)\s*=>/i.test(line)) {
+          startIdx = i;
+          break;
+        }
+        if (/^\s*\}\s*\)\s*;?\s*$/i.test(line) || /^\}\s*;?\s*$/i.test(line)) {
+          // Closed previous block/function
+          startIdx = i + 1;
+          break;
+        }
+        startIdx = i;
+      }
+    }
+
+    let endIdx = lineIdx;
+    // Scan downward to find the end of the current route or function
+    for (let i = lineIdx + 1; i < lines.length && i <= lineIdx + 30; i++) {
+      const line = lines[i];
+      if (/^\s*(app|router)\.(get|post|put|delete|patch|all|use)\s*\(/i.test(line)) {
+        // Next route starts
+        break;
+      }
+      if (/^\s*(async\s+)?function\s+\w+\s*\(/i.test(line)) {
+        // Next function starts
+        break;
+      }
+      endIdx = i;
+      if (/^\s*\}\s*\)\s*;?\s*$/i.test(line) || /^\}\s*;?\s*$/i.test(line)) {
+        // Closing of the current route handler or function
+        break;
+      }
+    }
+
+    return { startIdx, endIdx };
   }
 }

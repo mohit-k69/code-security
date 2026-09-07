@@ -808,6 +808,114 @@ Deno.test("CheckpointRunner - Regression Test: Refine JWT_SECURITY location from
   assertEquals(result.findings[0].evidence[0].snippet, "const decoded = jwt.decode(token);");
 });
 
+Deno.test("CheckpointRunner - Regression Test: Multi-endpoint file preserves jwt.decode finding and suppresses /admin and header extraction findings", async () => {
+  const fileContent = [
+    "// Endpoint 1: Vulnerable JWT decode endpoint",
+    "app.get('/profile', (req, res) => {",
+    "  const auth = req.headers.authorization;",
+    "  const token = auth.split(' ')[1];",
+    "  const decoded = jwt.decode(token);", // line 5
+    "  req.user = decoded;",
+    "  res.json(req.user);",
+    "});",
+    "",
+    "// Endpoint 2: Route declaration without JWT operations",
+    "app.get('/admin', (req, res) => {", // line 11
+    "  res.send('admin dashboard');",
+    "});",
+    "",
+    "// Endpoint 3: Benign authorization header extraction",
+    "app.get('/public', (req, res) => {",
+    "  const token = req.headers.authorization;", // line 17
+    "  res.send('ok');",
+    "});"
+  ].join("\n");
+
+  const context = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "test-vulnerabilities.js",
+        content: fileContent,
+        deleted: false
+      }
+    ]
+  };
+
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.95,
+    "summary": "Multiple JWT security issues identified in endpoints.",
+    "findings": [
+      {
+        "criterionId": "SESSION-C2",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "cwes": ["CWE-347"],
+        "primaryLocation": { "file": "test-vulnerabilities.js", "line": 5 },
+        "title": "Unverified JWT Decoded",
+        "severity": "critical",
+        "description": "Token is decoded without signature verification.",
+        "suggestion": "Use jwt.verify instead.",
+        "evidence": [
+          {
+            "file": "test-vulnerabilities.js",
+            "line": 5,
+            "snippet": "const decoded = jwt.decode(token);",
+            "explanation": "Decodes token without signature verification"
+          }
+        ]
+      },
+      {
+        "criterionId": "SESSION-C2",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "cwes": ["CWE-347"],
+        "primaryLocation": { "file": "test-vulnerabilities.js", "line": 11 },
+        "title": "Missing JWT Authentication on /admin",
+        "severity": "warning",
+        "description": "The /admin route lacks JWT verification middleware.",
+        "suggestion": "Add JWT verification middleware.",
+        "evidence": [
+          {
+            "file": "test-vulnerabilities.js",
+            "line": 11,
+            "snippet": "app.get('/admin', (req, res) => {",
+            "explanation": "Admin route without verification"
+          }
+        ]
+      },
+      {
+        "criterionId": "SESSION-C2",
+        "vulnerabilityClass": "JWT_SECURITY",
+        "cwes": ["CWE-347"],
+        "primaryLocation": { "file": "test-vulnerabilities.js", "line": 17 },
+        "title": "Insecure JWT Extraction",
+        "severity": "warning",
+        "description": "Authorization header read without token verification.",
+        "suggestion": "Verify token signature.",
+        "evidence": [
+          {
+            "file": "test-vulnerabilities.js",
+            "line": 17,
+            "snippet": "const token = req.headers.authorization;",
+            "explanation": "Extracts header without verification"
+          }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(context, "framework", mockSpec);
+
+  // Exactly 1 finding preserved: line 5 (jwt.decode)
+  // Line 11 (/admin) and line 17 (header extraction) must be suppressed
+  assertEquals(result.verdict, "FAIL");
+  assertEquals(result.findings.length, 1, "Exactly one JWT_SECURITY finding must remain");
+  assertEquals(result.findings[0].primaryLocation.line, 5, "Finding must be on jwt.decode line");
+  assertEquals(result.findings[0].evidence[0].snippet, "const decoded = jwt.decode(token);");
+});
+
 
 
 
