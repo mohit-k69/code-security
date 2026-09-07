@@ -31,6 +31,11 @@ export class SanitizationValidator {
     if (original.dependencies.length !== sanitized.dependencies.length) {
       throw new Error("Validation Failed: Dependencies count does not match.");
     }
+    const origFullLen = (original.fullRepositoryFiles || []).length;
+    const sanFullLen = (sanitized.fullRepositoryFiles || []).length;
+    if (origFullLen !== sanFullLen) {
+      throw new Error("Validation Failed: Full repository files count does not match.");
+    }
 
     // 3. Verify Line Counts (Preserve formatting/lines rule)
     for (let i = 0; i < original.changedFiles.length; i++) {
@@ -55,6 +60,19 @@ export class SanitizationValidator {
       }
     }
 
+    const origFull = original.fullRepositoryFiles || [];
+    const sanFull = sanitized.fullRepositoryFiles || [];
+    for (let i = 0; i < origFull.length; i++) {
+      const origFile = origFull[i];
+      const sanFile = sanFull[i];
+
+      if (origFile.content && sanFile.content) {
+        if (origFile.content.split('\n').length !== sanFile.content.split('\n').length) {
+          throw new Error(`Validation Failed: Line count changed for full repo file ${origFile.path}`);
+        }
+      }
+    }
+
     // 4. Verify no detected secrets remain
     // We achieve this by running the scanner against the fully sanitized output package.
     // We need to cast it back to ContextPackage shape for the scanner.
@@ -63,6 +81,7 @@ export class SanitizationValidator {
       prNumber: sanitized.prNumber,
       commitSha: sanitized.commitSha,
       changedFiles: sanitized.changedFiles,
+      fullRepositoryFiles: sanitized.fullRepositoryFiles,
       dependencies: sanitized.dependencies,
       missingDependencies: original.missingDependencies, // Irrelevant for scanning, but keeps typing happy
       metadata: original.metadata

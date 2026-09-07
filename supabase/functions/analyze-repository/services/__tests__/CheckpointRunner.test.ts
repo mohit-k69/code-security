@@ -27,7 +27,7 @@ const mockContext: any = {
   repository: "owner/repo",
   prNumber: 1,
   commitSha: "s",
-  changedFiles: [],
+  fullRepositoryFiles: [], changedFiles: [],
   dependencies: [],
   metadata: { totalSecretsReplaced: 0, replacementTypes: {}, ignoredReplacements: 0, processingTimeMs: 0 }
 };
@@ -139,7 +139,7 @@ Deno.test("CheckpointRunner - Regression Test: tc_028 distinct secrets on differ
 Deno.test("CheckpointRunner - Regression Test: tc_012 visible route definition with requireAuth -> not suppressed", async () => {
   const tc012Context = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "snippet.js",
         content: "app.post('/updateProfile', requireAuth, async (req, res) => {\\n  const targetUserId = req.body.userId;\\n  await db.users.update({ id: targetUserId, email: req.body.email });\\n  res.send('Updated');\\n});",
@@ -180,7 +180,7 @@ Deno.test("CheckpointRunner - Regression Test: tc_012 visible route definition w
 Deno.test("CheckpointRunner - Regression Test: visible /api/profile endpoint without auth check -> not suppressed", async () => {
   const profileContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "routes.js",
         content: "app.post('/api/profile', async (req, res) => {\\n  const userId = req.body.userId;\\n  await db.users.update({ id: userId, email: req.body.email });\\n  res.send('Updated');\\n});",
@@ -221,7 +221,7 @@ Deno.test("CheckpointRunner - Regression Test: visible /api/profile endpoint wit
 Deno.test("CheckpointRunner - Regression Test: partial function body IDOR -> suppressed to NOT_VERIFIED", async () => {
   const partialContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "snippet.js",
         content: "async function updateUser(req, res) {\\n  const targetUserId = req.body.userId;\\n  await db.users.update({ id: targetUserId, email: req.body.email });\\n  res.send('Updated');\\n}",
@@ -289,7 +289,7 @@ Deno.test("CheckpointRunner - Regression Test: genuinely unseen security propert
 Deno.test("CheckpointRunner - Regression Test: partial file-upload delegation (tc_024) -> NOT_VERIFIED with 0 findings", async () => {
   const partialContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "snippet.js",
         content: "export const upload = async (req, res) => { return fileProcessor.handleUpload(req.file); };",
@@ -342,7 +342,7 @@ Deno.test("CheckpointRunner - Regression Test: vulnerable JWT -> FAIL", async ()
 Deno.test("CheckpointRunner - Regression Test: Hardcoded API key -> SECRET_EXPOSURE", async () => {
   const apiKeyContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "config.js",
         content: "const stripeApiKey = 'sk_live_99887766554433221100';",
@@ -383,7 +383,7 @@ Deno.test("CheckpointRunner - Regression Test: Hardcoded API key -> SECRET_EXPOS
 Deno.test("CheckpointRunner - Regression Test: API returning password_hash/ssn -> should NOT be SECRET_EXPOSURE", async () => {
   const piiContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "routes/user.js",
         content: "app.get('/api/user/:id', async (req, res) => { const user = await db.query('SELECT ssn, password_hash, email FROM users WHERE id = $1', [req.params.id]); res.json(user); });",
@@ -424,7 +424,7 @@ Deno.test("CheckpointRunner - Regression Test: API returning password_hash/ssn -
 Deno.test("CheckpointRunner - Regression Test: Clean code -> no finding", async () => {
   const cleanContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "math.js",
         content: "export function add(a, b) { return a + b; }",
@@ -451,7 +451,7 @@ Deno.test("CheckpointRunner - Regression Test: Clean code -> no finding", async 
 Deno.test("CheckpointRunner - Regression Test: AUTH_BYPASS location points to token creation decision instead of getUserByUsername", async () => {
   const authBypassContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "controllers/auth.js",
         content: [
@@ -509,7 +509,7 @@ Deno.test("CheckpointRunner - Regression Test: AUTH_BYPASS location points to to
 Deno.test("CheckpointRunner - Regression Test: SSRF location points to outbound request sink instead of req.query extraction", async () => {
   const ssrfContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "controllers/proxy.js",
         content: [
@@ -566,7 +566,7 @@ Deno.test("CheckpointRunner - Regression Test: SSRF location points to outbound 
 Deno.test("CheckpointRunner - Regression Test: CORS configuration with model disclaimer is preserved", async () => {
   const corsContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "server.js",
         content: [
@@ -616,7 +616,7 @@ Deno.test("CheckpointRunner - Regression Test: CORS configuration with model dis
 Deno.test("CheckpointRunner - Regression Test: Genuinely speculative finding based on missing context is suppressed", async () => {
   const normalContext = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "routes/data.js",
         content: "app.get('/api/data', (req, res) => res.json({ status: 'ok' }));",
@@ -663,7 +663,7 @@ Deno.test("CheckpointRunner - Regression Test: Genuinely speculative finding bas
 Deno.test("CheckpointRunner - Regression Test: Suppress JWT_SECURITY on req.headers.authorization reading by itself", async () => {
   const context = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "middleware/auth.js",
         content: "const authHeader = req.headers.authorization;\nconst token = authHeader?.split(' ')[1];\nconsole.log(token);",
@@ -708,7 +708,7 @@ Deno.test("CheckpointRunner - Regression Test: Suppress JWT_SECURITY on req.head
 Deno.test("CheckpointRunner - Regression Test: Suppress JWT_SECURITY on /admin route declaration by itself", async () => {
   const context = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "routes/admin.js",
         content: "app.get('/admin', (req, res) => {\n  res.send('admin');\n});",
@@ -762,7 +762,7 @@ Deno.test("CheckpointRunner - Regression Test: Refine JWT_SECURITY location from
 
   const context = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "routes/profile.js",
         content: fileContent,
@@ -833,7 +833,7 @@ Deno.test("CheckpointRunner - Regression Test: Multi-endpoint file preserves jwt
 
   const context = {
     ...mockContext,
-    changedFiles: [
+    fullRepositoryFiles: [], changedFiles: [
       {
         path: "test-vulnerabilities.js",
         content: fileContent,

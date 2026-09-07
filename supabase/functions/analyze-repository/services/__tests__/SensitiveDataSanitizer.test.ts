@@ -10,6 +10,7 @@ const createMockContext = (content: string): ContextPackage => ({
   prNumber: 1,
   commitSha: "s",
   changedFiles: [{ path: "test.ts", content, deleted: false }],
+  fullRepositoryFiles: [],
   dependencies: [],
   missingDependencies: [],
   metadata: { totalFiles: 1, totalChars: content.length, truncated: false },

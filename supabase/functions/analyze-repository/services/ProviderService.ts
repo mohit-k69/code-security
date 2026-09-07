@@ -53,4 +53,9 @@ export interface ProviderService {
    * Fetch the raw content of a specific file at a given commit/ref.
    */
   getFileContent(owner: string, repo: string, path: string, ref: string): Promise<string>;
+
+  /**
+   * Fetch all supported repository files at a given commit/ref.
+   */
+  getRepositoryFiles(owner: string, repo: string, commitSha: string, isSupportedFile: (path: string) => boolean): Promise<{ path: string; content: string }[]>;
 }

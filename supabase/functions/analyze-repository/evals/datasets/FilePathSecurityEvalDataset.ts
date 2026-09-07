@@ -12,7 +12,7 @@ export const FilePathSecurityEvalDataset: EvalDataset = {
       description: "Direct path concatenation allowing directory traversal",
       tags: ["path-traversal", "concatenation", "fs"],
       criteriaTargeted: ["FILE-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/download.ts",
           content: `
@@ -47,7 +47,7 @@ export function downloadFile(req, res) {
       description: "Unsafe absolute path injection",
       tags: ["path-traversal", "absolute-path", "fs"],
       criteriaTargeted: ["FILE-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/logs.ts",
           content: `
@@ -79,7 +79,7 @@ export function getLogs(req, res) {
       description: "Secure path construction using path.basename",
       tags: ["secure", "path-traversal", "basename"],
       criteriaTargeted: ["FILE-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/download.ts",
           content: `
@@ -108,7 +108,7 @@ export function downloadFile(req, res) {
       description: "Secure path validation resolving canonical paths",
       tags: ["secure", "path-traversal", "realpath"],
       criteriaTargeted: ["FILE-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/download.ts",
           content: `
@@ -141,7 +141,7 @@ export function downloadFile(req, res) {
       description: "Trusting client-provided MIME type without validation",
       tags: ["upload", "mime-type", "bypass"],
       criteriaTargeted: ["FILE-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/upload.ts",
           content: `
@@ -174,7 +174,7 @@ export async function handleUpload(req, res) {
       description: "Failing to validate file extensions (Executable Upload)",
       tags: ["upload", "extension", "executable"],
       criteriaTargeted: ["FILE-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/upload.ts",
           content: `
@@ -204,7 +204,7 @@ export async function handleUpload(req, res) {
       description: "Secure upload validation with strict extension allowlist",
       tags: ["secure", "upload", "extension", "allowlist"],
       criteriaTargeted: ["FILE-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/upload.ts",
           content: `
@@ -241,7 +241,7 @@ export async function handleUpload(req, res) {
       description: "IDOR on file download",
       tags: ["download", "idor", "authorization"],
       criteriaTargeted: ["FILE-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/invoices.ts",
           content: `
@@ -271,7 +271,7 @@ export async function downloadInvoice(req, res) {
       description: "Secure file download with ownership verification",
       tags: ["secure", "download", "authorization"],
       criteriaTargeted: ["FILE-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/invoices.ts",
           content: `
@@ -300,7 +300,7 @@ export async function downloadInvoice(req, res) {
       description: "Unintended File Overwrite (Trusting User Filename)",
       tags: ["storage", "overwrite", "filename"],
       criteriaTargeted: ["FILE-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/avatar.ts",
           content: `
@@ -336,7 +336,7 @@ export async function uploadAvatar(req, res) {
       description: "Insecure file permissions on sensitive generated files",
       tags: ["storage", "permissions", "chmod"],
       criteriaTargeted: ["FILE-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/export.ts",
           content: `
@@ -368,7 +368,7 @@ export async function generateTaxReport(data) {
       description: "Secure filename randomization to prevent overwrites",
       tags: ["secure", "storage", "randomization", "overwrite-prevention"],
       criteriaTargeted: ["FILE-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/avatar.ts",
           content: `
@@ -403,7 +403,7 @@ export async function uploadAvatar(req, res) {
       description: "Zip Slip vulnerability during extraction",
       tags: ["archive", "zip-slip", "traversal"],
       criteriaTargeted: ["FILE-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/unzip.ts",
           content: `
@@ -443,7 +443,7 @@ export async function extractArchive(zipPath, targetDir) {
       description: "Secure archive extraction preventing Zip Slip",
       tags: ["secure", "archive", "zip-slip"],
       criteriaTargeted: ["FILE-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/unzip.ts",
           content: `
@@ -487,7 +487,7 @@ export async function extractArchive(zipPath, targetDir) {
       description: "Blindly reading via symlink to arbitrary files",
       tags: ["symlink", "fs", "abuse"],
       criteriaTargeted: ["FILE-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/backup.ts",
           content: `
@@ -515,7 +515,7 @@ export function readBackupItem(itemPath) {
       description: "Safely resolving real paths before operations",
       tags: ["secure", "symlink", "realpath"],
       criteriaTargeted: ["FILE-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/backup.ts",
           content: `
@@ -548,7 +548,7 @@ export function readBackupItem(itemPath, allowedDir) {
       description: "Static server-controlled paths (False Positive test)",
       tags: ["secure", "static-path", "false-positive-check"],
       criteriaTargeted: ["FILE-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/loader.ts",
           content: `
@@ -573,7 +573,7 @@ export function loadConfig() {
       description: "Upload handled purely via AWS S3 abstraction",
       tags: ["missing-context", "cloud-storage", "s3"],
       criteriaTargeted: ["FILE-C1", "FILE-C2", "FILE-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/upload.ts",
           content: `

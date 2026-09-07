@@ -90,4 +90,37 @@ export class GithubService implements ProviderService {
     });
     return await res.text();
   }
+
+  async getRepositoryFiles(owner: string, repo: string, commitSha: string, isSupportedFile: (path: string) => boolean): Promise<{ path: string; content: string }[]> {
+    try {
+      const res = await this.fetchGithubApi(`/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`);
+      const data = await res.json();
+      
+      const files = data.tree.filter((t: any) => t.type === 'blob' && isSupportedFile(t.path));
+      
+      const results: { path: string; content: string }[] = [];
+      
+      // Fetch in small chunks to avoid overwhelming the API
+      for (let i = 0; i < files.length; i += 10) {
+        const chunk = files.slice(i, i + 10);
+        const chunkResults = await Promise.all(chunk.map(async (file: any) => {
+          try {
+            const content = await this.getFileContent(owner, repo, file.path, commitSha);
+            return { path: file.path, content };
+          } catch (e) {
+            return null;
+          }
+        }));
+        
+        for (const r of chunkResults) {
+          if (r) results.push(r);
+        }
+      }
+      
+      return results;
+    } catch (e) {
+      console.error('Failed to fetch full repository files', e);
+      return [];
+    }
+  }
 }

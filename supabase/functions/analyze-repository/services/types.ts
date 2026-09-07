@@ -23,6 +23,7 @@ export interface ContextPackage {
   prNumber: number;
   commitSha: string;
   changedFiles: ContextFile[];
+  fullRepositoryFiles: ContextFile[];
   dependencies: DependencyFile[];
   missingDependencies: string[];
   metadata: {
@@ -47,6 +48,7 @@ export interface SanitizedContextPackage {
   prNumber: number;
   commitSha: string;
   changedFiles: ContextFile[];
+  fullRepositoryFiles: ContextFile[];
   dependencies: DependencyFile[];
   metadata: SanitizationMetadata;
 }

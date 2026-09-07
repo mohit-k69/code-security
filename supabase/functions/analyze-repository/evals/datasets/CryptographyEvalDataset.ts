@@ -12,7 +12,7 @@ export const CryptographyEvalDataset: EvalDataset = {
       description: "Using deprecated DES algorithm for encryption",
       tags: ["encryption", "algorithm", "deprecated", "des"],
       criteriaTargeted: ["CRYPTO-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -42,7 +42,7 @@ export function encryptData(text, key) {
       description: "Using RC4 stream cipher",
       tags: ["encryption", "algorithm", "rc4"],
       criteriaTargeted: ["CRYPTO-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/stream.ts",
           content: `
@@ -69,7 +69,7 @@ export function encryptStream(key) {
       description: "Using modern AES-256 for encryption",
       tags: ["secure", "encryption", "aes256"],
       criteriaTargeted: ["CRYPTO-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -97,7 +97,7 @@ export function encryptData(text, key, iv) {
       description: "Hashing passwords with fast general-purpose hash (SHA-256)",
       tags: ["password", "hashing", "sha256"],
       criteriaTargeted: ["CRYPTO-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/register.ts",
           content: `
@@ -125,7 +125,7 @@ export async function register(user, password) {
       description: "Hashing passwords with deprecated MD5",
       tags: ["password", "hashing", "md5", "deprecated"],
       criteriaTargeted: ["CRYPTO-C2", "CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/register.ts",
           content: `
@@ -153,7 +153,7 @@ export async function register(user, password) {
       description: "Secure password hashing with bcrypt",
       tags: ["secure", "password", "hashing", "bcrypt"],
       criteriaTargeted: ["CRYPTO-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/register.ts",
           content: `
@@ -180,7 +180,7 @@ export async function register(user, password) {
       description: "Hardcoded encryption key in source code",
       tags: ["key-management", "hardcoded", "secrets"],
       criteriaTargeted: ["CRYPTO-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -211,7 +211,7 @@ export function encrypt(text) {
       description: "Reusing the same Initialization Vector (IV)",
       tags: ["key-management", "iv", "reuse"],
       criteriaTargeted: ["CRYPTO-C3", "CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -243,7 +243,7 @@ export function encrypt(text, key) {
       description: "Secure key generation and unique IVs",
       tags: ["secure", "key-management", "iv", "csprng"],
       criteriaTargeted: ["CRYPTO-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -269,7 +269,7 @@ export function encrypt(text) {
       description: "Key rotation implementation (Enhancement)",
       tags: ["secure", "key-management", "rotation"],
       criteriaTargeted: ["CRYPTO-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -303,7 +303,7 @@ export async function decryptData(encryptedPayload) {
       description: "Using Math.random() for API tokens",
       tags: ["prng", "math-random", "tokens"],
       criteriaTargeted: ["CRYPTO-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/tokens.ts",
           content: `
@@ -328,7 +328,7 @@ export function generateApiToken() {
       description: "Using timestamp for password reset token",
       tags: ["prng", "predictable", "reset-token"],
       criteriaTargeted: ["CRYPTO-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/reset.ts",
           content: `
@@ -355,7 +355,7 @@ export function createResetToken(userId) {
       description: "Using crypto.randomBytes for password reset",
       tags: ["secure", "csprng", "reset-token"],
       criteriaTargeted: ["CRYPTO-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/reset.ts",
           content: `
@@ -382,7 +382,7 @@ export function createResetToken(userId) {
       description: "Encryption without integrity (AES-CBC)",
       tags: ["integrity", "aes-cbc", "padding-oracle"],
       criteriaTargeted: ["CRYPTO-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -413,7 +413,7 @@ export function decryptData(encryptedHex, key, iv) {
       description: "Timing attack vulnerability in HMAC comparison",
       tags: ["integrity", "hmac", "timing-attack"],
       criteriaTargeted: ["CRYPTO-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/webhooks/verify.ts",
           content: `
@@ -441,7 +441,7 @@ export function verifyWebhook(payload, signature, secret) {
       description: "Authenticated encryption using AES-GCM",
       tags: ["secure", "integrity", "aes-gcm", "aead"],
       criteriaTargeted: ["CRYPTO-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -472,7 +472,7 @@ export function decryptData(encryptedHex, key, iv, authTagHex) {
       description: "Disabling TLS certificate validation",
       tags: ["insecure-practice", "tls", "reject-unauthorized"],
       criteriaTargeted: ["CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/api.ts",
           content: `
@@ -503,7 +503,7 @@ export function fetchSensitiveData() {
       description: "Using insecure ECB cipher mode",
       tags: ["insecure-practice", "ecb-mode", "encryption"],
       criteriaTargeted: ["CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -533,7 +533,7 @@ export function encryptFast(text, key) {
       description: "mTLS configuration correctly enforcing client certs (Enhancement)",
       tags: ["secure", "mtls", "tls"],
       criteriaTargeted: ["CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/server.ts",
           content: `
@@ -560,7 +560,7 @@ https.createServer(options, app).listen(443);
       description: "TLS termination handled by external load balancer",
       tags: ["missing-context", "tls", "load-balancer"],
       criteriaTargeted: ["CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/server.ts",
           content: `
@@ -583,7 +583,7 @@ http.createServer(app).listen(8080);
       description: "Perfect cryptographic implementation",
       tags: ["comprehensive", "secure"],
       criteriaTargeted: ["CRYPTO-C1", "CRYPTO-C3", "CRYPTO-C4", "CRYPTO-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/crypto.ts",
           content: `
@@ -610,7 +610,7 @@ export function encryptPayload(data, keyBuffer) {
       description: "Password hashing using MD5 (tc_014 style)",
       tags: ["password", "md5"],
       criteriaTargeted: ["CRYPTO-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -636,7 +636,7 @@ function storePassword(pass) {
       description: "MD5 used for ETag (tc_020 style)",
       tags: ["etag", "md5", "false-positive-check"],
       criteriaTargeted: ["CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/cache.ts",
           content: `
@@ -655,7 +655,7 @@ function generateETag(content) {
       description: "Generic security-sensitive MD5 use",
       tags: ["signature", "md5"],
       criteriaTargeted: ["CRYPTO-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/signature.ts",
           content: `
@@ -680,7 +680,7 @@ function signPayload(content, secret) {
       description: "PR modifies generic text utilities",
       tags: ["unrelated", "utils"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/text.ts",
           content: `

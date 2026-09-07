@@ -12,7 +12,7 @@ export const SecurityConfigurationEvalDataset: EvalDataset = {
       description: "Disabling essential security headers in Helmet",
       tags: ["headers", "helmet", "insecure-config"],
       criteriaTargeted: ["CONFIG-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -44,7 +44,7 @@ app.use(helmet({
       description: "Insecure Content Security Policy (unsafe-inline / unsafe-eval)",
       tags: ["headers", "csp", "xss"],
       criteriaTargeted: ["CONFIG-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -73,7 +73,7 @@ app.use((req, res, next) => {
       description: "Securely configuring Helmet middleware",
       tags: ["secure", "headers", "helmet"],
       criteriaTargeted: ["CONFIG-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -95,7 +95,7 @@ app.use(helmet());
       description: "Headers managed by reverse proxy",
       tags: ["headers", "missing-context", "reverse-proxy"],
       criteriaTargeted: ["CONFIG-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -119,7 +119,7 @@ app.get('/api/data', (req, res) => res.json({ ok: true }));
       description: "Wildcard CORS on API routes",
       tags: ["cors", "wildcard"],
       criteriaTargeted: ["CONFIG-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -146,7 +146,7 @@ app.use(cors({ origin: '*' }));
       description: "Wildcard CORS with Credentials enabled",
       tags: ["cors", "wildcard", "credentials", "critical"],
       criteriaTargeted: ["CONFIG-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/cors.ts",
           content: `
@@ -173,7 +173,7 @@ export function corsMiddleware(req, res, next) {
       description: "Insecure Regex for CORS origin matching",
       tags: ["cors", "regex", "bypass"],
       criteriaTargeted: ["CONFIG-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -204,7 +204,7 @@ app.use(cors(corsOptions));
       description: "Strict CORS allowlist configuration",
       tags: ["secure", "cors", "allowlist"],
       criteriaTargeted: ["CONFIG-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -238,7 +238,7 @@ app.use(cors(corsOptions));
       description: "Forcing insecure redirects",
       tags: ["https", "redirect", "insecure-config"],
       criteriaTargeted: ["CONFIG-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -263,7 +263,7 @@ export function loginRedirect(req, res) {
       description: "Enforcing HTTPS via middleware",
       tags: ["secure", "https", "middleware"],
       criteriaTargeted: ["CONFIG-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/tls.ts",
           content: `
@@ -284,7 +284,7 @@ export function requireHttps(req, res, next) {
       description: "HTTPS enforcement handled by AWS ALB (missing context)",
       tags: ["https", "missing-context", "alb"],
       criteriaTargeted: ["CONFIG-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -307,7 +307,7 @@ app.listen(8080);
       description: "Returning stack traces to clients in production",
       tags: ["debug", "stack-trace", "exposure"],
       criteriaTargeted: ["CONFIG-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -333,7 +333,7 @@ app.use((err, req, res, next) => {
       description: "Exposing debug/diagnostic endpoints",
       tags: ["debug", "endpoints", "exposure"],
       criteriaTargeted: ["CONFIG-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/api.ts",
           content: `
@@ -358,7 +358,7 @@ router.get('/api/debug/env', (req, res) => {
       description: "Safe production error handling",
       tags: ["secure", "error-handling", "production"],
       criteriaTargeted: ["CONFIG-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -386,7 +386,7 @@ app.use((err, req, res, next) => {
       description: "Explicitly disabling CSRF protection",
       tags: ["framework", "csrf", "disabled"],
       criteriaTargeted: ["CONFIG-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/security.ts",
           content: `
@@ -413,7 +413,7 @@ export const { csrfSynchronisedProtection } = csrfSync({
       description: "Extremely large request body limits",
       tags: ["framework", "body-parser", "dos"],
       criteriaTargeted: ["CONFIG-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -439,7 +439,7 @@ app.use(express.json({ limit: '5000mb' }));
       description: "Appropriate request size limits configured",
       tags: ["secure", "framework", "body-parser"],
       criteriaTargeted: ["CONFIG-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -464,7 +464,7 @@ app.use(express.urlencoded({ extended: true, limit: '100kb' }));
       description: "Binding server to all interfaces (0.0.0.0) unnecessarily",
       tags: ["defaults", "network", "binding"],
       criteriaTargeted: ["CONFIG-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/admin.ts",
           content: `
@@ -490,7 +490,7 @@ adminApp.listen(9090, '0.0.0.0', () => console.log('Admin running'));
       description: "Insecure feature flag default (Enhancement)",
       tags: ["defaults", "feature-flags", "insecure-config"],
       criteriaTargeted: ["CONFIG-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/features.ts",
           content: `
@@ -518,7 +518,7 @@ export const features = {
       description: "Secure feature flag defaults (Enhancement)",
       tags: ["secure", "defaults", "feature-flags"],
       criteriaTargeted: ["CONFIG-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/features.ts",
           content: `
@@ -542,7 +542,7 @@ export const features = {
       description: "Perfectly configured Express app",
       tags: ["comprehensive", "secure"],
       criteriaTargeted: ["CONFIG-C1", "CONFIG-C2", "CONFIG-C4", "CONFIG-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -570,7 +570,7 @@ app.use((err, req, res, next) => {
       description: "Documentation updates only",
       tags: ["unrelated", "docs"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "docs/deployment.md",
           content: `

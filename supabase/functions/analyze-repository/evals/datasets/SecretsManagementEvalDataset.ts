@@ -9,7 +9,7 @@ export const SecretsManagementEvalDataset: EvalDataset = {
       description: "AWS EXAMPLE credentials (tc_010 style)",
       tags: ["synthetic", "aws", "secrets"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/s3.ts",
           content: `
@@ -29,7 +29,7 @@ AWS.config.update({
       description: "Explicit FAKE/TEST credentials (tc_017 style)",
       tags: ["synthetic", "mock", "secrets"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "tests/mock_data.test.js",
           content: `
@@ -46,7 +46,7 @@ const MOCK_AWS_SECRET = 'FAKE-TEST-SECRET-STRING-FOR-MOCKS-DO-NOT-USE-999';
       description: "Realistic hardcoded credential without synthetic markers",
       tags: ["hardcoded", "aws", "secrets"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/s3.ts",
           content: `
@@ -76,7 +76,7 @@ AWS.config.update({
       description: "Hardcoded JWT secret in source code",
       tags: ["hardcoded", "jwt", "secrets"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -104,7 +104,7 @@ export function createToken(userId) {
       description: "Hardcoded AWS Access Key",
       tags: ["hardcoded", "aws", "secrets"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/s3.ts",
           content: `
@@ -133,7 +133,7 @@ export const uploadFile = async (file) => { /* ... */ };
       description: "Accidentally committed .env file",
       tags: ["hardcoded", "env", "secrets", "committed-file"],
       criteriaTargeted: ["SECRET-C1", "SECRET-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".env",
           content: `
@@ -167,7 +167,7 @@ import express from 'express';
       description: "Accidentally committed GCP service account JSON",
       tags: ["hardcoded", "gcp", "service-account", "committed-file"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "config/service-account.json",
           content: `
@@ -196,7 +196,7 @@ import express from 'express';
       description: "Using environment variables securely",
       tags: ["secure", "env", "secrets"],
       criteriaTargeted: ["SECRET-C1", "SECRET-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -217,7 +217,7 @@ export function createToken(userId) {
       description: "Safe configuration file without secrets",
       tags: ["secure", "config", "no-secrets"],
       criteriaTargeted: ["SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "config.json",
           content: `
@@ -243,7 +243,7 @@ export function createToken(userId) {
       description: "Plaintext database credentials in config struct",
       tags: ["storage", "plaintext", "database"],
       criteriaTargeted: ["SECRET-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/database.ts",
           content: `
@@ -270,7 +270,7 @@ export const dbConfig = {
       description: "Custom weak encryption for secrets with hardcoded key",
       tags: ["storage", "weak-encryption", "custom-crypto"],
       criteriaTargeted: ["SECRET-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/secrets.ts",
           content: `
@@ -303,7 +303,7 @@ export function getDbPassword() {
       description: "Storing API key in localStorage (Client-side code)",
       tags: ["storage", "client-side", "localstorage"],
       criteriaTargeted: ["SECRET-C2", "SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/PaymentForm.tsx",
           content: `
@@ -330,7 +330,7 @@ export function setupPayment() {
       description: "Fetching secrets securely from AWS Secrets Manager",
       tags: ["secure", "secrets-manager", "aws"],
       criteriaTargeted: ["SECRET-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/secrets.ts",
           content: `
@@ -355,7 +355,7 @@ export async function getDatabaseCredentials() {
       description: "Using dotenv securely (file not committed)",
       tags: ["secure", "dotenv", "env"],
       criteriaTargeted: ["SECRET-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/server.ts",
           content: `
@@ -388,7 +388,7 @@ dist/
       description: "Logging full request headers (including Authorization)",
       tags: ["exposure", "logs", "headers"],
       criteriaTargeted: ["SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/logger.ts",
           content: `
@@ -414,7 +414,7 @@ export function requestLogger(req, res, next) {
       description: "Logging connection URI containing password",
       tags: ["exposure", "logs", "database"],
       criteriaTargeted: ["SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/db.ts",
           content: `
@@ -443,7 +443,7 @@ export async function connectToDatabase(uri: string) {
       description: "Exposing stack traces and env vars in error responses",
       tags: ["exposure", "errors", "stack-trace"],
       criteriaTargeted: ["SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/errorHandler.ts",
           content: `
@@ -472,7 +472,7 @@ export function errorHandler(err, req, res, next) {
       description: "Returning full user object including password hash in API response",
       tags: ["exposure", "api-response", "password-hash"],
       criteriaTargeted: ["SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/users.ts",
           content: `
@@ -499,7 +499,7 @@ export async function getUserProfile(req, res) {
       description: "Client-side code containing backend secret",
       tags: ["exposure", "client-side", "react"],
       criteriaTargeted: ["SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/Checkout.tsx",
           content: `
@@ -528,7 +528,7 @@ export function Checkout() {
       description: "Secure logging with redaction",
       tags: ["secure", "logging", "redaction"],
       criteriaTargeted: ["SECRET-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/logger.ts",
           content: `
@@ -556,7 +556,7 @@ export function requestLogger(req, res, next) {
       description: "JWT tokens without expiration",
       tags: ["lifecycle", "jwt", "no-expiry"],
       criteriaTargeted: ["SECRET-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/tokens.ts",
           content: `
@@ -583,7 +583,7 @@ export function generateAccessToken(user) {
       description: "Hardcoding long-lived AWS IAM User keys instead of assuming roles",
       tags: ["lifecycle", "aws", "long-lived"],
       criteriaTargeted: ["SECRET-C4", "SECRET-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/aws.ts",
           content: `
@@ -614,7 +614,7 @@ const client = new S3Client({
       description: "Refresh token stored without revocation capability",
       tags: ["lifecycle", "refresh-token", "revocation"],
       criteriaTargeted: ["SECRET-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/refresh.ts",
           content: `
@@ -648,7 +648,7 @@ export function handleRefresh(req, res) {
       description: "Assuming temporary AWS STS role",
       tags: ["secure", "lifecycle", "sts", "temporary-credentials"],
       criteriaTargeted: ["SECRET-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/aws.ts",
           content: `
@@ -675,7 +675,7 @@ export async function getTemporaryCredentials() {
       description: "JWT access token with short expiry",
       tags: ["secure", "lifecycle", "jwt"],
       criteriaTargeted: ["SECRET-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/tokens.ts",
           content: `
@@ -696,7 +696,7 @@ export function generateAccessToken(user) {
       description: "Token rotation handled by external IdP",
       tags: ["lifecycle", "missing-context", "idp"],
       criteriaTargeted: ["SECRET-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -724,7 +724,7 @@ export async function login(req, res) {
       description: "Connecting to database as 'root' or 'postgres' superuser",
       tags: ["least-privilege", "database", "superuser"],
       criteriaTargeted: ["SECRET-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/db.ts",
           content: `
@@ -758,7 +758,7 @@ export function connectDb() {
       description: "Requesting overly broad OAuth scopes",
       tags: ["least-privilege", "oauth", "scopes"],
       criteriaTargeted: ["SECRET-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/github.ts",
           content: `
@@ -784,7 +784,7 @@ export function getGithubLoginUrl() {
       description: "Database connection uses restricted application user",
       tags: ["secure", "least-privilege", "database"],
       criteriaTargeted: ["SECRET-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/db.ts",
           content: `
@@ -812,7 +812,7 @@ export function connectDb() {
       description: "IAM Role permissions defined outside of codebase",
       tags: ["least-privilege", "missing-context", "iam"],
       criteriaTargeted: ["SECRET-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/s3.ts",
           content: `
@@ -835,7 +835,7 @@ const client = new S3Client({ region: "us-west-2" });
       description: "Writing API token to a temporary file on disk",
       tags: ["secure-usage", "disk-persistence", "tmp"],
       criteriaTargeted: ["SECRET-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/external.ts",
           content: `
@@ -868,7 +868,7 @@ export function runLegacyJob(token) {
       description: "Caching raw database passwords in Redis",
       tags: ["secure-usage", "caching"],
       criteriaTargeted: ["SECRET-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/config/loader.ts",
           content: `
@@ -900,7 +900,7 @@ export async function getDbConfig() {
       description: "Passing secrets via environment to child process",
       tags: ["secure", "secure-usage", "child-process"],
       criteriaTargeted: ["SECRET-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/external.ts",
           content: `
@@ -923,7 +923,7 @@ export function runLegacyJob(token) {
       description: "In-memory caching implementation not visible",
       tags: ["secure-usage", "missing-context", "cache"],
       criteriaTargeted: ["SECRET-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/vault.ts",
           content: `
@@ -949,7 +949,7 @@ export async function fetchSecret() {
       description: "Perfectly secured external API integration",
       tags: ["comprehensive", "secure"],
       criteriaTargeted: ["SECRET-C1", "SECRET-C2", "SECRET-C3", "SECRET-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/stripe.ts",
           content: `
@@ -982,7 +982,7 @@ export async function createCustomer(email) {
       description: "PR only modifies CSS",
       tags: ["unrelated", "css"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/styles.css",
           content: `

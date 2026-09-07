@@ -58,6 +58,7 @@ export class ContextManager {
       const changedFiles: ContextFile[] = [];
       const dependencies: DependencyFile[] = [];
       const missingDependencies: string[] = [];
+      let fullRepositoryFiles: ContextFile[] = [];
       
       const visitedFiles = new Set<string>();
       const dependencyQueue: string[] = [];
@@ -134,6 +135,14 @@ export class ContextManager {
         }
       }
 
+      // Fetch full repository files for deterministic security scanning
+      try {
+        const repoFiles = await this.provider.getRepositoryFiles(owner, repo, commitSha, this.isSupportedFile.bind(this));
+        fullRepositoryFiles = repoFiles.map(rf => ({ path: rf.path, content: rf.content, deleted: false }));
+      } catch (err) {
+        console.error('Failed to fetch full repository files', err);
+      }
+
       if (changedFiles.length === 0) {
         return { stage: 'context_manager', message: 'No supported source files were available for security analysis.', fatal: false };
       }
@@ -143,6 +152,7 @@ export class ContextManager {
         prNumber,
         commitSha,
         changedFiles,
+        fullRepositoryFiles,
         dependencies,
         missingDependencies,
         metadata: {
@@ -158,7 +168,7 @@ export class ContextManager {
     }
   }
 
-  private isSupportedFile(filename: string): boolean {
+  public isSupportedFile(filename: string): boolean {
     const lastDot = filename.lastIndexOf('.');
     if (lastDot === -1) return false;
 

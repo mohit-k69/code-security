@@ -116,6 +116,14 @@ export class SensitiveDataSanitizer {
       };
     });
 
+    const sanitizedFullRepositoryFiles = (originalPackage.fullRepositoryFiles || []).map(file => {
+      if (file.deleted || !file.content) return { ...file };
+      return {
+        ...file,
+        content: sanitizeFileContent(file.path, file.content)
+      };
+    });
+
     const endTime = performance.now();
 
     return {
@@ -123,6 +131,7 @@ export class SensitiveDataSanitizer {
       prNumber: originalPackage.prNumber,
       commitSha: originalPackage.commitSha,
       changedFiles: sanitizedChangedFiles,
+      fullRepositoryFiles: sanitizedFullRepositoryFiles,
       dependencies: sanitizedDependencies,
       metadata: {
         totalSecretsReplaced,

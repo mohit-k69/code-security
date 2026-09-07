@@ -28,7 +28,7 @@ function makeSanitizedPackage(files: string[]): SanitizedContextPackage {
     repository: "acme-corp/web-app",
     prNumber: 42,
     commitSha: "abc123",
-    changedFiles: files.map((f) => ({
+    fullRepositoryFiles: [], changedFiles: files.map((f) => ({
       path: f,
       content: "// mock content",
       deleted: false,
@@ -340,7 +340,7 @@ console.log("\n── Test 11: Secret inside a normally named source file in Git
     repository: "owner/repo",
     prNumber: 123,
     commitSha: "sha123",
-    changedFiles: [{
+    fullRepositoryFiles: [], changedFiles: [{
       path: "test-vulnerabilities.js",
       content: 'const API_KEY = "<REDACTED_API_KEY>";',
       deleted: false,

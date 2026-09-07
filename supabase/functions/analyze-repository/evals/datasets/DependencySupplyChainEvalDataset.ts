@@ -12,7 +12,7 @@ export const DependencySupplyChainEvalDataset: EvalDataset = {
       description: "Explicit downgrade to a vulnerable version with a comment",
       tags: ["dependency", "vulnerable", "downgrade", "evidence"],
       criteriaTargeted: ["SUPPLY-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -38,7 +38,7 @@ export const DependencySupplyChainEvalDataset: EvalDataset = {
       description: "Vulnerability reported in included audit output",
       tags: ["dependency", "vulnerable", "audit-report"],
       criteriaTargeted: ["SUPPLY-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -79,7 +79,7 @@ export const DependencySupplyChainEvalDataset: EvalDataset = {
       description: "Secure dependency upgrade resolving known issues",
       tags: ["secure", "dependency", "upgrade"],
       criteriaTargeted: ["SUPPLY-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -99,7 +99,7 @@ export const DependencySupplyChainEvalDataset: EvalDataset = {
       description: "Known CVE package without explicit evidence in context",
       tags: ["missing-context", "dependency", "no-evidence"],
       criteriaTargeted: ["SUPPLY-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -123,7 +123,7 @@ export const DependencySupplyChainEvalDataset: EvalDataset = {
       description: "Explicitly ignoring package-lock.json",
       tags: ["integrity", "lockfile", "ignored"],
       criteriaTargeted: ["SUPPLY-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".gitignore",
           content: `
@@ -148,7 +148,7 @@ yarn.lock
       description: "Disabling strict SSL during dependency fetch",
       tags: ["integrity", "ssl", "disabled"],
       criteriaTargeted: ["SUPPLY-C2", "SUPPLY-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".npmrc",
           content: `
@@ -172,7 +172,7 @@ registry=http://registry.npmjs.org/
       description: "Enforcing immutable dependencies in CI",
       tags: ["secure", "integrity", "ci", "immutable"],
       criteriaTargeted: ["SUPPLY-C2", "SUPPLY-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".github/workflows/build.yml",
           content: `
@@ -196,7 +196,7 @@ steps:
       description: "Pulling a dependency from an untrusted Git URL",
       tags: ["trust", "git-url", "untrusted"],
       criteriaTargeted: ["SUPPLY-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -223,7 +223,7 @@ steps:
       description: "Using an HTTP-only unofficial mirror",
       tags: ["trust", "mirror", "http"],
       criteriaTargeted: ["SUPPLY-C3", "SUPPLY-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "build.gradle",
           content: `
@@ -251,7 +251,7 @@ dependencies {
       description: "Using official trusted registries",
       tags: ["secure", "trust", "registry"],
       criteriaTargeted: ["SUPPLY-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "pom.xml",
           content: `
@@ -276,7 +276,7 @@ dependencies {
       description: "Executing remote script without verification (curl | bash)",
       tags: ["ci-cd", "curl-bash", "remote-execution"],
       criteriaTargeted: ["SUPPLY-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "Dockerfile",
           content: `
@@ -300,7 +300,7 @@ RUN curl -sL https://install.meteor.com/ | sh
       description: "Unpinned GitHub Action using @main",
       tags: ["ci-cd", "github-actions", "unpinned"],
       criteriaTargeted: ["SUPPLY-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".github/workflows/deploy.yml",
           content: `
@@ -327,7 +327,7 @@ steps:
       description: "Pinned GitHub Actions to commit SHA",
       tags: ["secure", "ci-cd", "github-actions", "pinned"],
       criteriaTargeted: ["SUPPLY-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".github/workflows/deploy.yml",
           content: `
@@ -348,7 +348,7 @@ steps:
       description: "Verified artifact download with checksums",
       tags: ["secure", "ci-cd", "artifact-verification"],
       criteriaTargeted: ["SUPPLY-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "install.sh",
           content: `
@@ -377,7 +377,7 @@ fi
       description: "Development tools included in production dependencies",
       tags: ["exposure", "dependencies", "dev-tools"],
       criteriaTargeted: ["SUPPLY-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -408,7 +408,7 @@ fi
       description: "Bundling source maps and dev tools in Docker production image",
       tags: ["exposure", "docker", "production"],
       criteriaTargeted: ["SUPPLY-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "Dockerfile",
           content: `
@@ -436,7 +436,7 @@ CMD ["node", "dist/app.js"]
       description: "Clean separation of dev dependencies",
       tags: ["secure", "exposure", "dependencies"],
       criteriaTargeted: ["SUPPLY-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `
@@ -465,7 +465,7 @@ CMD ["node", "dist/app.js"]
       description: "Disabling automated dependency updates",
       tags: ["management", "dependabot", "disabled"],
       criteriaTargeted: ["SUPPLY-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".github/dependabot.yml",
           content: `
@@ -494,7 +494,7 @@ updates:
       description: "Dependabot configuration present",
       tags: ["secure", "management", "dependabot"],
       criteriaTargeted: ["SUPPLY-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".github/dependabot.yml",
           content: `
@@ -516,7 +516,7 @@ updates:
       description: "SBOM generation configured in CI",
       tags: ["secure", "management", "sbom"],
       criteriaTargeted: ["SUPPLY-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: ".github/workflows/sbom.yml",
           content: `
@@ -543,7 +543,7 @@ steps:
       description: "PR modifies application logic, no supply chain files present",
       tags: ["missing-context", "app-logic"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/math.ts",
           content: `
@@ -561,7 +561,7 @@ export function add(a: number, b: number) {
       description: "Perfectly secured pipeline and manifest",
       tags: ["comprehensive", "secure"],
       criteriaTargeted: ["SUPPLY-C2", "SUPPLY-C3", "SUPPLY-C4", "SUPPLY-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "package.json",
           content: `{"dependencies": {"express": "4.18.2"}, "devDependencies": {"jest": "29.5.0"}}`

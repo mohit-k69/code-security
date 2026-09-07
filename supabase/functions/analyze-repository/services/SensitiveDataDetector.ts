@@ -81,18 +81,32 @@ export class SensitiveDataDetector implements SecretScanner {
       });
     };
 
+    const scannedPaths = new Set<string>();
+
     // 1. Scan Changed Files
     for (const file of contextPackage.changedFiles) {
       // Edge Case: Deleted files (without content) -> Ignore
-      if (!file.deleted && file.content) {
+      if (!file.deleted && file.content && !scannedPaths.has(file.path)) {
         scanContent(file.path, file.content);
+        scannedPaths.add(file.path);
       }
     }
 
     // 2. Scan Dependencies
     for (const file of contextPackage.dependencies) {
-      if (file.content) {
+      if (file.content && !scannedPaths.has(file.path)) {
         scanContent(file.path, file.content);
+        scannedPaths.add(file.path);
+      }
+    }
+
+    // 3. Scan Full Repository Files
+    if (contextPackage.fullRepositoryFiles) {
+      for (const file of contextPackage.fullRepositoryFiles) {
+        if (!file.deleted && file.content && !scannedPaths.has(file.path)) {
+          scanContent(file.path, file.content);
+          scannedPaths.add(file.path);
+        }
       }
     }
 

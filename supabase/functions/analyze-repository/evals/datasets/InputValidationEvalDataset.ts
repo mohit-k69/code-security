@@ -12,7 +12,7 @@ export const InputValidationEvalDataset: EvalDataset = {
       description: "Missing length limits on string input",
       tags: ["input-validation", "length-limits", "dos"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/comments.ts",
           content: `
@@ -42,7 +42,7 @@ export async function createComment(req, res) {
       description: "Weak regex validation for email",
       tags: ["input-validation", "regex", "weak-validation"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/validators.ts",
           content: `
@@ -68,7 +68,7 @@ export function isValidEmail(email: string) {
       description: "Numeric input not checked for bounds",
       tags: ["input-validation", "numeric", "bounds"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/cart.ts",
           content: `
@@ -98,7 +98,7 @@ export async function updateQuantity(req, res) {
       description: "Unvalidated enum/allowed values",
       tags: ["input-validation", "enum", "allowed-values"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/settings.ts",
           content: `
@@ -127,7 +127,7 @@ export async function updateTheme(req, res) {
       description: "Robust input validation using validator library",
       tags: ["input-validation", "secure", "validator"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/profile.ts",
           content: `
@@ -158,7 +158,7 @@ export async function updateProfile(req, res) {
       description: "Validation handled by external middleware",
       tags: ["input-validation", "middleware", "missing-context"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/api.ts",
           content: `
@@ -182,7 +182,7 @@ router.post('/profile', validateProfileUpdate, updateProfile);
       description: "Unsanitized input rendered in HTML template",
       tags: ["input-sanitization", "xss", "template"],
       criteriaTargeted: ["INPUT-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/search.ts",
           content: `
@@ -214,7 +214,7 @@ export function renderSearchResults(query: string, results: any[]) {
       description: "Storing raw rich text without sanitization",
       tags: ["input-sanitization", "rich-text"],
       criteriaTargeted: ["INPUT-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/posts.ts",
           content: `
@@ -241,7 +241,7 @@ export async function createPost(req, res) {
       description: "Command injection due to unsanitized input",
       tags: ["input-sanitization", "command-injection"],
       criteriaTargeted: ["INPUT-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/network.ts",
           content: `
@@ -270,7 +270,7 @@ export function pingHost(host: string, cb: (out: string) => void) {
       description: "Path traversal via unsanitized filename",
       tags: ["input-sanitization", "path-traversal"],
       criteriaTargeted: ["INPUT-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/files.ts",
           content: `
@@ -300,7 +300,7 @@ export function downloadFile(req, res) {
       description: "Sanitizing HTML input with DOMPurify",
       tags: ["input-sanitization", "secure", "dompurify"],
       criteriaTargeted: ["INPUT-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/posts.ts",
           content: `
@@ -324,7 +324,7 @@ export async function createPost(req, res) {
       description: "Path traversal prevention using basename",
       tags: ["input-sanitization", "secure", "path-traversal"],
       criteriaTargeted: ["INPUT-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/files.ts",
           content: `
@@ -352,7 +352,7 @@ export function downloadFile(req, res) {
       description: "Client-side validation only (React form)",
       tags: ["server-side-validation", "client-only"],
       criteriaTargeted: ["INPUT-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/SignupForm.tsx",
           content: `
@@ -397,7 +397,7 @@ export async function signupHandler(req, res) {
       description: "HTML5 validation without backend enforcement",
       tags: ["server-side-validation", "html5-only"],
       criteriaTargeted: ["INPUT-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/form.html",
           content: `
@@ -433,7 +433,7 @@ export function submitHandler(req, res) {
       description: "Validation bypassed via API direct access",
       tags: ["server-side-validation", "api-bypass"],
       criteriaTargeted: ["INPUT-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/update.ts",
           content: `
@@ -460,7 +460,7 @@ export function updateItem(req, res) {
       description: "Server-side validation matching client rules",
       tags: ["server-side-validation", "secure"],
       criteriaTargeted: ["INPUT-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/signup.ts",
           content: `
@@ -490,7 +490,7 @@ export async function signupHandler(req, res) {
       description: "Type confusion crash (array passed instead of string)",
       tags: ["dangerous-input", "type-confusion", "crash"],
       criteriaTargeted: ["INPUT-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/search.ts",
           content: `
@@ -517,7 +517,7 @@ export function searchHandler(req, res) {
       description: "Null pointer dereference risk",
       tags: ["dangerous-input", "null-pointer"],
       criteriaTargeted: ["INPUT-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/profile.ts",
           content: `
@@ -546,7 +546,7 @@ export function updateProfile(req, res) {
       description: "Missing payload size limits (JSON parsing)",
       tags: ["dangerous-input", "payload-size", "dos"],
       criteriaTargeted: ["INPUT-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -573,7 +573,7 @@ app.use(express.json({ limit: '50mb' }));
       description: "Safely handling unexpected types",
       tags: ["dangerous-input", "secure", "type-checking"],
       criteriaTargeted: ["INPUT-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/search.ts",
           content: `
@@ -606,7 +606,7 @@ export function searchHandler(req, res) {
       description: "Unrestricted file upload (no limits or filters)",
       tags: ["file-upload", "unrestricted", "rce"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/upload.ts",
           content: `
@@ -634,7 +634,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
       description: "Trusting client-provided MIME type",
       tags: ["file-upload", "mime-spoofing"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/upload.ts",
           content: `
@@ -668,7 +668,7 @@ const upload = multer({
       description: "Missing file size limits",
       tags: ["file-upload", "size-limit", "dos"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/upload.ts",
           content: `
@@ -696,7 +696,7 @@ const upload = multer({
       description: "Using original filename directly",
       tags: ["file-upload", "path-traversal"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/upload.ts",
           content: `
@@ -727,7 +727,7 @@ export function handleUpload(req, res) {
       description: "Robust file upload configuration",
       tags: ["file-upload", "secure", "multer"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/upload.ts",
           content: `
@@ -757,7 +757,7 @@ const upload = multer({
       description: "Validating file content via magic bytes",
       tags: ["file-upload", "secure", "magic-bytes"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/utils/file.ts",
           content: `
@@ -783,7 +783,7 @@ export async function processUpload(filePath) {
       description: "No file upload logic in context",
       tags: ["file-upload", "not-applicable"],
       criteriaTargeted: ["INPUT-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/ping.ts",
           content: `
@@ -805,7 +805,7 @@ export function ping(req, res) {
       description: "Manual extraction instead of schema validation",
       tags: ["schema-validation", "manual-extraction"],
       criteriaTargeted: ["INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/api.ts",
           content: `
@@ -839,7 +839,7 @@ export async function createItem(req, res) {
       description: "Schema validation that allows unknown fields",
       tags: ["schema-validation", "unknown-fields"],
       criteriaTargeted: ["INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/api.ts",
           content: `
@@ -874,7 +874,7 @@ export async function updateUser(req, res) {
       description: "Schema validation errors not handled properly",
       tags: ["schema-validation", "error-handling"],
       criteriaTargeted: ["INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/api.ts",
           content: `
@@ -906,7 +906,7 @@ export async function createItem(req, res) {
       description: "Robust schema validation with Zod",
       tags: ["schema-validation", "secure", "zod"],
       criteriaTargeted: ["INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/api.ts",
           content: `
@@ -937,7 +937,7 @@ export async function createUser(req, res) {
       description: "Validation pipe in NestJS",
       tags: ["schema-validation", "secure", "nestjs"],
       criteriaTargeted: ["INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/users.ts",
           content: `
@@ -962,7 +962,7 @@ export class UsersController {
       description: "Schema validation enforced by API Gateway",
       tags: ["schema-validation", "missing-context", "api-gateway"],
       criteriaTargeted: ["INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/handlers/lambda.ts",
           content: `
@@ -987,7 +987,7 @@ export async function handler(event) {
       description: "Perfectly validated endpoint (all criteria met)",
       tags: ["comprehensive", "secure"],
       criteriaTargeted: ["INPUT-C1", "INPUT-C2", "INPUT-C3", "INPUT-C4", "INPUT-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/api/profile.ts",
           content: `
@@ -1019,7 +1019,7 @@ export async function updateProfile(req, res) {
       description: "PR only modifies documentation files",
       tags: ["unrelated", "docs-only"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "README.md",
           content: `
@@ -1036,7 +1036,7 @@ This module handles validation.
       description: "tc_025 style opaque paymentGateway.charge wrapper",
       tags: ["delegated", "hidden-implementation"],
       criteriaTargeted: ["INPUT-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/services/payment.ts",
           content: `

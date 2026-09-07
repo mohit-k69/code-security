@@ -12,7 +12,7 @@ export const AuthenticationEvalDataset: EvalDataset = {
       description: "Detects plaintext password storage during registration",
       tags: ["plaintext", "password-storage"],
       criteriaTargeted: ["AUTH-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -39,7 +39,7 @@ export async function register(req, res) {
       description: "Detects plaintext password comparison during login",
       tags: ["plaintext", "password-storage", "login"],
       criteriaTargeted: ["AUTH-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -69,7 +69,7 @@ export async function login(req, res) {
       description: "Detects MD5 hashing for passwords",
       tags: ["md5", "password-storage"],
       criteriaTargeted: ["AUTH-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -98,7 +98,7 @@ export async function register(req, res) {
       description: "Detects SHA-256 hashing without salt for passwords",
       tags: ["sha256", "password-storage", "no-salt"],
       criteriaTargeted: ["AUTH-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -127,7 +127,7 @@ export async function register(req, res) {
       description: "Secure password hashing using bcrypt",
       tags: ["bcrypt", "password-storage", "secure"],
       criteriaTargeted: ["AUTH-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -150,7 +150,7 @@ export async function register(req, res) {
       description: "Missing context for password verification",
       tags: ["missing-context", "password-storage"],
       criteriaTargeted: ["AUTH-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -179,7 +179,7 @@ export async function login(req, res) {
       description: "Detects password logging during error handling",
       tags: ["logging", "transmission", "credentials"],
       criteriaTargeted: ["AUTH-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -210,7 +210,7 @@ export async function login(req, res) {
       description: "Detects GET request with password in query params",
       tags: ["get-method", "transmission", "credentials"],
       criteriaTargeted: ["AUTH-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes.ts",
           content: `
@@ -241,7 +241,7 @@ export default router;
       description: "JWT sent in query parameters",
       tags: ["jwt", "transmission", "token-security"],
       criteriaTargeted: ["AUTH-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/redirect.ts",
           content: `
@@ -270,7 +270,7 @@ export function redirectUser(res, token) {
       description: "Client-side only authentication check",
       tags: ["login-flow", "client-side", "bypass"],
       criteriaTargeted: ["AUTH-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/pages/Login.tsx",
           content: `
@@ -306,7 +306,7 @@ export function LoginPage() {
       description: "OAuth flow missing state parameter validation",
       tags: ["login-flow", "oauth", "csrf"],
       criteriaTargeted: ["AUTH-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/callback.ts",
           content: `
@@ -339,7 +339,7 @@ export async function oauthCallback(req, res) {
       description: "Server-side login with proper input validation",
       tags: ["login-flow", "secure", "validation"],
       criteriaTargeted: ["AUTH-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -382,7 +382,7 @@ export async function login(req, res) {
       description: "Hardcoded debug backdoor bypassing authentication",
       tags: ["backdoor", "bypass"],
       criteriaTargeted: ["AUTH-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware.ts",
           content: `
@@ -411,7 +411,7 @@ export function requireAuth(req, res, next) {
       description: "Logic flaw in password check (null evaluation allows bypass)",
       tags: ["logic-flaw", "bypass"],
       criteriaTargeted: ["AUTH-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -443,7 +443,7 @@ export async function login(req, res) {
       description: "Unprotected admin route missing auth middleware",
       tags: ["bypass", "missing-middleware"],
       criteriaTargeted: ["AUTH-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/admin.ts",
           content: `
@@ -485,7 +485,7 @@ export default router;
       description: "Detects missing rate limit on standard login route",
       tags: ["missing-rate-limit", "brute-force", "login"],
       criteriaTargeted: ["AUTH-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes.ts",
           content: `
@@ -513,7 +513,7 @@ export default router;
       description: "Rate limiting applied correctly to login",
       tags: ["rate-limiting", "brute-force", "secure"],
       criteriaTargeted: ["AUTH-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes.ts",
           content: `
@@ -538,7 +538,7 @@ export default router;
       description: "Custom account lockout logic",
       tags: ["account-lockout", "brute-force", "secure"],
       criteriaTargeted: ["AUTH-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -573,7 +573,7 @@ export async function loginHandler(req, res) {
       description: "Password reset allows user enumeration via 404 response",
       tags: ["password-reset", "user-enumeration"],
       criteriaTargeted: ["AUTH-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/reset.ts",
           content: `
@@ -602,7 +602,7 @@ export async function forgotPassword(req, res) {
       description: "Predictable password reset token via Math.random",
       tags: ["password-reset", "weak-randomness"],
       criteriaTargeted: ["AUTH-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/reset.ts",
           content: `
@@ -628,7 +628,7 @@ export async function generateResetToken(userId) {
       description: "Password reset logic doesn't expire or delete tokens",
       tags: ["password-reset", "logic-flaw"],
       criteriaTargeted: ["AUTH-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/reset.ts",
           content: `
@@ -658,7 +658,7 @@ export async function handleReset(req, res) {
       description: "Secure password reset with crypto random tokens and expiry",
       tags: ["password-reset", "secure"],
       criteriaTargeted: ["AUTH-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/reset.ts",
           content: `
@@ -702,7 +702,7 @@ export async function handleReset(req, res) {
       description: "MFA bypass via parameter manipulation",
       tags: ["mfa", "bypass", "parameter-manipulation"],
       criteriaTargeted: ["AUTH-C7"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -739,7 +739,7 @@ export async function login(req, res) {
       description: "TOTP secret stored in plaintext in database",
       tags: ["mfa", "totp", "insecure-storage"],
       criteriaTargeted: ["AUTH-C7"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/mfa.ts",
           content: `
@@ -782,7 +782,7 @@ export async function verifyMfa(req, res) {
       description: "MFA enrollment without re-authentication",
       tags: ["mfa", "enrollment", "re-auth"],
       criteriaTargeted: ["AUTH-C7"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/settings.ts",
           content: `
@@ -813,7 +813,7 @@ export default router;
       description: "No MFA implementation in changed files",
       tags: ["mfa", "not-present"],
       criteriaTargeted: ["AUTH-C7"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -843,7 +843,7 @@ export async function login(req, res) {
       description: "Session fixation vulnerability (no regeneration)",
       tags: ["session-fixation", "session-management"],
       criteriaTargeted: ["AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -873,7 +873,7 @@ export async function loginHandler(req, res) {
       description: "Session cookie without HttpOnly",
       tags: ["cookie-flags", "session-management"],
       criteriaTargeted: ["AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -899,7 +899,7 @@ app.use(session({
       description: "Session cookie without Secure flag",
       tags: ["cookie-flags", "session-management"],
       criteriaTargeted: ["AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -925,7 +925,7 @@ app.use(session({
       description: "SameSite attribute set to none on session cookie",
       tags: ["cookie-flags", "session-management"],
       criteriaTargeted: ["AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -951,7 +951,7 @@ app.use(session({
       description: "Session securely regenerated on login",
       tags: ["session-fixation", "session-management", "secure"],
       criteriaTargeted: ["AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -978,7 +978,7 @@ export async function loginHandler(req, res) {
       description: "Secure JWT verification and signing",
       tags: ["jwt", "token-security", "secure"],
       criteriaTargeted: ["AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/tokens.ts",
           content: `
@@ -1005,7 +1005,7 @@ export function verifyToken(token) {
       description: "Logout only clears client-side cookie without server-side invalidation",
       tags: ["logout", "session-invalidation", "client-only"],
       criteriaTargeted: ["AUTH-C9"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/logout.ts",
           content: `
@@ -1031,7 +1031,7 @@ export function logout(req, res) {
       description: "JWT-based logout with no token revocation mechanism",
       tags: ["logout", "jwt", "no-revocation"],
       criteriaTargeted: ["AUTH-C9"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/logout.ts",
           content: `
@@ -1067,7 +1067,7 @@ export function createToken(user) {
       description: "Password change does not invalidate other sessions",
       tags: ["logout", "password-change", "session-invalidation"],
       criteriaTargeted: ["AUTH-C9"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/password.ts",
           content: `
@@ -1104,7 +1104,7 @@ export async function changePassword(req, res) {
       description: "Proper server-side session destruction on logout",
       tags: ["logout", "session-invalidation", "secure"],
       criteriaTargeted: ["AUTH-C9"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/logout.ts",
           content: `
@@ -1132,7 +1132,7 @@ export function logout(req, res) {
       description: "Distinct error message for incorrect password vs user not found",
       tags: ["error-handling", "login", "user-enumeration"],
       criteriaTargeted: ["AUTH-C10"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/login.ts",
           content: `
@@ -1163,7 +1163,7 @@ export async function login(req, res) {
       description: "Stack trace leaked in authentication error response",
       tags: ["error-handling", "stack-trace", "information-disclosure"],
       criteriaTargeted: ["AUTH-C10"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -1201,7 +1201,7 @@ export async function login(req, res) {
       description: "Registration endpoint reveals whether email is already registered",
       tags: ["error-handling", "registration", "user-enumeration"],
       criteriaTargeted: ["AUTH-C10"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/register.ts",
           content: `
@@ -1234,7 +1234,7 @@ export async function register(req, res) {
       description: "Generic error message for both invalid user and invalid password",
       tags: ["error-handling", "login", "secure"],
       criteriaTargeted: ["AUTH-C10"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/login.ts",
           content: `
@@ -1260,7 +1260,7 @@ export async function login(req, res) {
       description: "Standard Next.js Auth.js integration",
       tags: ["oauth", "library", "secure"],
       criteriaTargeted: ["AUTH-C1", "AUTH-C8"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth.ts",
           content: `
@@ -1281,7 +1281,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       description: "PR changes only CSS files",
       tags: ["unrelated", "missing-context"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/styles.css",
           content: `

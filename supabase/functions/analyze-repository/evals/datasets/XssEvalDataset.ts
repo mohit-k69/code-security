@@ -12,7 +12,7 @@ export const XssEvalDataset: EvalDataset = {
       description: "Direct interpolation into HTML string",
       tags: ["xss", "encoding", "interpolation", "html"],
       criteriaTargeted: ["XSS-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/profile.ts",
           content: `
@@ -42,7 +42,7 @@ export function renderProfile(user) {
       description: "Direct interpolation into a JavaScript block (XSS in JS Context)",
       tags: ["xss", "encoding", "javascript-context"],
       criteriaTargeted: ["XSS-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/tracking.ts",
           content: `
@@ -74,7 +74,7 @@ export function renderTrackingCode(userId, username) {
       description: "Safe output encoding using a library",
       tags: ["secure", "encoding", "escape-html"],
       criteriaTargeted: ["XSS-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/profile.ts",
           content: `
@@ -104,7 +104,7 @@ export function renderProfile(user) {
       description: "Unsafe use of innerHTML",
       tags: ["xss", "dom", "innerhtml"],
       criteriaTargeted: ["XSS-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/client/comments.js",
           content: `
@@ -131,7 +131,7 @@ function renderComment(commentText) {
       description: "DOM-based XSS via location.hash (Enhancement)",
       tags: ["xss", "dom-based", "location"],
       criteriaTargeted: ["XSS-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/client/router.js",
           content: `
@@ -160,7 +160,7 @@ window.addEventListener('hashchange', loadTab);
       description: "Safe DOM manipulation using textContent",
       tags: ["secure", "dom", "textcontent"],
       criteriaTargeted: ["XSS-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/client/comments.js",
           content: `
@@ -185,7 +185,7 @@ function renderComment(commentText) {
       description: "Disabling escaping in Handlebars (triple-stash)",
       tags: ["xss", "template", "handlebars", "unescaped"],
       criteriaTargeted: ["XSS-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/email.hbs",
           content: `
@@ -210,7 +210,7 @@ function renderComment(commentText) {
       description: "Disabling escaping in Pug",
       tags: ["xss", "template", "pug", "unescaped"],
       criteriaTargeted: ["XSS-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/dashboard.pug",
           content: `
@@ -235,7 +235,7 @@ div.dashboard
       description: "Safe default template escaping",
       tags: ["secure", "template", "escaped"],
       criteriaTargeted: ["XSS-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/email.hbs",
           content: `
@@ -258,7 +258,7 @@ div.dashboard
       description: "Unsafe dangerouslySetInnerHTML in React",
       tags: ["xss", "react", "dangerouslySetInnerHTML"],
       criteriaTargeted: ["XSS-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/BlogPost.jsx",
           content: `
@@ -290,7 +290,7 @@ export function BlogPost({ post }) {
       description: "Unsafe v-html in Vue",
       tags: ["xss", "vue", "v-html"],
       criteriaTargeted: ["XSS-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/Comment.vue",
           content: `
@@ -318,7 +318,7 @@ export function BlogPost({ post }) {
       description: "Sanitizing Markdown output before React rendering (Enhancement)",
       tags: ["secure", "react", "markdown", "dompurify"],
       criteriaTargeted: ["XSS-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/MarkdownViewer.jsx",
           content: `
@@ -345,7 +345,7 @@ export function MarkdownViewer({ text }) {
       description: "Using dangerouslySetInnerHTML with strictly trusted static data",
       tags: ["secure", "react", "trusted-data"],
       criteriaTargeted: ["XSS-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/IconBox.jsx",
           content: `
@@ -374,7 +374,7 @@ export function IconBox({ iconName }) {
       description: "Weak CSP allowing unsafe-inline",
       tags: ["xss", "csp", "unsafe-inline"],
       criteriaTargeted: ["XSS-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/server/headers.ts",
           content: `
@@ -400,7 +400,7 @@ export function setHeaders(req, res, next) {
       description: "Strict Content Security Policy (Nonces)",
       tags: ["secure", "csp", "nonce"],
       criteriaTargeted: ["XSS-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/server/headers.ts",
           content: `
@@ -429,7 +429,7 @@ export function setCsp(req, res, next) {
       description: "Unvalidated javascript: URL injection in React",
       tags: ["xss", "react", "javascript-url", "href"],
       criteriaTargeted: ["XSS-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/UserLink.jsx",
           content: `
@@ -456,7 +456,7 @@ export function UserLink({ url, text }) {
       description: "Inline event handler injection in template",
       tags: ["xss", "template", "event-handler", "inline"],
       criteriaTargeted: ["XSS-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/views/button.hbs",
           content: `
@@ -479,7 +479,7 @@ export function UserLink({ url, text }) {
       description: "Validating URLs before rendering",
       tags: ["secure", "url", "validation"],
       criteriaTargeted: ["XSS-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/UserLink.jsx",
           content: `
@@ -514,7 +514,7 @@ export function UserLink({ url, text }) {
       description: "Perfectly secured rich text rendering",
       tags: ["comprehensive", "secure", "rich-text"],
       criteriaTargeted: ["XSS-C2", "XSS-C4", "XSS-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/components/RichText.jsx",
           content: `
@@ -541,7 +541,7 @@ export function RichText({ htmlInput }) {
       description: "PR modifies backend SQL queries only",
       tags: ["unrelated", "backend", "sql"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/db/queries.ts",
           content: `

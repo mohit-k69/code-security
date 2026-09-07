@@ -12,7 +12,7 @@ export const AuthorizationEvalDataset: EvalDataset = {
       description: "IDOR: Order fetched by ID without ownership verification",
       tags: ["idor", "resource-ownership", "missing-filter"],
       criteriaTargeted: ["AUTHZ-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/orders.ts",
           content: `
@@ -46,7 +46,7 @@ export default router;
       description: "IDOR: User profile update without ownership check",
       tags: ["idor", "resource-ownership", "update"],
       criteriaTargeted: ["AUTHZ-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/users.ts",
           content: `
@@ -73,7 +73,7 @@ export async function updateProfile(req, res) {
       description: "IDOR: Document deletion without ownership verification",
       tags: ["idor", "resource-ownership", "delete"],
       criteriaTargeted: ["AUTHZ-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/documents.ts",
           content: `
@@ -100,7 +100,7 @@ router.delete('/documents/:docId', requireAuth, async (req, res) => {
       description: "Order fetched with ownership filter in query",
       tags: ["resource-ownership", "secure", "ownership-filter"],
       criteriaTargeted: ["AUTHZ-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/orders.ts",
           content: `
@@ -130,7 +130,7 @@ export default router;
       description: "Ownership check delegated to ORM policy layer",
       tags: ["resource-ownership", "missing-context", "orm"],
       criteriaTargeted: ["AUTHZ-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/orders.ts",
           content: `
@@ -158,7 +158,7 @@ router.get('/orders/:id', requireAuth, async (req, res) => {
       description: "Authorization enforced only in React frontend, not on API",
       tags: ["client-only", "server-side", "frontend-guard"],
       criteriaTargeted: ["AUTHZ-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/pages/AdminDashboard.tsx",
           content: `
@@ -203,7 +203,7 @@ router.get('/api/admin/stats', requireAuth, async (req, res) => {
       description: "API returns data based on client-supplied role header",
       tags: ["client-only", "server-side", "header-trust"],
       criteriaTargeted: ["AUTHZ-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/data.ts",
           content: `
@@ -233,7 +233,7 @@ router.get('/api/reports', requireAuth, async (req, res) => {
       description: "Server-side role check with session-derived permissions",
       tags: ["server-side", "secure", "role-check"],
       criteriaTargeted: ["AUTHZ-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/reports.ts",
           content: `
@@ -261,7 +261,7 @@ router.get('/api/reports', requireAuth, requireRole('manager'), async (req, res)
       description: "Admin user listing endpoint without role guard",
       tags: ["admin", "missing-guard", "user-listing"],
       criteriaTargeted: ["AUTHZ-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/admin.ts",
           content: `
@@ -294,7 +294,7 @@ export default router;
       description: "Admin configuration endpoint with inline check that can be bypassed",
       tags: ["admin", "bypassable-check", "configuration"],
       criteriaTargeted: ["AUTHZ-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/admin.ts",
           content: `
@@ -323,7 +323,7 @@ router.post('/admin/config', requireAuth, async (req, res) => {
       description: "Admin panel accessible to any user who knows the URL",
       tags: ["admin", "obscurity", "no-guard"],
       criteriaTargeted: ["AUTHZ-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/admin.ts",
           content: `
@@ -350,7 +350,7 @@ router.get('/internal/admin/dashboard', async (req, res) => {
       description: "Admin routes properly protected with role middleware",
       tags: ["admin", "secure", "role-guard"],
       criteriaTargeted: ["AUTHZ-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/admin.ts",
           content: `
@@ -388,7 +388,7 @@ export default router;
       description: "User can set their own role via profile update (mass assignment)",
       tags: ["privilege-escalation", "mass-assignment", "role"],
       criteriaTargeted: ["AUTHZ-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/users.ts",
           content: `
@@ -418,7 +418,7 @@ export async function updateProfile(req, res) {
       description: "Registration endpoint accepts role parameter",
       tags: ["privilege-escalation", "registration", "role-injection"],
       criteriaTargeted: ["AUTHZ-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/auth.ts",
           content: `
@@ -448,7 +448,7 @@ export async function register(req, res) {
       description: "Invitation endpoint allows inviter to assign any role",
       tags: ["privilege-escalation", "invitation", "role-assignment"],
       criteriaTargeted: ["AUTHZ-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/invitations.ts",
           content: `
@@ -479,7 +479,7 @@ router.post('/invitations', requireAuth, async (req, res) => {
       description: "Profile update whitelists allowed fields",
       tags: ["privilege-escalation", "secure", "field-whitelist"],
       criteriaTargeted: ["AUTHZ-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/controllers/users.ts",
           content: `
@@ -507,7 +507,7 @@ export async function updateProfile(req, res) {
       description: "Query returns all tenants' projects without tenant filter",
       tags: ["multi-tenant", "missing-filter", "data-leak"],
       criteriaTargeted: ["AUTHZ-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/projects.ts",
           content: `
@@ -535,7 +535,7 @@ router.get('/projects', requireAuth, async (req, res) => {
       description: "Tenant ID taken from request parameter instead of session",
       tags: ["multi-tenant", "parameter-injection", "tenant-id"],
       criteriaTargeted: ["AUTHZ-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/projects.ts",
           content: `
@@ -564,7 +564,7 @@ router.get('/projects', requireAuth, async (req, res) => {
       description: "Cross-tenant member access via unscoped invitation lookup",
       tags: ["multi-tenant", "cross-tenant", "invitation"],
       criteriaTargeted: ["AUTHZ-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/members.ts",
           content: `
@@ -595,7 +595,7 @@ router.get('/organizations/:orgId/members', requireAuth, async (req, res) => {
       description: "Tenant scoping derived from authenticated session",
       tags: ["multi-tenant", "secure", "session-derived"],
       criteriaTargeted: ["AUTHZ-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/projects.ts",
           content: `
@@ -620,7 +620,7 @@ router.get('/projects', requireAuth, async (req, res) => {
       description: "Tenant isolation enforced by database row-level security",
       tags: ["multi-tenant", "missing-context", "rls"],
       criteriaTargeted: ["AUTHZ-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/projects.ts",
           content: `
@@ -649,7 +649,7 @@ router.get('/projects', requireAuth, async (req, res) => {
       description: "Account deletion without authorization check",
       tags: ["sensitive-operation", "delete", "missing-check"],
       criteriaTargeted: ["AUTHZ-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/users.ts",
           content: `
@@ -677,7 +677,7 @@ router.delete('/users/:id', requireAuth, async (req, res) => {
       description: "Billing update accessible to non-billing users",
       tags: ["sensitive-operation", "billing", "missing-permission"],
       criteriaTargeted: ["AUTHZ-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/billing.ts",
           content: `
@@ -707,7 +707,7 @@ router.put('/billing/plan', requireAuth, async (req, res) => {
       description: "API key generation without permission verification",
       tags: ["sensitive-operation", "api-key", "missing-permission"],
       criteriaTargeted: ["AUTHZ-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/apikeys.ts",
           content: `
@@ -738,7 +738,7 @@ router.post('/api-keys', requireAuth, async (req, res) => {
       description: "Sensitive delete operation with permission check",
       tags: ["sensitive-operation", "secure", "permission-check"],
       criteriaTargeted: ["AUTHZ-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/routes/projects.ts",
           content: `
@@ -769,7 +769,7 @@ router.delete('/projects/:id', requireAuth, requirePermission('project:delete'),
       description: "Next.js API route with proper authorization middleware",
       tags: ["nextjs", "middleware", "secure"],
       criteriaTargeted: ["AUTHZ-C1", "AUTHZ-C2", "AUTHZ-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app/api/admin/users/route.ts",
           content: `
@@ -798,7 +798,7 @@ export async function GET() {
       description: "PR changes only test files",
       tags: ["unrelated", "tests-only"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/__tests__/utils.test.ts",
           content: `

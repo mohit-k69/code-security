@@ -12,7 +12,7 @@ export const SessionJwtEvalDataset: EvalDataset = {
       description: "Weak JWT signing algorithm (none)",
       tags: ["jwt", "creation", "algorithm", "none"],
       criteriaTargeted: ["SESSION-C1", "SESSION-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/tokens.ts",
           content: `
@@ -39,7 +39,7 @@ export function createUnsecureToken(user) {
       description: "Predictable session IDs (Math.random)",
       tags: ["session", "creation", "prng"],
       criteriaTargeted: ["SESSION-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/session/manager.ts",
           content: `
@@ -64,7 +64,7 @@ export function createSessionId() {
       description: "Secure session ID generation",
       tags: ["secure", "session", "creation", "crypto"],
       criteriaTargeted: ["SESSION-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/session/manager.ts",
           content: `
@@ -89,7 +89,7 @@ export function createSessionId() {
       description: "Using jwt.decode() instead of jwt.verify()",
       tags: ["jwt", "validation", "decode"],
       criteriaTargeted: ["SESSION-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/auth.ts",
           content: `
@@ -123,7 +123,7 @@ export function authMiddleware(req, res, next) {
       description: "Missing algorithm restriction in verify()",
       tags: ["jwt", "validation", "algorithm-confusion"],
       criteriaTargeted: ["SESSION-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/auth.ts",
           content: `
@@ -159,7 +159,7 @@ export function authMiddleware(req, res, next) {
       description: "Ignoring token expiration during verify",
       tags: ["jwt", "validation", "expiration"],
       criteriaTargeted: ["SESSION-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/auth.ts",
           content: `
@@ -192,7 +192,7 @@ export function authMiddleware(req, res, next) {
       description: "Secure JWT verification with algorithms and audience",
       tags: ["secure", "jwt", "validation"],
       criteriaTargeted: ["SESSION-C2"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/middleware/auth.ts",
           content: `
@@ -227,7 +227,7 @@ export function authMiddleware(req, res, next) {
       description: "JWT created without expiration",
       tags: ["expiration", "jwt", "no-expiry"],
       criteriaTargeted: ["SESSION-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -254,7 +254,7 @@ export function login(user) {
       description: "Express session without cookie expiration",
       tags: ["expiration", "session", "express"],
       criteriaTargeted: ["SESSION-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/app.ts",
           content: `
@@ -286,7 +286,7 @@ app.use(session({
       description: "JWT with explicit short expiration",
       tags: ["secure", "expiration", "jwt"],
       criteriaTargeted: ["SESSION-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -311,7 +311,7 @@ export function login(user) {
       description: "Blindly trusting refresh tokens without database validation",
       tags: ["refresh-token", "no-revocation-check"],
       criteriaTargeted: ["SESSION-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/refresh.ts",
           content: `
@@ -346,7 +346,7 @@ export function refreshTokens(req, res) {
       description: "Storing refresh tokens in plaintext in DB",
       tags: ["refresh-token", "storage", "plaintext"],
       criteriaTargeted: ["SESSION-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -375,7 +375,7 @@ export async function createRefreshToken(userId) {
       description: "Secure refresh token validation and rotation",
       tags: ["secure", "refresh-token", "rotation"],
       criteriaTargeted: ["SESSION-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/refresh.ts",
           content: `
@@ -406,7 +406,7 @@ export async function refreshTokens(req, res) {
       description: "Refresh token replay detection (Future enhancement scenario)",
       tags: ["secure", "refresh-token", "replay-detection"],
       criteriaTargeted: ["SESSION-C4"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/refresh.ts",
           content: `
@@ -443,7 +443,7 @@ export async function refresh(req, res) {
       description: "Missing HttpOnly flag on auth cookie",
       tags: ["cookie", "httponly", "xss"],
       criteriaTargeted: ["SESSION-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -470,7 +470,7 @@ export function login(req, res) {
       description: "Missing Secure flag on auth cookie",
       tags: ["cookie", "secure-flag", "interception"],
       criteriaTargeted: ["SESSION-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -497,7 +497,7 @@ export function login(req, res) {
       description: "Secure cookie configuration",
       tags: ["secure", "cookie"],
       criteriaTargeted: ["SESSION-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -523,7 +523,7 @@ export function login(req, res) {
       description: "Stateless JWT authentication (No cookies used)",
       tags: ["cookie", "not-applicable", "stateless"],
       criteriaTargeted: ["SESSION-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -548,7 +548,7 @@ export function login(req, res) {
       description: "Logout fails to invalidate backend state",
       tags: ["invalidation", "logout", "state"],
       criteriaTargeted: ["SESSION-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/logout.ts",
           content: `
@@ -577,7 +577,7 @@ export function logout(req, res) {
       description: "Password reset fails to revoke active sessions",
       tags: ["invalidation", "password-reset"],
       criteriaTargeted: ["SESSION-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/password.ts",
           content: `
@@ -606,7 +606,7 @@ export async function resetPassword(req, res) {
       description: "Secure logout invalidates backend state",
       tags: ["secure", "invalidation", "logout"],
       criteriaTargeted: ["SESSION-C6"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/logout.ts",
           content: `
@@ -634,7 +634,7 @@ export async function logout(req, res) {
       description: "Perfectly secured session endpoint",
       tags: ["comprehensive", "secure"],
       criteriaTargeted: ["SESSION-C1", "SESSION-C3", "SESSION-C5"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -666,7 +666,7 @@ export async function login(req, res) {
       description: "PR modifies database schema only",
       tags: ["unrelated", "schema"],
       criteriaTargeted: [],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "db/migrations/102_add_index.sql",
           content: `
@@ -682,7 +682,7 @@ CREATE INDEX idx_users_email ON users(email);
       description: "Snippet with no visible token creation/signing context",
       tags: ["expiration", "not-applicable"],
       criteriaTargeted: ["SESSION-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/middleware.ts",
           content: `
@@ -704,7 +704,7 @@ export function checkAuth(req, res, next) {
       description: "JWT generation delegated to an unseen external function",
       tags: ["delegated", "hidden-implementation"],
       criteriaTargeted: ["SESSION-C1", "SESSION-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/login.ts",
           content: `
@@ -725,7 +725,7 @@ export function login(user) {
       description: "tc_004 style secure JWT creation",
       tags: ["jwt", "secure"],
       criteriaTargeted: ["SESSION-C1", "SESSION-C3"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/token.js",
           content: `
@@ -744,7 +744,7 @@ function generateToken(user) {
       description: "tc_023 style opaque nativeAuth.verify wrapper",
       tags: ["delegated", "hidden-implementation"],
       criteriaTargeted: ["SESSION-C1"],
-      changedFiles: [
+      fullRepositoryFiles: [], changedFiles: [
         {
           path: "src/auth/verify.js",
           content: `
