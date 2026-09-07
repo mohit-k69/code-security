@@ -68,10 +68,56 @@ export class FindingAggregator {
             matchedCluster = cluster;
             break;
           }
+
           if (isNearby) {
-            const isRedacted1 = /REDACTED/i.test(f1.description) || f1.evidence?.some(e => /REDACTED/i.test(e.snippet));
-            const isRedacted2 = /REDACTED/i.test(f2.description) || f2.evidence?.some(e => /REDACTED/i.test(e.snippet));
-            if (isRedacted1 || isRedacted2 || hasIdenticalSnippet) {
+            // Helper to extract secret variable name or string literals
+            const extractSecretMeta = (f: CheckpointFinding) => {
+              const snippet = f.evidence?.[0]?.snippet || "";
+              const text = (f.title || "") + " " + (f.description || "") + " " + snippet;
+              
+              // Match variable name: const/let/var/key FOO = ... or "foo": ...
+              const varMatch = snippet.match(/(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=/i) ||
+                               snippet.match(/["']?([a-zA-Z0-9_$]+)["']?\s*:\s*["']/i);
+              const varName = varMatch ? varMatch[1].toLowerCase() : null;
+
+              // Match string literals of length >= 6 (e.g. 'sk_live_123', 'supersecret', 'token_abc_123')
+              const literals = snippet.match(/['"`]([a-zA-Z0-9_\-\.\/+=]{6,})['"`]/g) || [];
+              const cleanedLiterals = literals.map(l => l.replace(/['"`]/g, "").trim());
+
+              const isRedacted = /REDACTED/i.test(text) || snippet.includes("***REDACTED***") || /<REDACTED_[A-Z0-9_]+>/i.test(snippet);
+
+              return { varName, cleanedLiterals, isRedacted, snippet };
+            };
+
+            const meta1 = extractSecretMeta(f1);
+            const meta2 = extractSecretMeta(f2);
+
+            // A) Exact identical evidence snippets
+            if (hasIdenticalSnippet) {
+              matchedCluster = cluster;
+              break;
+            }
+
+            // B) Share the exact same underlying secret value (e.g. 'sk_live_...', 'token_abc_...')
+            const sharesSecretValue = meta1.cleanedLiterals.length > 0 && 
+              meta1.cleanedLiterals.some(lit => meta2.cleanedLiterals.includes(lit));
+            if (sharesSecretValue) {
+              matchedCluster = cluster;
+              break;
+            }
+
+            // C) One finding is synthetic/redacted (from SensitiveDataSanitizer) and the other is an LLM finding on adjacent/nearby lines
+            if (meta1.isRedacted || meta2.isRedacted) {
+              // If both findings explicitly declare different variable names (e.g. DB_PASS vs JWT_SECRET), keep them separate
+              const hasDifferingExplicitVars = meta1.varName && meta2.varName && meta1.varName !== meta2.varName;
+              if (!hasDifferingExplicitVars) {
+                matchedCluster = cluster;
+                break;
+              }
+            }
+
+            // D) Both findings refer to the exact same variable identifier on nearby lines (e.g. LLM line jitter)
+            if (meta1.varName && meta2.varName && meta1.varName === meta2.varName) {
               matchedCluster = cluster;
               break;
             }

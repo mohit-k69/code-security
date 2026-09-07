@@ -373,3 +373,52 @@ Deno.test("FindingAggregator - tc_028 regression: different-line secrets do NOT 
   const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
   assertEquals(aggregated.length, 2, "Should NOT merge distinct secrets on different lines");
 });
+
+Deno.test("FindingAggregator - Regression: Same secret, synthetic/redacted finding + LLM finding on adjacent lines merges to 1 finding", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Secret Detected: Stripe API Key", 
+    "A hardcoded secret matching the pattern for Stripe API Key was detected in the source code. It has been redacted for security.", 
+    "server.js", 4, "***REDACTED***", ["CWE-798"]
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Hardcoded Stripe API Key", 
+    "A Stripe API key is hardcoded in server.js.", 
+    "server.js", 5, "const stripe = require('stripe')('sk_live_51AbcDefGhi123456789');", ["CWE-798"]
+  );
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge synthetic/redacted finding and LLM finding for the same secret on adjacent lines");
+});
+
+Deno.test("FindingAggregator - Regression: Two genuinely different secrets on different lines produce 2 findings", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Stripe API Key", 
+    "Stripe API key hardcoded in configuration.", 
+    "server.js", 4, "const stripeKey = 'sk_live_51AbcDefGhi123456789';", ["CWE-798"]
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Hardcoded Database Password", 
+    "Database password hardcoded in configuration.", 
+    "server.js", 5, "const dbPassword = 'super_secret_db_pass_999';", ["CWE-798"]
+  );
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 2, "Should keep genuinely different secrets on different lines as separate findings");
+});
+
+Deno.test("FindingAggregator - Regression: Same secret represented differently but same underlying secret value merges to 1 finding", () => {
+  const aggregator = new FindingAggregator();
+  const f1 = createFinding(
+    "1", "SECRET_EXPOSURE", "Hardcoded Auth Token", 
+    "Hardcoded token assignment in auth handler.", 
+    "auth.js", 4, "const AUTH_TOKEN = 'secret_token_abc_123456789';", ["CWE-798"]
+  );
+  const f2 = createFinding(
+    "2", "SECRET_EXPOSURE", "Authorization Header Secret", 
+    "Direct usage of token in authorization header.", 
+    "auth.js", 6, "req.headers['Authorization'] = 'Bearer ' + 'secret_token_abc_123456789';", ["CWE-798"]
+  );
+  const aggregated = aggregator.aggregate([wrapFinding(f1), wrapFinding(f2)]);
+  assertEquals(aggregated.length, 1, "Should merge findings that share the exact same underlying secret value");
+});
+
