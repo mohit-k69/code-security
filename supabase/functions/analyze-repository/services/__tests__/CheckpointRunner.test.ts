@@ -563,5 +563,103 @@ Deno.test("CheckpointRunner - Regression Test: SSRF location points to outbound 
   assertEquals(result.findings[0].evidence[0].snippet, "const response = await axios.get(url);");
 });
 
+Deno.test("CheckpointRunner - Regression Test: CORS configuration with model disclaimer is preserved", async () => {
+  const corsContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "server.js",
+        content: [
+          'res.setHeader("Access-Control-Allow-Origin", "*");',
+          'res.setHeader("Access-Control-Allow-Credentials", "true");'
+        ].join("\n"),
+        deleted: false
+      }
+    ]
+  };
+
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.95,
+    "summary": "Insecure CORS configuration: Access-Control-Allow-Origin is set to wildcard while Access-Control-Allow-Credentials is true.",
+    "findings": [
+      {
+        "criterionId": "CONFIG-C2",
+        "vulnerabilityClass": "INSECURE_CONFIGURATION",
+        "primaryLocation": { "file": "server.js", "line": 1 },
+        "title": "Insecure CORS Configuration: Wildcard Origin with Credentials",
+        "severity": "critical",
+        "description": "The server sets Access-Control-Allow-Origin to '*' while enabling Access-Control-Allow-Credentials. While full server context is not visible in the provided snippet, this combination violates CORS security constraints.",
+        "suggestion": "Specify explicit origins when credentials are allowed.",
+        "evidence": [
+          {
+            "file": "server.js",
+            "line": 1,
+            "snippet": "res.setHeader(\\"Access-Control-Allow-Origin\\", \\"*\\");\\nres.setHeader(\\"Access-Control-Allow-Credentials\\", \\"true\\");",
+            "explanation": "Wildcard origin combined with credentials true. Full server context is not visible in the provided snippet."
+          }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(corsContext, "framework", mockSpec);
+
+  // Finding must be preserved despite disclaimer phrases in description/explanation
+  assertEquals(result.verdict, "FAIL", "CORS flaw must result in FAIL verdict");
+  assertEquals(result.findings.length, 1, "CORS finding must NOT be suppressed by disclaimer phrases");
+  assertEquals(result.findings[0].vulnerabilityClass, "INSECURE_CONFIGURATION");
+});
+
+Deno.test("CheckpointRunner - Regression Test: Genuinely speculative finding based on missing context is suppressed", async () => {
+  const normalContext = {
+    ...mockContext,
+    changedFiles: [
+      {
+        path: "routes/data.js",
+        content: "app.get('/api/data', (req, res) => res.json({ status: 'ok' }));",
+        deleted: false
+      }
+    ]
+  };
+
+  // Speculative LLM finding claiming missing security headers on an ordinary route handler snippet
+  const mockLLMResponse = `{
+    "verdict": "FAIL",
+    "applicability": "APPLICABLE",
+    "confidence": 0.5,
+    "summary": "Security headers are not shown in this endpoint definition.",
+    "findings": [
+      {
+        "criterionId": "CONFIG-C1",
+        "vulnerabilityClass": "INSECURE_CONFIGURATION",
+        "primaryLocation": { "file": "routes/data.js", "line": 1 },
+        "title": "Missing Security Headers",
+        "severity": "warning",
+        "description": "Security headers such as Content-Security-Policy and X-Frame-Options are not visible in the provided snippet.",
+        "suggestion": "Configure helmet or similar security header middleware.",
+        "evidence": [
+          {
+            "file": "routes/data.js",
+            "line": 1,
+            "snippet": "app.get('/api/data', (req, res) => res.json({ status: 'ok' }));",
+            "explanation": "Security headers are not shown in the snippet."
+          }
+        ]
+      }
+    ]
+  }`;
+
+  const runner = new CheckpointRunner(new MockProvider(mockLLMResponse));
+  const result = await runner.run(normalContext, "framework", mockSpec);
+
+  // Purely speculative finding must be suppressed by Rule 4
+  assertEquals(result.verdict, "NOT_VERIFIED", "Speculative finding should result in NOT_VERIFIED verdict");
+  assertEquals(result.findings.length, 0, "Speculative finding must be suppressed");
+});
+
+
 
 

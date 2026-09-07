@@ -77,11 +77,37 @@ export class FindingGuardrail {
       }
     }
 
-    // 4. Suppression: Absence of context
-    // No finding when the claim is based only on absence of context
-    const isBasedOnMissingContext = /(is not shown|not visible in the provided|cannot be determined from the snippet)/i.test(combinedText);
-    if (isBasedOnMissingContext) {
-       return true;
+    // 4. Suppression: Absence of context (Genuinely speculative findings)
+    // Suppress findings where the vulnerability claim itself is based purely on missing context / absence of code,
+    // rather than concrete affirmative insecure patterns visible in the evidence snippet.
+    const mentionsMissingContext = /(is not shown|not visible in the provided|cannot be determined from the snippet|without seeing the rest|full server context is not visible)/i.test(combinedText);
+    if (mentionsMissingContext) {
+      // Check if the evidence snippet contains concrete affirmative insecure code
+      const hasWildcardOrReflectedOrigin =
+        (/access-control-allow-origin/i.test(combinedEvidenceSnippet) && /\*/.test(combinedEvidenceSnippet)) ||
+        /origin\s*[:=,]\s*['"]?\*/i.test(combinedEvidenceSnippet) ||
+        /cors\s*\(\s*\{.*origin\s*:\s*['"]?\*/is.test(combinedEvidenceSnippet);
+
+      const hasCredentialsTrue =
+        (/access-control-allow-credentials/i.test(combinedEvidenceSnippet) && /true/i.test(combinedEvidenceSnippet)) ||
+        /credentials\s*[:=,]\s*(true|['"]true['"])/i.test(combinedEvidenceSnippet);
+
+      const hasConcreteCorsMisconfig = hasWildcardOrReflectedOrigin && hasCredentialsTrue;
+
+      const hasConcreteReflectedOrigin =
+        (/access-control-allow-origin/i.test(combinedEvidenceSnippet) && /req\.(headers|get).*origin/i.test(combinedEvidenceSnippet)) ||
+        /origin\s*[:=,]\s*.*req\.(headers|get).*origin/i.test(combinedEvidenceSnippet);
+
+      const hasConcreteDangerousSink =
+        /\b(eval|exec|spawn|createSessionToken|generateToken|jwt\.sign|axios\.(get|post)|fetch\(|http\.get)\b/i.test(combinedEvidenceSnippet) ||
+        /\b(SELECT|INSERT|UPDATE|DELETE).*\$\{/i.test(combinedEvidenceSnippet);
+
+      const hasConcreteVisibleFlaw = hasConcreteCorsMisconfig || hasConcreteReflectedOrigin || hasConcreteDangerousSink;
+
+      // Suppress if the finding is purely speculative and lacks concrete visible flaws
+      if (!hasConcreteVisibleFlaw) {
+        return true;
+      }
     }
 
     // 5. Suppression: Truthiness/Falsy Hallucination
