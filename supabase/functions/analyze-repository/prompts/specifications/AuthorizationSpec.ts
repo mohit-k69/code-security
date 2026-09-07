@@ -42,7 +42,7 @@ export const AuthorizationSpec: ReviewSpecification = {
         "(e.g., WHERE id = ? AND user_id = ?, or an explicit permission check " +
         "before returning data). No user-controlled IDs are used for lookups " +
         "without ownership filtering.\n" +
-        "FAIL: The snippet explicitly demonstrates broken access control logic, an explicit authorization bypass, or a dangerous database operation using client-supplied IDs where the route definition (e.g., app.post) is visible and clearly lacks authorization middleware. Do NOT FAIL if the snippet is merely a partial function body where middleware might handle it; instead use NOT_VERIFIED.\n" +
+        "FAIL: The snippet explicitly demonstrates broken access control logic or an explicit authorization bypass in the supplied code. Do NOT infer missing authorization, authentication, or middleware; instead use NOT_VERIFIED or NO FINDING.\n" +
         "STATIC ASSETS EXCEPTION: Do not flag IDOR (AUTHZ-C1) for fetching generic static files, assets, or documents from a shared directory (e.g., `/var/www/downloads`) unless the code explicitly establishes that the files are user-scoped or contain sensitive user data.\n" +
         "NOT_VERIFIED: Resource ownership logic is delegated to a data access " +
         "layer, ORM policy, or missing downstream database authorization logic not included in the provided context, or authorization is simply not visible in the snippet.",
@@ -215,9 +215,9 @@ export const AuthorizationSpec: ReviewSpecification = {
     "- **Deduplication**: Do NOT flag a database query as an authorization failure (e.g. IDOR) if the query is just retrieving a user by token or ID for authentication/session purposes, unless explicit missing enforcement is evident.\n" +
     "- **NOT_VERIFIED vs PASS**: If a middleware with a name suggesting authentication/authorization (like `requireAdmin`, `checkAuth`, `isAuthenticated`) is explicitly applied to the route in the snippet, you MUST return PASS for the respective criteria, not NOT_VERIFIED.\n\n" +
 
-    "### Deep Data-Flow Analysis for IDOR (CRITICAL)\n\n" +
-    "- Do NOT assume global middleware handles resource ownership (IDOR) checks. While global middleware can authenticate a user, it typically cannot authorize specific object IDs (e.g., `req.params.id`).\n" +
-    "- If a route handler directly accesses data using a client-supplied ID (e.g., `db.getUser(req.params.id)`) without verifying that the authenticated user owns that ID within the handler or inline middleware, you MUST report a **FAIL** (AUTHZ-C1).\n" +
+    "### Authorization Evaluation Rules\n\n" +
+    "- Only report vulnerabilities that are directly proven by the supplied code. Do not infer missing authentication, authorization, middleware, database constraints, infrastructure, or runtime behavior.\n" +
+    "- Do NOT flag database queries or client-supplied parameters for missing authorization or IDOR (BUSINESS_LOGIC_FLAW) unless broken access control or an explicit bypass is directly demonstrated in the code. If authorization context is simply not visible, use NOT_VERIFIED or PASS, not FAIL.\n" +
     "- You must verify that the authorization check happens **before** the sensitive action. A check-then-act race condition or an action followed by a check is a **FAIL**.\n\n" +
 
     "### Authorization vs Authentication\n\n" +

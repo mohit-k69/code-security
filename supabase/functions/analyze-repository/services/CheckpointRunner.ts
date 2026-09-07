@@ -249,13 +249,9 @@ When you apply this opaque implementation rule and return NOT_VERIFIED because a
 5. UNKNOWN should not be used when the opaque implementation rule clearly applies; use APPLICABLE + NOT_VERIFIED.
 
 **Authentication & Authorization Context:**
-For Paste Code, do NOT automatically produce NOT_VERIFIED whenever inline authorization middleware is absent in explicitly defined API endpoints (e.g. app.get, app.post).
+Only report vulnerabilities that are directly proven by the supplied code. Do not infer missing authentication, authorization, middleware, database constraints, infrastructure, or runtime behavior.
+When a route or handler definition is present without explicit authorization logic, do not infer broken access control or BUSINESS_LOGIC_FLAW unless the code directly demonstrates an explicit security bypass or flawed check.
 Preserve NOT_VERIFIED for genuinely delegated security boundaries where a standard/explicit middleware or security abstraction is visible but its implementation is unseen, OR for partial function snippets (e.g. export const processPayment) where the unseen calling context might be the security boundary.
-When an API endpoint definition visibly implements a fundamentally insecure security flow, you must analyze that visible behavior and return FAIL when the security property is demonstrably violated.
-For example, return FAIL (not NOT_VERIFIED) for:
-- An internal users endpoint with no visible authorization.
-- An admin delete-user endpoint using a client-controlled parameter (e.g. req.body.userId) with no visible ownership or authorization check.
-- A password reset endpoint based only on client-controlled email and new password without visible reset-token validation.
 
 Example:
 - Small, self-contained safe snippet → PASS

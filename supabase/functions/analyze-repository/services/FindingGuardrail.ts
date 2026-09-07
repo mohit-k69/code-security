@@ -138,7 +138,7 @@ export class FindingGuardrail {
       return true;
     }
 
-    // 9. Suppression: IDOR false positives on partial snippets
+    // 9. Suppression: IDOR false positives on partial snippets / inferred missing authorization
     if (
       (finding.vulnerabilityClass === "AUTH_BYPASS" ||
        finding.vulnerabilityClass === "BUSINESS_LOGIC_FLAW") &&
@@ -157,11 +157,13 @@ export class FindingGuardrail {
       const cleanCodeContext = codeContext.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
 
       const isClientControlledId = /req\.(body|query|params)/i.test(cleanCodeContext);
-      const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query)/i.test(cleanCodeContext);
+      const isDbOperation = /(SELECT|INSERT|UPDATE|DELETE|db\.execute|db\.query|db\.\w+\.(find|update|delete|query))/i.test(cleanCodeContext);
       
-      const hasExplicitAuthLogic = /(bypass|role|admin|permission|ownerId|req\.session|req\.user|jwt|verify|auth)/i.test(cleanCodeContext);
+      const hasExplicitBypass = /(bypass|admin|role)\s*===?|req\.body\.(admin|role)|req\.query\.bypass/i.test(cleanCodeContext);
+      const hasExplicitAuthCheck = /\b(requireAuth|checkAuth|isAuthenticated|req\.session|req\.user|jwt\.verify)\b/i.test(cleanCodeContext);
+      const hasExplicitAuthLogic = hasExplicitBypass || hasExplicitAuthCheck;
 
-      if (isClientControlledId && isDbOperation && !hasExplicitAuthLogic) {
+      if ((isClientControlledId || isDbOperation) && !hasExplicitAuthLogic) {
         return true;
       }
     }
