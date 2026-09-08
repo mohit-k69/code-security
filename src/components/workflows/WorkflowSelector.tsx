@@ -39,17 +39,17 @@ export function WorkflowSelector({
           disabled
           type="button"
           aria-disabled="true"
-          className="w-[145px] h-[110px] flex flex-col items-center justify-center gap-2 rounded-3xl border border-gray-200 bg-gray-50/60 opacity-50 cursor-not-allowed select-none shadow-none"
+          className="w-[145px] h-[110px] flex flex-col items-center justify-center gap-1.5 rounded-3xl border border-gray-200 bg-white shadow-sm cursor-not-allowed select-none"
           title="Upload Files - Coming Soon"
         >
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-400">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-50/70 text-blue-300">
             <Upload className="w-4 h-4" />
           </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[13px] font-semibold text-gray-500">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[13px] font-semibold text-gray-400">
               Upload Files
             </span>
-            <span className="text-[10px] font-medium text-gray-400">
+            <span className="text-[10px] font-medium text-gray-500 bg-gray-100 border border-gray-200/60 px-2 py-0.5 rounded-full leading-tight">
               Coming Soon
             </span>
           </div>
