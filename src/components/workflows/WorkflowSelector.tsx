@@ -34,27 +34,24 @@ export function WorkflowSelector({
       </div>
       
       <div className="flex items-center justify-center gap-6 w-full" onClick={(e) => e.stopPropagation()}>
-        {/* Upload Button */}
+        {/* Upload Button (Disabled - Coming Soon) */}
         <button 
-          onClick={() => setActiveWorkflow('upload')}
-          className={`w-[145px] h-[110px] flex flex-col items-center justify-center gap-3 rounded-3xl border shadow-sm hover:shadow-md transition-all group ${
-            hasUploadedCode
-              ? 'bg-emerald-50 border-emerald-300'
-              : 'bg-white border-gray-200 hover:border-gray-300'
-          }`}
+          disabled
+          type="button"
+          aria-disabled="true"
+          className="w-[145px] h-[110px] flex flex-col items-center justify-center gap-2 rounded-3xl border border-gray-200 bg-gray-50/60 opacity-50 cursor-not-allowed select-none shadow-none"
+          title="Upload Files - Coming Soon"
         >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform ${
-            hasUploadedCode
-              ? 'bg-emerald-100 text-emerald-600'
-              : 'bg-blue-50 text-blue-600'
-          }`}>
-            {hasUploadedCode ? <Check className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-400">
+            <Upload className="w-4 h-4" />
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <span className={`text-[13px] font-semibold ${hasUploadedCode ? 'text-emerald-700' : 'text-gray-900'}`}>
-              {hasUploadedCode ? `${uploadedFilesCount} file${uploadedFilesCount > 1 ? 's' : ''}` : 'Upload Files'}
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="text-[13px] font-semibold text-gray-500">
+              Upload Files
             </span>
-            <span className="text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium px-2 leading-tight">Drop files here</span>
+            <span className="text-[10px] font-medium text-gray-400">
+              Coming Soon
+            </span>
           </div>
         </button>
 
