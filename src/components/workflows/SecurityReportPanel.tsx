@@ -14,99 +14,208 @@ function getRealWorldScenario(finding: any): string {
     return finding.scenario || finding.realWorldScenario || finding.impact || finding.consequence;
   }
 
+  const vulnClass = String(
+    finding.vulnerabilityClass ||
+    finding.rule ||
+    finding.criterionId ||
+    ''
+  ).toUpperCase().trim();
+
+  // 1. Direct Vulnerability Class Matching
+  if (vulnClass === 'JWT_SECURITY' || vulnClass.includes('JWT')) {
+    return 'An attacker could forge or tamper with a JSON Web Token (e.g., modifying header parameters or payload claims such as role: admin or user IDs) and bypass authentication or authorization checks if token signatures and claims are not verified, allowing unauthorized access without possessing a legitimate signing secret.';
+  }
+
+  if (vulnClass === 'CRYPTOGRAPHIC_FAILURE' || vulnClass.includes('CRYPTO')) {
+    return 'Using weak, broken, or deprecated hashing algorithms (such as MD5 or SHA-1 for passwords) allows attackers who obtain database hashes to rapidly crack and reverse them into plaintext credentials using collision attacks or precomputed rainbow tables.';
+  }
+
+  if (vulnClass === 'AUTH_BYPASS' || vulnClass === 'AUTHENTICATION_FAILURE') {
+    return 'An attacker could bypass authentication controls to access restricted endpoints, administrative functions, or user accounts without presenting valid credentials. By supplying arbitrary usernames or exploiting missing credential checks, an unauthorized caller can hijack accounts or access protected services.';
+  }
+
+  if (vulnClass === 'BUSINESS_LOGIC_FLAW' || vulnClass === 'AUTHORIZATION_FAILURE' || vulnClass.includes('IDOR')) {
+    return 'An authenticated attacker could manipulate object identifiers (such as record IDs in route parameters or request bodies) to view, modify, or delete another user\'s private data without authorization, bypassing tenant boundaries and ownership checks (Insecure Direct Object Reference).';
+  }
+
+  if (vulnClass === 'SECRET_EXPOSURE') {
+    return 'If this hardcoded secret or API key is committed to version control, anyone with access to the repository can extract the credential. An attacker could use the exposed key to perform unauthorized API calls, access private cloud services, exfiltrate data, or incur substantial unexpected billing charges.';
+  }
+
+  if (vulnClass === 'SQL_INJECTION') {
+    return 'An attacker could inject malicious SQL fragments into input parameters to manipulate database queries. This allows them to bypass authentication, exfiltrate confidential database tables (including passwords and personal data), or modify and delete application records.';
+  }
+
+  if (vulnClass === 'XSS') {
+    return 'Malicious script content could execute in another user\'s browser session. This could allow an attacker to hijack active sessions by stealing cookies or localStorage tokens, capture sensitive keystrokes, deface the web application, or perform unauthorized actions on behalf of the victim.';
+  }
+
+  if (vulnClass === 'PATH_TRAVERSAL') {
+    return 'An attacker could supply directory traversal sequences (such as ../) in file path inputs to read or overwrite sensitive files outside the designated root directory, including server configuration files, environment variables, or application source code.';
+  }
+
+  if (vulnClass === 'SSRF') {
+    return 'An attacker could supply a malicious URL to force the server to issue requests to internal network services or cloud metadata endpoints (e.g., 169.254.169.254). This can expose internal microservices, private cluster APIs, and cloud environment credentials not accessible from the public internet.';
+  }
+
+  if (vulnClass === 'INSECURE_CONFIGURATION') {
+    return 'An insecure or conflicting configuration—such as combining a wildcard CORS origin (*) with credentials enabled (Access-Control-Allow-Credentials: true) or missing critical security headers—allows untrusted third-party websites to execute authenticated cross-origin requests and steal private user data.';
+  }
+
+  if (vulnClass === 'INPUT_VALIDATION') {
+    return 'An attacker could pass unvalidated or specially crafted input directly into dynamic execution sinks (such as eval() or system command spawners), potentially resulting in arbitrary remote code execution on the server or application denial of service.';
+  }
+
+  if (vulnClass === 'DEPENDENCY_RISK') {
+    return 'Using outdated or compromised third-party dependencies with known security vulnerabilities (CVEs) could allow an attacker to exploit documented flaws in upstream packages to compromise the host application.';
+  }
+
+  // 2. Text-Based Fallback Analysis (with strict keyword order and protection against false positives)
   const textToAnalyze = [
     finding.title || '',
     finding.rule || '',
     finding.description || '',
-    ...(finding.cwes || [])
+    finding.message || '',
+    finding.suggestion || '',
+    ...(finding.cwes || []),
+    ...(finding.contributingCheckpoints || [])
   ].join(' ').toLowerCase();
 
+  // JWT & Session Security
   if (
-    textToAnalyze.includes('secret') ||
-    textToAnalyze.includes('api_key') ||
-    textToAnalyze.includes('apikey') ||
-    textToAnalyze.includes('api key') ||
-    textToAnalyze.includes('token') ||
-    textToAnalyze.includes('password') ||
-    textToAnalyze.includes('credential') ||
-    textToAnalyze.includes('cwe-798') ||
-    textToAnalyze.includes('cwe-259') ||
-    textToAnalyze.includes('cwe-312')
+    textToAnalyze.includes('jwt') ||
+    textToAnalyze.includes('jsonwebtoken') ||
+    textToAnalyze.includes('cwe-347') ||
+    textToAnalyze.includes('cwe-290') ||
+    textToAnalyze.includes('jwt.decode') ||
+    textToAnalyze.includes('sec-session-001')
   ) {
-    return 'If this secret or API key is committed to a public or compromised repository, an attacker could copy it and use the API under your account. If the key allows billable requests or privileged actions, they could generate thousands of requests, leave you with an unexpected bill, or access protected user data.';
+    return 'An attacker could forge or tamper with a JSON Web Token (e.g., modifying header parameters or payload claims such as role: admin or user IDs) and bypass authentication or authorization checks if token signatures and claims are not verified, allowing unauthorized access without possessing a legitimate signing secret.';
   }
 
+  // Cryptographic Failure & Password Hashing
+  if (
+    textToAnalyze.includes('md5') ||
+    textToAnalyze.includes('sha1') ||
+    textToAnalyze.includes('sha-1') ||
+    textToAnalyze.includes('cwe-327') ||
+    textToAnalyze.includes('cwe-328') ||
+    textToAnalyze.includes('cwe-916') ||
+    textToAnalyze.includes('hashing password') ||
+    textToAnalyze.includes('password hashing') ||
+    textToAnalyze.includes('weak hash') ||
+    textToAnalyze.includes('sec-crypto-001')
+  ) {
+    return 'Using weak, broken, or deprecated hashing algorithms (such as MD5 or SHA-1 for passwords) allows attackers who obtain database hashes to rapidly crack and reverse them into plaintext credentials using collision attacks or precomputed rainbow tables.';
+  }
+
+  // Authentication Bypass
+  if (
+    textToAnalyze.includes('auth_bypass') ||
+    textToAnalyze.includes('authentication bypass') ||
+    textToAnalyze.includes('login endpoint') ||
+    textToAnalyze.includes('cwe-287') ||
+    textToAnalyze.includes('cwe-306') ||
+    textToAnalyze.includes('sec-auth-001')
+  ) {
+    return 'An attacker could bypass authentication controls to access restricted endpoints, administrative functions, or user accounts without presenting valid credentials. By supplying arbitrary usernames or exploiting missing credential checks, an unauthorized caller can hijack accounts or access protected services.';
+  }
+
+  // Insecure Configuration / CORS
+  if (
+    textToAnalyze.includes('cors') ||
+    textToAnalyze.includes('access-control-allow') ||
+    textToAnalyze.includes('cwe-942') ||
+    textToAnalyze.includes('sec-config-001') ||
+    textToAnalyze.includes('insecure_configuration')
+  ) {
+    return 'An insecure or conflicting configuration—such as combining a wildcard CORS origin (*) with credentials enabled (Access-Control-Allow-Credentials: true) or missing critical security headers—allows untrusted third-party websites to execute authenticated cross-origin requests and steal private user data.';
+  }
+
+  // Authorization Failure & IDOR
+  if (
+    textToAnalyze.includes('idor') ||
+    textToAnalyze.includes('cwe-639') ||
+    textToAnalyze.includes('cwe-862') ||
+    textToAnalyze.includes('cwe-863') ||
+    textToAnalyze.includes('sec-authz-001') ||
+    textToAnalyze.includes('business_logic_flaw') ||
+    (textToAnalyze.includes('authorization') && textToAnalyze.includes('req.params'))
+  ) {
+    return 'An authenticated attacker could manipulate object identifiers (such as record IDs in route parameters or request bodies) to view, modify, or delete another user\'s private data without authorization, bypassing tenant boundaries and ownership checks (Insecure Direct Object Reference).';
+  }
+
+  // SQL Injection
   if (
     textToAnalyze.includes('sql') ||
-    textToAnalyze.includes('injection') && textToAnalyze.includes('query') ||
+    (textToAnalyze.includes('injection') && textToAnalyze.includes('query')) ||
     textToAnalyze.includes('cwe-89')
   ) {
-    return 'An attacker could supply crafted inputs to manipulate database queries, allowing them to bypass authentication, read confidential database tables, or modify and delete application records.';
+    return 'An attacker could inject malicious SQL fragments into input parameters to manipulate database queries. This allows them to bypass authentication, exfiltrate confidential database tables (including passwords and personal data), or modify and delete application records.';
   }
 
+  // Cross-Site Scripting (XSS)
   if (
     textToAnalyze.includes('xss') ||
     textToAnalyze.includes('cross-site scripting') ||
     textToAnalyze.includes('innerhtml') ||
     textToAnalyze.includes('dangerouslysetinnerhtml') ||
-    textToAnalyze.includes('cwe-79')
+    textToAnalyze.includes('cwe-79') ||
+    textToAnalyze.includes('sec-xss-001')
   ) {
-    return "Malicious script content could execute in another user's browser session. Depending on the application's protections, this could allow an attacker to steal session cookies, capture keystrokes, or perform unauthorized actions on that user's behalf.";
+    return 'Malicious script content could execute in another user\'s browser session. This could allow an attacker to hijack active sessions by stealing cookies or localStorage tokens, capture sensitive keystrokes, deface the web application, or perform unauthorized actions on behalf of the victim.';
   }
 
+  // Path Traversal
   if (
-    textToAnalyze.includes('command') ||
-    textToAnalyze.includes('exec') ||
-    textToAnalyze.includes('spawn') ||
-    textToAnalyze.includes('eval') ||
+    textToAnalyze.includes('traversal') ||
+    textToAnalyze.includes('cwe-22') ||
+    textToAnalyze.includes('sec-file-001') ||
+    textToAnalyze.includes('path_traversal')
+  ) {
+    return 'An attacker could supply directory traversal sequences (such as ../) in file path inputs to read or overwrite sensitive files outside the designated root directory, including server configuration files, environment variables, or application source code.';
+  }
+
+  // SSRF
+  if (
+    textToAnalyze.includes('ssrf') ||
+    textToAnalyze.includes('cwe-918') ||
+    textToAnalyze.includes('server-side request forgery')
+  ) {
+    return 'An attacker could supply a malicious URL to force the server to issue requests to internal network services or cloud metadata endpoints (e.g., 169.254.169.254). This can expose internal microservices, private cluster APIs, and cloud environment credentials not accessible from the public internet.';
+  }
+
+  // Command Execution / Eval
+  if (
+    textToAnalyze.includes('eval(') ||
+    textToAnalyze.includes('exec(') ||
+    textToAnalyze.includes('spawn(') ||
+    textToAnalyze.includes('command injection') ||
     textToAnalyze.includes('cwe-78') ||
     textToAnalyze.includes('cwe-94')
   ) {
-    return 'An attacker could inject and execute arbitrary commands on the underlying server or host system, potentially gaining shell access, reading filesystem data, or pivoting into internal infrastructure.';
+    return 'An attacker could inject and execute arbitrary commands or code on the underlying server or host system, potentially gaining shell access, reading filesystem data, or pivoting into internal infrastructure.';
   }
 
+  // Hardcoded Secret / API Key Exposure (Strict check: ensure it really is a secret exposure)
   if (
-    textToAnalyze.includes('traversal') ||
-    textToAnalyze.includes('path') ||
-    textToAnalyze.includes('cwe-22')
+    textToAnalyze.includes('secret_exposure') ||
+    textToAnalyze.includes('cwe-798') ||
+    textToAnalyze.includes('cwe-259') ||
+    textToAnalyze.includes('cwe-312') ||
+    textToAnalyze.includes('api_key') ||
+    textToAnalyze.includes('apikey') ||
+    textToAnalyze.includes('hardcoded secret') ||
+    textToAnalyze.includes('hardcoded api key') ||
+    textToAnalyze.includes('sk_live_') ||
+    textToAnalyze.includes('sec-secret-001')
   ) {
-    return 'An attacker could supply directory traversal sequences (like ../) to read or overwrite files outside the intended folder, such as server configuration files or sensitive source code.';
-  }
-
-  if (
-    textToAnalyze.includes('auth') ||
-    textToAnalyze.includes('bypass') ||
-    textToAnalyze.includes('access control') ||
-    textToAnalyze.includes('idor') ||
-    textToAnalyze.includes('cwe-287') ||
-    textToAnalyze.includes('cwe-306') ||
-    textToAnalyze.includes('cwe-862') ||
-    textToAnalyze.includes('cwe-639')
-  ) {
-    return 'An attacker could potentially access restricted features, administrative endpoints, or private account data without completing the intended authentication or authorization checks.';
-  }
-
-  if (
-    textToAnalyze.includes('ssrf') ||
-    textToAnalyze.includes('cwe-918')
-  ) {
-    return 'An attacker could force the server to issue requests to internal networks or cloud metadata services (e.g., 169.254.169.254), exposing internal services or cloud credentials.';
-  }
-
-  if (
-    textToAnalyze.includes('crypto') ||
-    textToAnalyze.includes('hash') ||
-    textToAnalyze.includes('md5') ||
-    textToAnalyze.includes('sha1') ||
-    textToAnalyze.includes('cwe-327') ||
-    textToAnalyze.includes('cwe-328')
-  ) {
-    return 'Weak cryptographic algorithms or insufficient key sizes make encrypted payloads and hashed passwords susceptible to pre-computed lookup attacks and collision cracking.';
+    return 'If this hardcoded secret or API key is committed to version control, anyone with access to the repository can extract the credential. An attacker could use the exposed key to perform unauthorized API calls, access private cloud services, exfiltrate data, or incur substantial unexpected billing charges.';
   }
 
   if (
     textToAnalyze.includes('dos') ||
-    textToAnalyze.includes('denial') ||
+    textToAnalyze.includes('denial of service') ||
     textToAnalyze.includes('redos') ||
     textToAnalyze.includes('cwe-400') ||
     textToAnalyze.includes('cwe-1333')
@@ -188,6 +297,7 @@ function getCodingAgentPrompt(finding: any): string {
 
   const title = getCleanIssueName(finding);
   const description = finding.description || finding.message || 'Vulnerability detected in the source code.';
+  const scenario = getRealWorldScenario(finding);
   const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
   const suggestion = finding.suggestion || finding.remediation || 'Refactor the code according to security best practices to resolve the vulnerability.';
 
@@ -195,6 +305,7 @@ function getCodingAgentPrompt(finding: any): string {
     `TASK\nFix the identified security vulnerability.`,
     `LOCATION\n${locationText}`,
     `ISSUE\n${title}\n\n${description}`,
+    scenario ? `EXPLOIT SCENARIO\n${scenario}` : '',
     snippet ? `CURRENT CODE\n${snippet}` : '',
     `REQUIRED FIX\n${suggestion}`,
     `REQUIREMENTS\n- Preserve existing application behavior.\n- Modify only what is necessary to fix the vulnerability.\n- Do not introduce new security issues.\n- Follow the existing project's coding patterns.\n- Do not modify unrelated files unless required by the fix.`,
