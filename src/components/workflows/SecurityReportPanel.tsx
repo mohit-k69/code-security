@@ -4,6 +4,8 @@ import { Check, Copy, AlertTriangle, Loader2, ShieldCheck, Download } from 'luci
 interface SecurityReportPanelProps {
   report: any;
   isAnalyzing: boolean;
+  workflow?: string;
+  analysisError?: string | null;
 }
 
 /**
@@ -540,7 +542,12 @@ function downloadMarkdownDocument(filename: string, content: string): boolean {
   }
 }
 
-export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanelProps) {
+export function SecurityReportPanel({ 
+  report, 
+  isAnalyzing,
+  workflow,
+  analysisError
+}: SecurityReportPanelProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
 
@@ -562,6 +569,20 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
     );
   }
 
+  if (analysisError || report?.error) {
+    return (
+      <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
+        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+          <AlertTriangle className="w-6 h-6 text-red-600" />
+        </div>
+        <h3 className="text-gray-900 font-medium text-lg">Analysis Error</h3>
+        <p className="text-red-600 text-sm mt-2 max-w-xs text-center">
+          {analysisError || report?.error || 'Security analysis encountered an error. Please try again.'}
+        </p>
+      </div>
+    );
+  }
+
   if (!report) {
     return (
       <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
@@ -571,22 +592,6 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
           </div>
           <h3 className="text-gray-900 font-medium text-lg">No Analysis Results</h3>
           <p className="text-gray-500 text-sm mt-2">Your security analysis will appear here.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (report.verdict === 'PASS') {
-    return (
-      <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
-        <div className="flex flex-col items-center max-w-sm mx-auto">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
-            <Check className="w-6 h-6 text-emerald-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">PASS</h2>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            No security vulnerabilities were identified in the provided code.
-          </p>
         </div>
       </div>
     );
@@ -621,9 +626,40 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
 
   const totalFindings = allFindings.length;
 
+  const isPasteReview =
+    workflow === 'paste' ||
+    report?.reviewType === 'paste' ||
+    report?.repository?.name === 'paste_snippet';
+
+  const effectiveVerdict = isPasteReview
+    ? (totalFindings === 0 ? 'PASS' : 'FAIL')
+    : report.verdict;
+
+  if (effectiveVerdict === 'PASS') {
+    return (
+      <div className="w-full bg-white border-l border-gray-200 flex flex-col items-center justify-center h-full p-8 text-center shrink-0">
+        <div className="flex flex-col items-center max-w-sm mx-auto">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
+            <Check className="w-6 h-6 text-emerald-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">PASS</h2>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            {isPasteReview
+              ? 'No security vulnerabilities detected.'
+              : 'No security vulnerabilities were identified in the provided code.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const handleDownloadMarkdown = () => {
     try {
-      const mdContent = generateRemediationMarkdown(report, allFindings);
+      const reportForDownload = {
+        ...report,
+        verdict: effectiveVerdict
+      };
+      const mdContent = generateRemediationMarkdown(reportForDownload, allFindings);
       const rawName = report.repository?.name || (typeof report.repository === 'string' ? report.repository : null) || 'code';
       const cleanName = rawName.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase() || 'code';
       const fileName = `${cleanName}-security-remediation.md`;
@@ -644,7 +680,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
     <div className="w-full bg-white border-l border-gray-200 flex flex-col h-full shrink-0">
       {/* 1. Results Header */}
       <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
-        {report.verdict === 'NOT_VERIFIED' && (
+        {!isPasteReview && effectiveVerdict === 'NOT_VERIFIED' && (
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
@@ -682,7 +718,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
           </div>
         )}
 
-        {report.verdict === 'FAIL' && (
+        {effectiveVerdict === 'FAIL' && (
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -690,7 +726,11 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
               </div>
               <h2 className="text-2xl font-bold text-gray-900">FAIL</h2>
             </div>
-            <p className="text-red-700 font-medium">Security vulnerabilities were detected in the provided code.</p>
+            <p className="text-red-700 font-medium">
+              {isPasteReview
+                ? `${totalFindings} security ${totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'} detected.`
+                : 'Security vulnerabilities were detected in the provided code.'}
+            </p>
             
             <div className="mt-3 flex items-center justify-between">
               <span className="font-semibold text-gray-800 text-sm">
@@ -722,7 +762,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
 
       {/* 2. Scrollable Findings List */}
       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-        {report.verdict === 'FAIL' && totalFindings > 0 && (
+        {effectiveVerdict === 'FAIL' && totalFindings > 0 && (
           <div className="space-y-6">
             {allFindings.map((finding: any, i: number) => {
               const isHigh = finding._severityLabel === 'HIGH';

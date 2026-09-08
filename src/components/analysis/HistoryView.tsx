@@ -8,6 +8,7 @@ interface ReviewedItem {
   pr: number | null;
   date: Date;
   result: any;
+  reviewType?: string;
 }
 
 interface HistoryViewProps {
@@ -130,13 +131,26 @@ export function HistoryView({
                   </div>
                   
                   <div className="w-[120px] flex justify-center">
-                    <span className={`px-2.5 py-1 rounded-md text-[12px] font-bold ${
-                      item.verdict === 'FAIL' ? 'bg-red-100 text-red-700' :
-                      item.verdict === 'NOT_VERIFIED' ? 'bg-orange-100 text-orange-700' :
-                      'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {item.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.verdict || 'PASS'}
-                    </span>
+                    {(() => {
+                      const isPaste = item.reviewType === 'paste' || item.result?.reviewType === 'paste' || item.result?.repository?.name === 'paste_snippet';
+                      const count = (
+                        (item.result?.totalFindings ?? 0) > 0 ||
+                        (Array.isArray(item.result?.findings) && item.result.findings.length > 0)
+                      ) ? 1 : 0;
+                      const displayVerdict = isPaste
+                        ? (item.verdict === 'FAIL' || count > 0 ? 'FAIL' : 'PASS')
+                        : (item.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.verdict || 'PASS');
+                      
+                      return (
+                        <span className={`px-2.5 py-1 rounded-md text-[12px] font-bold ${
+                          displayVerdict === 'FAIL' ? 'bg-red-100 text-red-700' :
+                          displayVerdict === 'NOT_VERIFIED' ? 'bg-orange-100 text-orange-700' :
+                          'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {displayVerdict}
+                        </span>
+                      );
+                    })()}
                   </div>
                   
                   <div className="w-[120px] flex justify-center">

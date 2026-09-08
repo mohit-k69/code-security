@@ -11,6 +11,7 @@ export { FREE_REVIEW_LIMIT };
 export function useAnalysis(user?: User | null) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [expandedFinding, setExpandedFinding] = useState<number | null>(null);
 
@@ -111,6 +112,20 @@ export function useAnalysis(user?: User | null) {
 
     setIsAnalyzing(true);
     setAnalysisResult(null);
+    setAnalysisError(null);
+
+    const getFindingCount = (res: any): number => {
+      if (!res) return 0;
+      if (Array.isArray(res.findings)) return res.findings.length;
+      if (res.findings && typeof res.findings === 'object') {
+        return (
+          (res.findings.critical?.length || 0) +
+          (res.findings.warning?.length || 0) +
+          (res.findings.info?.length || 0)
+        );
+      }
+      return typeof res.totalFindings === 'number' ? res.totalFindings : 0;
+    };
 
     let finalResult: any;
 
@@ -125,20 +140,43 @@ export function useAnalysis(user?: User | null) {
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       finalResult = data.report;
+      if (finalResult && reviewType === 'paste') {
+        const count = getFindingCount(finalResult);
+        finalResult = {
+          ...finalResult,
+          reviewType: 'paste',
+          verdict: count === 0 ? 'PASS' : 'FAIL',
+        };
+      }
       setAnalysisResult(finalResult);
     } catch (err: any) {
       console.error('Analysis failed:', err);
       try {
         // Fallback to legacy analyzer if the edge function fails or isn't deployed yet
         finalResult = analyzeCode(allCode);
+        if (finalResult && reviewType === 'paste') {
+          const count = getFindingCount(finalResult);
+          finalResult = {
+            ...finalResult,
+            reviewType: 'paste',
+            verdict: count === 0 ? 'PASS' : 'FAIL',
+          };
+        }
         setAnalysisResult(finalResult as any);
-      } catch (fallbackErr) {
+      } catch (fallbackErr: any) {
         trackEvent('analysis_failed', { review_type: reviewType });
+        setAnalysisError(err?.message || fallbackErr?.message || 'Security analysis encountered an error. Please try again.');
+        setAnalysisResult(null);
       }
     } finally {
       setIsAnalyzing(false);
+    }
+
+    if (!finalResult) {
+      return;
     }
 
     if (finalResult) {
@@ -201,6 +239,8 @@ export function useAnalysis(user?: User | null) {
     setIsAnalyzing,
     analysisResult,
     setAnalysisResult,
+    analysisError,
+    setAnalysisError,
     activeCategory,
     setActiveCategory,
     expandedFinding,

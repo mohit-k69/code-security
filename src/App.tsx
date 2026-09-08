@@ -44,6 +44,7 @@ export default function App() {
     setIsAnalyzing,
     analysisResult,
     setAnalysisResult,
+    analysisError,
     activeCategory,
     setActiveCategory,
     expandedFinding,
@@ -294,6 +295,8 @@ export default function App() {
                       <SecurityReportPanel 
                         report={analysisResult?.verdict ? analysisResult : null}
                         isAnalyzing={isAnalyzing}
+                        workflow={activeWorkflow}
+                        analysisError={analysisError}
                       />
                     </motion.div>
                   )}
