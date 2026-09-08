@@ -14,65 +14,57 @@ export interface User {
   authProvider?: 'email' | 'github' | 'google';
 }
 
+export function isOAuthUser(user: any, identities: any[] = []): boolean {
+  if (!user) return false;
+  const primaryProvider = user.app_metadata?.provider;
+  if (primaryProvider === 'google' || primaryProvider === 'github') return true;
+
+  const providers: string[] = user.app_metadata?.providers || [];
+  if (providers.includes('google') || providers.includes('github')) return true;
+
+  const ids = identities.length > 0 ? identities : (user.identities || []);
+  if (ids.some((id: any) => id.provider === 'google' || id.provider === 'github')) {
+    return true;
+  }
+
+  return false;
+}
+
 function resolveAuthProvider(
   user: any,
   fetchedUserData: any,
   identities: any[]
 ): 'email' | 'github' | 'google' | undefined {
-  // 1. Authoritative initial signup provider from Supabase app_metadata
   const primaryProvider =
     user.app_metadata?.provider ||
     fetchedUserData?.app_metadata?.provider;
 
-  if (primaryProvider === 'google') {
-    return 'google';
-  }
-  if (primaryProvider === 'github') {
-    return 'github';
-  }
-  if (primaryProvider === 'email') {
-    return 'email';
-  }
+  const providers: string[] = [
+    ...(user.app_metadata?.providers || []),
+    ...(fetchedUserData?.app_metadata?.providers || [])
+  ];
 
-  // 2. Providers list from app_metadata
-  const providers: string[] =
-    user.app_metadata?.providers ||
-    fetchedUserData?.app_metadata?.providers ||
-    [];
-
-  if (providers.length === 1) {
-    if (providers[0] === 'google') return 'google';
-    if (providers[0] === 'github') return 'github';
-    if (providers[0] === 'email') return 'email';
-  }
-
-  // 3. Check identities list
   const hasGoogleIdentity = identities.some((id: any) => id.provider === 'google');
-  const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
   const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
+  const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
 
-  if (hasGoogleIdentity && !hasEmailIdentity && !hasGithubIdentity) {
+  if (primaryProvider === 'google' || (hasGoogleIdentity && !hasGithubIdentity)) {
     return 'google';
   }
-
-  if (hasGithubIdentity && !hasEmailIdentity && !hasGoogleIdentity && !providers.includes('email')) {
+  if (primaryProvider === 'github' || (hasGithubIdentity && !hasGoogleIdentity)) {
+    return 'github';
+  }
+  if (hasGoogleIdentity && hasGithubIdentity) {
+    if (primaryProvider === 'google' || providers[0] === 'google') return 'google';
     return 'github';
   }
 
-  if (hasEmailIdentity && !hasGithubIdentity && !hasGoogleIdentity) {
+  if (primaryProvider === 'email' || hasEmailIdentity || providers.includes('email')) {
     return 'email';
-  }
-
-  if (identities.length > 0) {
-    const firstProvider = identities[0]?.provider;
-    if (firstProvider === 'google' || firstProvider === 'github' || firstProvider === 'email') {
-      return firstProvider;
-    }
   }
 
   if (providers.includes('google')) return 'google';
   if (providers.includes('github')) return 'github';
-  if (providers.includes('email')) return 'email';
 
   return undefined;
 }
@@ -144,112 +136,165 @@ export function useAuth() {
       }
     }
 
+    const handleSession = async (session: any, source: string) => {
+      try {
+        if (!session?.user) {
+          setUser(null);
+          return;
+        }
+
+        console.log('[AUTH] SESSION_RECEIVED', {
+          source,
+          userId: session.user.id,
+          email: session.user.email,
+          hasProviderToken: Boolean(session.provider_token)
+        });
+
+        const meta = session.user.user_metadata;
+        let identities = session.user.identities || [];
+        let isGithubLinked = Boolean(
+          session.user.app_metadata?.providers?.includes('github') ||
+          session.user.app_metadata?.provider === 'github' ||
+          identities.some((id: any) => id.provider === 'github') ||
+          session.provider_token
+        );
+
+        let fetchedUserData: any = null;
+        if (!isGithubLinked || identities.length === 0 || !session.user.app_metadata?.provider) {
+          try {
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData?.user) {
+              fetchedUserData = userData.user;
+              if (userData.user.identities && userData.user.identities.length > 0) {
+                identities = userData.user.identities;
+              }
+              isGithubLinked = Boolean(
+                userData.user.app_metadata?.providers?.includes('github') ||
+                userData.user.app_metadata?.provider === 'github' ||
+                identities.some((id: any) => id.provider === 'github') ||
+                session.provider_token
+              );
+            }
+          } catch (e) {
+            console.warn('[AUTH] Could not fetch extended user data:', e);
+          }
+        }
+
+        // Determine if the user authenticated via an OAuth provider (Google or GitHub)
+        const isOAuth =
+          isOAuthUser(session.user, identities) ||
+          (fetchedUserData ? isOAuthUser(fetchedUserData, identities) : false) ||
+          Boolean(session.provider_token);
+
+        // Resolve user email
+        const userEmail =
+          session.user.email ||
+          meta?.email ||
+          fetchedUserData?.email ||
+          identities.find((id: any) => id.identity_data?.email)?.identity_data?.email ||
+          '';
+
+        if (isOAuth) {
+          // Edge case: If an OAuth provider does not return an email, handle it gracefully rather than bypassing security
+          if (!userEmail || userEmail.trim() === '') {
+            console.warn('[AUTH] OAuth user has no email returned from provider.');
+            await supabase.auth.signOut();
+            setUser(null);
+            const isGoogle = session.user.app_metadata?.provider === 'google' || identities.some((id: any) => id.provider === 'google');
+            const providerName = isGoogle ? 'Google' : 'GitHub';
+            const userFriendlyError = `Your ${providerName} account did not provide an email address. Please ensure an email is associated with your ${providerName} account and try again.`;
+            window.dispatchEvent(new CustomEvent('codevibe_auth_error', { detail: { message: userFriendlyError } }));
+            return;
+          }
+
+          // Google & GitHub OAuth users bypass the email verification screen and go directly into the app
+        } else {
+          // Email/password users: must have confirmed their email address before normal access
+          const isEmailConfirmed = Boolean(
+            session.user.email_confirmed_at ||
+            session.user.confirmed_at ||
+            fetchedUserData?.email_confirmed_at ||
+            fetchedUserData?.confirmed_at
+          );
+
+          if (!isEmailConfirmed) {
+            console.warn('[AUTH] Email/password account detected with unconfirmed email.');
+            await supabase.auth.signOut();
+            setUser(null);
+            window.dispatchEvent(new CustomEvent('codevibe_auth_error', {
+              detail: { message: 'Please confirm your email address before signing in.' }
+            }));
+            return;
+          }
+        }
+
+        const authProvider = resolveAuthProvider(session.user, fetchedUserData, identities);
+
+        const githubIdentity = identities.find((id: any) => id.provider === 'github');
+        const githubUsername = githubIdentity?.identity_data?.user_name ||
+          githubIdentity?.identity_data?.preferred_username ||
+          meta?.user_name ||
+          meta?.preferred_username ||
+          fetchedUserData?.user_metadata?.user_name ||
+          fetchedUserData?.user_metadata?.preferred_username;
+
+        console.log('[AUTH_DIAGNOSTIC]', {
+          source,
+          userId: session.user.id,
+          app_metadata_provider: session.user.app_metadata?.provider,
+          app_metadata_providers: session.user.app_metadata?.providers,
+          identities: identities.map((id: any) => ({
+            provider: id.provider,
+            id: id.id
+          })),
+          calculated_authProvider: authProvider,
+          isOAuth,
+          isGithubLinked,
+        });
+
+        setUser({
+          id: session.user.id,
+          name: meta?.full_name || meta?.name || meta?.first_name || userEmail.split('@')[0] || 'User',
+          email: userEmail,
+          avatar: meta?.avatar_url || meta?.picture,
+          created_at: session.user.created_at,
+          last_name_updated_at: meta?.last_name_updated_at,
+          last_password_updated_at: meta?.last_password_updated_at,
+          isGithubLinked,
+          githubUsername,
+          authProvider,
+        });
+
+        if (session.provider_token) {
+          try {
+            const { error, data } = await supabase.functions.invoke('store-provider-token', {
+              body: { 
+                providerToken: session.provider_token,
+                providerRefreshToken: session.provider_refresh_token
+              }
+            });
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            setProviderTokenSetupError(null);
+            window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+          } catch (err: any) {
+            console.error('Failed to trigger token storage:', err);
+            setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
+          }
+        }
+      } catch (err) {
+        console.error('Session handling error:', err);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
     const syncSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          console.log('[GITHUB_OAUTH] SESSION_AFTER_CALLBACK', {
-            source: 'syncSession',
-            hasSession: true,
-            userId: session.user.id,
-            email: session.user.email,
-            hasProviderToken: Boolean(session.provider_token)
-          });
-
-          const meta = session.user.user_metadata;
-          let identities = session.user.identities || [];
-          let isGithubLinked = Boolean(
-            session.user.app_metadata?.providers?.includes('github') ||
-            session.user.app_metadata?.provider === 'github' ||
-            identities.some((id: any) => id.provider === 'github')
-          );
-
-          let fetchedUserData: any = null;
-          if (!isGithubLinked || identities.length === 0 || !session.user.app_metadata?.provider) {
-            try {
-              const { data: userData } = await supabase.auth.getUser();
-              if (userData?.user) {
-                fetchedUserData = userData.user;
-                if (userData.user.identities && userData.user.identities.length > 0) {
-                  identities = userData.user.identities;
-                }
-                isGithubLinked = Boolean(
-                  userData.user.app_metadata?.providers?.includes('github') ||
-                  userData.user.app_metadata?.provider === 'github' ||
-                  identities.some((id: any) => id.provider === 'github')
-                );
-              }
-            } catch {}
-          }
-
-          const authProvider = resolveAuthProvider(session.user, fetchedUserData, identities);
-
-          const githubIdentity = identities.find((id: any) => id.provider === 'github');
-          const githubUsername = githubIdentity?.identity_data?.user_name ||
-            githubIdentity?.identity_data?.preferred_username ||
-            session.user.user_metadata?.user_name ||
-            session.user.user_metadata?.preferred_username ||
-            fetchedUserData?.user_metadata?.user_name ||
-            fetchedUserData?.user_metadata?.preferred_username;
-
-          console.log('[AUTH_DIAGNOSTIC]', {
-            source: 'syncSession',
-            userId: session.user.id,
-            app_metadata_provider: session.user.app_metadata?.provider,
-            app_metadata_providers: session.user.app_metadata?.providers,
-            identities: identities.map((id: any) => ({
-              provider: id.provider,
-              id: id.id
-            })),
-            calculated_authProvider: authProvider,
-            isGithubLinked,
-            showSwitchAccount_candidate: isGithubLinked && authProvider !== 'github'
-          });
-
-          setUser({
-            id: session.user.id,
-            name: meta?.full_name || meta?.name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            avatar: meta?.avatar_url || meta?.picture,
-            created_at: session.user.created_at,
-            last_name_updated_at: meta?.last_name_updated_at,
-            last_password_updated_at: meta?.last_password_updated_at,
-            isGithubLinked,
-            githubUsername,
-            authProvider,
-          });
-
-          console.log('[GITHUB_OAUTH] PROVIDER_TOKEN_DETECTED', {
-            source: 'syncSession',
-            hasProviderToken: Boolean(session.provider_token),
-            hasRefreshToken: Boolean(session.provider_refresh_token)
-          });
-
-          if (session.provider_token) {
-            try {
-              const { error, data } = await supabase.functions.invoke('store-provider-token', {
-                body: { 
-                  providerToken: session.provider_token,
-                  providerRefreshToken: session.provider_refresh_token
-                }
-              });
-              console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'syncSession', data, error });
-              if (error) throw error;
-              if (data?.error) throw new Error(data.error);
-              setProviderTokenSetupError(null);
-              window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
-            } catch (err: any) {
-              console.error('Failed to trigger token storage from syncSession:', err);
-              console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'syncSession', error: err });
-              setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
-            }
-          }
-        } else {
-          setUser(null);
-        }
+        await handleSession(session, 'syncSession');
       } catch (err) {
         console.error('Session sync error:', err);
-      } finally {
         setIsInitializing(false);
       }
     };
@@ -311,125 +356,20 @@ export function useAuth() {
         return;
       }
 
-      if (session?.user) {
-        console.log('[GITHUB_OAUTH] SESSION_AFTER_CALLBACK', {
-          source: 'onAuthStateChange',
-          event: _event,
-          hasSession: true,
-          userId: session.user.id,
-          email: session.user.email,
-          hasProviderToken: Boolean(session.provider_token)
-        });
-
-        const meta = session.user.user_metadata;
-        let identities = session.user.identities || [];
-        let isGithubLinked = Boolean(
-          session.user.app_metadata?.providers?.includes('github') ||
-          session.user.app_metadata?.provider === 'github' ||
-          identities.some((id: any) => id.provider === 'github')
-        );
-
-        if (!isGithubLinked && session.provider_token) {
-          isGithubLinked = true;
-        }
-
-        let fetchedUserData: any = null;
-        if (!isGithubLinked || identities.length === 0 || !session.user.app_metadata?.provider) {
-          try {
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData?.user) {
-              fetchedUserData = userData.user;
-              if (userData.user.identities && userData.user.identities.length > 0) {
-                identities = userData.user.identities;
-              }
-              isGithubLinked = Boolean(
-                userData.user.app_metadata?.providers?.includes('github') ||
-                userData.user.app_metadata?.provider === 'github' ||
-                identities.some((id: any) => id.provider === 'github') ||
-                session.provider_token
-              );
-            }
-          } catch {}
-        }
-
-        const authProvider = resolveAuthProvider(session.user, fetchedUserData, identities);
-
-        const githubIdentity = identities.find((id: any) => id.provider === 'github');
-        const githubUsername = githubIdentity?.identity_data?.user_name ||
-          githubIdentity?.identity_data?.preferred_username ||
-          session.user.user_metadata?.user_name ||
-          session.user.user_metadata?.preferred_username ||
-          fetchedUserData?.user_metadata?.user_name ||
-          fetchedUserData?.user_metadata?.preferred_username;
-
-        console.log('[AUTH_DIAGNOSTIC]', {
-          source: 'onAuthStateChange',
-          userId: session.user.id,
-          app_metadata_provider: session.user.app_metadata?.provider,
-          app_metadata_providers: session.user.app_metadata?.providers,
-          identities: identities.map((id: any) => ({
-            provider: id.provider,
-            id: id.id
-          })),
-          calculated_authProvider: authProvider,
-          isGithubLinked,
-          showSwitchAccount_candidate: isGithubLinked && authProvider !== 'github'
-        });
-
-        setUser({
-          id: session.user.id,
-          name: meta?.full_name || meta?.name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          avatar: meta?.avatar_url || meta?.picture,
-          created_at: session.user.created_at,
-          last_name_updated_at: meta?.last_name_updated_at,
-          last_password_updated_at: meta?.last_password_updated_at,
-          isGithubLinked,
-          githubUsername,
-          authProvider,
-        });
-
-        try {
-          authChannel?.postMessage({ type: 'AUTH_STATE_CHANGED' });
-        } catch {}
-
-        console.log('[GITHUB_OAUTH] PROVIDER_TOKEN_DETECTED', {
-          source: 'onAuthStateChange',
-          hasProviderToken: Boolean(session.provider_token),
-          hasRefreshToken: Boolean(session.provider_refresh_token)
-        });
-
-        // Securely capture the provider token immediately after the OAuth redirect
-        if (session.provider_token) {
-          try {
-            const { error, data } = await supabase.functions.invoke('store-provider-token', {
-              body: { 
-                providerToken: session.provider_token,
-                providerRefreshToken: session.provider_refresh_token
-              }
-            });
-            console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'onAuthStateChange', data, error });
-            if (error) throw error;
-            if (data?.error) throw new Error(data.error);
-            setProviderTokenSetupError(null);
-            window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
-          } catch (err: any) {
-            console.error('Failed to trigger token storage:', err);
-            console.log('[GITHUB_OAUTH] TOKEN_STORAGE_RESULT', { source: 'onAuthStateChange', error: err });
-            setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
-          }
-        }
-      } else {
-        setUser(null);
-      }
-      
-      // Stop showing the loading screen once auth state is settled
-      setIsInitializing(false);
+      await handleSession(session, 'onAuthStateChange');
     });
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'OAUTH_AUTH_SUCCESS' || e.data?.type === 'AUTH_STATE_CHANGED') {
+        syncSession();
+      }
+    };
+    window.addEventListener('message', handleMessage);
 
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('message', handleMessage);
       if (authChannel) authChannel.close();
     };
   }, []);
