@@ -27,11 +27,35 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   
-  // Track onboarding view
+  // Track onboarding view & handle OAuth URL errors
   useEffect(() => {
     trackPageView('/onboarding', 'Code Vibe - Welcome');
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const oauthError = searchParams.get('error_description') || hashParams.get('error_description') || searchParams.get('error') || hashParams.get('error');
+    if (oauthError) {
+      const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
+      const userFriendlyError = isAccessDenied
+        ? 'Sign-in was cancelled.'
+        : `Authentication error: ${oauthError}`;
+      setEmailError(userFriendlyError);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const handleAuthError = (e: any) => {
+      setIsLoading(false);
+      setIsGoogleLoading(false);
+      if (e.detail?.message) {
+        setEmailError(e.detail.message);
+      }
+    };
+
+    window.addEventListener('codevibe_auth_error', handleAuthError);
+    return () => window.removeEventListener('codevibe_auth_error', handleAuthError);
   }, []);
 
   // Forgot password state
@@ -141,20 +165,74 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     }
   }, [email, password, mode, firstName, lastName, onLogin]);
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      setEmailError('');
+      trackEvent('oauth_signin_initiated', { provider: 'google', mode });
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        if (window.self !== window.top) {
+          const popup = window.open(data.url, 'oauth_popup', 'width=500,height=650');
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            window.location.assign(data.url);
+          }
+        } else {
+          window.location.assign(data.url);
+        }
+      }
+    } catch (err: any) {
+      console.error('Google OAuth error:', err);
+      let message = err.message || 'Failed to authenticate with Google. Please try again.';
+      if (message.toLowerCase().includes('popup')) {
+        message = 'Popup was blocked by your browser. Please allow popups or open the app in a new tab.';
+      }
+      setEmailError(message);
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleGithubSignIn = async () => {
     try {
       setIsLoading(true);
       setEmailError('');
-      const { error } = await supabase.auth.signInWithOAuth({
+      trackEvent('oauth_signin_initiated', { provider: 'github', mode });
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: window.location.origin,
           scopes: 'repo read:user user:email',
-          // Always show GitHub account selection/consent screen
+          skipBrowserRedirect: true,
           queryParams: { prompt: 'consent' },
         },
       });
       if (error) throw error;
+
+      if (data?.url) {
+        if (window.self !== window.top) {
+          const popup = window.open(data.url, 'oauth_popup', 'width=500,height=650');
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            window.location.assign(data.url);
+          }
+        } else {
+          window.location.assign(data.url);
+        }
+      }
     } catch (err: any) {
       setEmailError(err.message || 'Failed to authenticate with GitHub.');
       setIsLoading(false);
@@ -228,6 +306,8 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         isLoading={isLoading}
         handleEmailContinue={handleEmailContinue}
         handleGithubSignIn={handleGithubSignIn}
+        handleGoogleSignIn={handleGoogleSignIn}
+        isGoogleLoading={isGoogleLoading}
         setShowForgotPassword={setShowForgotPassword}
         setForgotEmail={setForgotEmail}
         setForgotError={setForgotError}

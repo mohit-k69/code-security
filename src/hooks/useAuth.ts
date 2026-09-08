@@ -11,19 +11,22 @@ export interface User {
   last_password_updated_at?: string;
   isGithubLinked?: boolean;
   githubUsername?: string;
-  authProvider?: 'email' | 'github';
+  authProvider?: 'email' | 'github' | 'google';
 }
 
 function resolveAuthProvider(
   user: any,
   fetchedUserData: any,
   identities: any[]
-): 'email' | 'github' | undefined {
+): 'email' | 'github' | 'google' | undefined {
   // 1. Authoritative initial signup provider from Supabase app_metadata
   const primaryProvider =
     user.app_metadata?.provider ||
     fetchedUserData?.app_metadata?.provider;
 
+  if (primaryProvider === 'google') {
+    return 'google';
+  }
   if (primaryProvider === 'github') {
     return 'github';
   }
@@ -37,47 +40,40 @@ function resolveAuthProvider(
     fetchedUserData?.app_metadata?.providers ||
     [];
 
-  // If only GitHub is in the providers list, it's definitely GitHub
-  if (providers.length === 1 && providers[0] === 'github') {
-    return 'github';
-  }
-
-  // If only email is in the providers list, it's definitely email
-  if (providers.length === 1 && providers[0] === 'email') {
-    return 'email';
+  if (providers.length === 1) {
+    if (providers[0] === 'google') return 'google';
+    if (providers[0] === 'github') return 'github';
+    if (providers[0] === 'email') return 'email';
   }
 
   // 3. Check identities list
+  const hasGoogleIdentity = identities.some((id: any) => id.provider === 'google');
   const hasEmailIdentity = identities.some((id: any) => id.provider === 'email');
   const hasGithubIdentity = identities.some((id: any) => id.provider === 'github');
 
-  if (hasGithubIdentity && !hasEmailIdentity && !providers.includes('email')) {
+  if (hasGoogleIdentity && !hasEmailIdentity && !hasGithubIdentity) {
+    return 'google';
+  }
+
+  if (hasGithubIdentity && !hasEmailIdentity && !hasGoogleIdentity && !providers.includes('email')) {
     return 'github';
   }
 
-  if (hasEmailIdentity && !hasGithubIdentity) {
+  if (hasEmailIdentity && !hasGithubIdentity && !hasGoogleIdentity) {
     return 'email';
-  }
-
-  if (hasEmailIdentity && hasGithubIdentity) {
-    // If both identities exist, the first created identity represents the initial provider
-    return identities[0]?.provider === 'github' ? 'github' : 'email';
   }
 
   if (identities.length > 0) {
-    return identities[0]?.provider === 'github' ? 'github' : 'email';
+    const firstProvider = identities[0]?.provider;
+    if (firstProvider === 'google' || firstProvider === 'github' || firstProvider === 'email') {
+      return firstProvider;
+    }
   }
 
-  // Fallback: If GitHub is present in providers and email is not
-  if (providers.includes('github') && !providers.includes('email')) {
-    return 'github';
-  }
+  if (providers.includes('google')) return 'google';
+  if (providers.includes('github')) return 'github';
+  if (providers.includes('email')) return 'email';
 
-  if (providers.includes('email') && !providers.includes('github')) {
-    return 'email';
-  }
-
-  // Unresolved/unknown: return undefined instead of assuming email
   return undefined;
 }
 
@@ -132,15 +128,20 @@ export function useAuth() {
     }
 
     if (oauthError) {
-      const cleanUrl = window.location.pathname + (window.location.search.includes('workflow=github') ? '?workflow=github' : '');
+      const isGithubWorkflow = window.location.search.includes('workflow=github');
+      const cleanUrl = window.location.pathname + (isGithubWorkflow ? '?workflow=github' : '');
       window.history.replaceState({}, document.title, cleanUrl);
 
       const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
       const userFriendlyError = isAccessDenied 
-        ? 'GitHub authorization was cancelled.'
-        : `GitHub connection error: ${oauthError}`;
+        ? (isGithubWorkflow ? 'GitHub authorization was cancelled.' : 'Sign-in was cancelled.')
+        : (isGithubWorkflow ? `GitHub connection error: ${oauthError}` : `Authentication error: ${oauthError}`);
 
-      window.dispatchEvent(new CustomEvent('codevibe_github_oauth_error', { detail: { message: userFriendlyError } }));
+      if (isGithubWorkflow) {
+        window.dispatchEvent(new CustomEvent('codevibe_github_oauth_error', { detail: { message: userFriendlyError } }));
+      } else {
+        window.dispatchEvent(new CustomEvent('codevibe_auth_error', { detail: { message: userFriendlyError } }));
+      }
     }
 
     const syncSession = async () => {
@@ -207,9 +208,9 @@ export function useAuth() {
 
           setUser({
             id: session.user.id,
-            name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
+            name: meta?.full_name || meta?.name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
-            avatar: meta?.avatar_url,
+            avatar: meta?.avatar_url || meta?.picture,
             created_at: session.user.created_at,
             last_name_updated_at: meta?.last_name_updated_at,
             last_password_updated_at: meta?.last_password_updated_at,
@@ -377,9 +378,9 @@ export function useAuth() {
 
         setUser({
           id: session.user.id,
-          name: meta?.full_name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
+          name: meta?.full_name || meta?.name || meta?.first_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          avatar: meta?.avatar_url,
+          avatar: meta?.avatar_url || meta?.picture,
           created_at: session.user.created_at,
           last_name_updated_at: meta?.last_name_updated_at,
           last_password_updated_at: meta?.last_password_updated_at,
