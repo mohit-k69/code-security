@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Copy, AlertTriangle, Loader2, ShieldCheck, Download, FileText } from 'lucide-react';
+import { Check, Copy, AlertTriangle, Loader2, ShieldCheck, Download } from 'lucide-react';
 
 interface SecurityReportPanelProps {
   report: any;
@@ -543,7 +543,6 @@ function downloadMarkdownDocument(filename: string, content: string): boolean {
 export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanelProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
-  const [isCopiedAll, setIsCopiedAll] = useState(false);
 
   const handleCopyPrompt = (promptText: string, index: number) => {
     navigator.clipboard.writeText(promptText);
@@ -635,29 +634,9 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
         setTimeout(() => {
           setIsDownloaded(false);
         }, 2500);
-      } else {
-        // Fallback: If device or browser blocks file download, copy directly to clipboard
-        navigator.clipboard.writeText(mdContent);
-        setIsCopiedAll(true);
-        setTimeout(() => {
-          setIsCopiedAll(false);
-        }, 2500);
       }
     } catch (err) {
       console.error('Failed to download markdown file:', err);
-    }
-  };
-
-  const handleCopyAllMarkdown = () => {
-    try {
-      const mdContent = generateRemediationMarkdown(report, allFindings);
-      navigator.clipboard.writeText(mdContent);
-      setIsCopiedAll(true);
-      setTimeout(() => {
-        setIsCopiedAll(false);
-      }, 2500);
-    } catch (err) {
-      console.error('Failed to copy markdown content:', err);
     }
   };
 
@@ -677,30 +656,25 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
             <p className="text-gray-500 text-sm mt-2 italic">Add the related implementation or supporting files and run the analysis again.</p>
 
             {totalFindings > 0 && (
-              <div className="mt-3.5 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+              <div className="mt-3.5 pt-3 border-t border-gray-100 flex items-center justify-between">
                 <span className="font-semibold text-gray-800 text-sm">
                   {totalFindings} security {totalFindings === 1 ? 'finding' : 'findings'}
                 </span>
                 <button
                   id="download-not-verified-md-btn"
                   onClick={handleDownloadMarkdown}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
+                  className={`p-2 rounded-lg transition-all border cursor-pointer flex items-center justify-center ${
                     isDownloaded
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-300'
                       : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100'
                   }`}
-                  title="Download findings as Markdown for your coding agent"
+                  title={isDownloaded ? "Downloaded" : "Download .md"}
+                  aria-label="Download .md"
                 >
                   {isDownloaded ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Downloaded .md</span>
-                    </>
+                    <Check className="w-4 h-4 text-emerald-600" />
                   ) : (
-                    <>
-                      <Download className="w-3.5 h-3.5 text-gray-600" />
-                      <span>Download .md</span>
-                    </>
+                    <Download className="w-4 h-4" />
                   )}
                 </button>
               </div>
@@ -718,7 +692,7 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
             </div>
             <p className="text-red-700 font-medium">Security vulnerabilities were detected in the provided code.</p>
             
-            <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="mt-3 flex items-center justify-between">
               <span className="font-semibold text-gray-800 text-sm">
                 {totalFindings} security {totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'}
               </span>
@@ -726,23 +700,18 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
                 <button
                   id="download-results-md-btn"
                   onClick={handleDownloadMarkdown}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
+                  className={`p-2 rounded-lg transition-all border cursor-pointer flex items-center justify-center ${
                     isDownloaded
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-300'
                       : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100'
                   }`}
-                  title="Download results as a Markdown file for your coding agent"
+                  title={isDownloaded ? "Downloaded" : "Download .md"}
+                  aria-label="Download .md"
                 >
                   {isDownloaded ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Downloaded .md</span>
-                    </>
+                    <Check className="w-4 h-4 text-emerald-600" />
                   ) : (
-                    <>
-                      <Download className="w-3.5 h-3.5 text-gray-600" />
-                      <span>Download .md</span>
-                    </>
+                    <Download className="w-4 h-4" />
                   )}
                 </button>
               )}
@@ -755,67 +724,6 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
         {report.verdict === 'FAIL' && totalFindings > 0 && (
           <div className="space-y-6">
-            {/* Download option banner directly above results cards */}
-            <div 
-              id="download-agent-md-banner"
-              className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0 text-gray-700 shadow-2xs">
-                  <FileText className="w-4 h-4 text-gray-700" />
-                </div>
-                <div className="min-w-0">
-                  <h6 className="text-xs font-bold text-gray-900 truncate">Fix with Coding Agent (.md)</h6>
-                  <p className="text-[11px] text-gray-500 truncate">Download all {totalFindings} findings formatted for AI coding tools</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  id="copy-all-md-banner-btn"
-                  onClick={handleCopyAllMarkdown}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
-                    isCopiedAll
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100'
-                  }`}
-                  title="Copy full remediation markdown to clipboard"
-                >
-                  {isCopiedAll ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-gray-600" />
-                      <span>Copy All</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  id="download-agent-md-banner-btn"
-                  onClick={handleDownloadMarkdown}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
-                    isDownloaded
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                      : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700 active:bg-blue-800'
-                  }`}
-                  title="Download results as a Markdown file for your coding agent"
-                >
-                  {isDownloaded ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-white" />
-                      <span>Downloaded .md</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-3.5 h-3.5 text-white" />
-                      <span>Download .md</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
             {allFindings.map((finding: any, i: number) => {
               const isHigh = finding._severityLabel === 'HIGH';
               const isMedium = finding._severityLabel === 'MEDIUM';
