@@ -130,7 +130,7 @@ export class ReviewOrchestrator {
       });
 
       if (realSecretFindings.length > 0) {
-        const syntheticFindings: import("../../services/CheckpointRunner.ts").CheckpointFinding[] = realSecretFindings.map((f: any) => ({
+        const syntheticFindings: import("../services/CheckpointRunner.ts").CheckpointFinding[] = realSecretFindings.map((f: any) => ({
           findingId: f.id,
           criterionId: "SECRET-C1",
           vulnerabilityClass: VulnerabilityClass.SECRET_EXPOSURE,

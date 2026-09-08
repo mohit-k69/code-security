@@ -26,6 +26,7 @@ export interface EvalScenario {
   description: string;                // What the scenario tests
   tags: string[];                     // e.g., ["bcrypt", "login", "password-storage"]
   criteriaTargeted: string[];         // e.g., ["AUTH-C1"]
+  fullRepositoryFiles?: EvalFile[];
   changedFiles: EvalFile[];           // The PR context
   dependencies?: EvalFile[];          // Supporting files (not changed)
   expectedVerdict: "PASS" | "FAIL" | "NOT_VERIFIED";
