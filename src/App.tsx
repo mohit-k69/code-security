@@ -171,8 +171,6 @@ export default function App() {
           setIsProfileOpen={setIsProfileOpen}
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
-          reviewCount={reviewedItems.length}
-          isLimitReached={isLimitReached}
         />
 
         <div className="flex-1 flex overflow-hidden">
@@ -232,8 +230,6 @@ export default function App() {
                               hasPastedCode={hasPastedCode}
                               githubConnected={githubConnected}
                               onClearState={handleReturnHome}
-                              reviewCount={reviewedItems.length}
-                              isLimitReached={isLimitReached}
                             />
                           )}
 

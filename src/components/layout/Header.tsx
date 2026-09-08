@@ -8,8 +8,6 @@ interface HeaderProps {
   setIsProfileOpen: (isOpen: boolean) => void;
   openProfileModal: () => void;
   onSignOut: () => void;
-  reviewCount?: number;
-  isLimitReached?: boolean;
 }
 
 export function Header({ 
@@ -17,28 +15,10 @@ export function Header({
   isProfileOpen, 
   setIsProfileOpen, 
   openProfileModal, 
-  onSignOut,
-  reviewCount = 0,
-  isLimitReached = false
+  onSignOut
 }: HeaderProps) {
-  const remaining = Math.max(0, 5 - reviewCount);
-
   return (
-    <div className="h-[60px] flex items-center justify-between px-8 border-b border-gray-200 bg-white">
-      <div>
-        {isLimitReached ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium bg-amber-50 text-amber-800 border border-amber-200/80">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            5/5 Free Reviews Used
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium bg-gray-50 text-gray-600 border border-gray-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            {remaining} free review{remaining === 1 ? '' : 's'} left
-          </span>
-        )}
-      </div>
-
+    <div className="h-[60px] flex items-center justify-end px-8 border-b border-gray-200 bg-white">
       <div className="relative">
         <button 
           onClick={() => setIsProfileOpen(!isProfileOpen)}

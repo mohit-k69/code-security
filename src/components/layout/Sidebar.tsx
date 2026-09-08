@@ -56,7 +56,7 @@ export function Sidebar({ activeTab, setActiveTab, reviewedItems }: SidebarProps
         <div className="flex items-center justify-between text-[11px] mb-2 font-medium text-[#d4c4bc]">
           <span>Free Plan</span>
           <span className="font-semibold text-white">
-            {Math.min(reviewedItems.length, 5)} / 5
+            {Math.max(0, 5 - reviewedItems.length)} / 5 remaining
           </span>
         </div>
         <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -69,7 +69,7 @@ export function Sidebar({ activeTab, setActiveTab, reviewedItems }: SidebarProps
         </div>
         <p className="text-[11px] text-[#b8a298] mt-2 font-normal">
           {reviewedItems.length >= 5 
-            ? 'Free reviews limit reached' 
+            ? '0 free reviews remaining' 
             : `${5 - reviewedItems.length} free review${5 - reviewedItems.length === 1 ? '' : 's'} remaining`}
         </p>
       </div>
