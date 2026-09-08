@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Copy, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
+import { Check, Copy, AlertTriangle, Loader2, ShieldCheck, Download, FileText } from 'lucide-react';
 
 interface SecurityReportPanelProps {
   report: any;
@@ -315,8 +315,235 @@ function getCodingAgentPrompt(finding: any): string {
   return sections.join('\n\n');
 }
 
+/**
+ * Safely wraps code snippets in markdown code fences, avoiding collision with existing backticks.
+ */
+function safeCodeFence(code: string, lang = 'javascript'): string {
+  if (!code) return '';
+  const fence = code.includes('```') ? '````' : '```';
+  return `${fence}${lang}\n${code}\n${fence}`;
+}
+
+/**
+ * Generates an end-to-end, structured Markdown remediation document tailored for AI coding agents.
+ */
+function generateRemediationMarkdown(report: any, findings: any[]): string {
+  const timestamp = report?.generatedAt || report?.timestamp || new Date().toISOString();
+  const dateStr = new Date(timestamp).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const targetName = report?.repository?.name || (typeof report?.repository === 'string' ? report.repository : null) || report?.target || 'Code Review Snippet';
+  const totalFindings = findings.length;
+  const highCount = findings.filter(f => f._severityLabel === 'HIGH').length;
+  const medCount = findings.filter(f => f._severityLabel === 'MEDIUM').length;
+  const lowCount = findings.filter(f => f._severityLabel === 'LOW').length;
+
+  const lines: string[] = [];
+
+  // 1. Document Title & Context
+  lines.push(`# Security Vulnerability Remediation Guide`);
+  lines.push(``);
+  lines.push(`> **Target:** \`${targetName}\`  `);
+  lines.push(`> **Scan Verdict:** **${report?.verdict || 'FAIL'}**  `);
+  lines.push(`> **Total Findings:** ${totalFindings} (${highCount} High, ${medCount} Medium, ${lowCount} Low)  `);
+  lines.push(`> **Generated At:** ${dateStr}  `);
+  lines.push(``);
+
+  // 2. Clear Directives for AI Coding Agents
+  lines.push(`## Instructions for AI Coding Agent`);
+  lines.push(`You are an expert security engineer and full-stack software developer.`);
+  lines.push(`Your objective is to remediate each security vulnerability identified below with minimal, robust code modifications.`);
+  lines.push(``);
+  lines.push(`### Core Requirements:`);
+  lines.push(`1. **Surgical Remediation:** Modify only the code necessary to eliminate the security vulnerability.`);
+  lines.push(`2. **Preserve Application Logic:** Do not break existing API contracts, component behavior, or business functionality.`);
+  lines.push(`3. **Defense-in-Depth:** Follow secure development best practices (e.g. parameterized queries, strict input validation, cryptographically secure password hashing, secure JWT verification).`);
+  lines.push(`4. **No Regressions:** Validate that the application compiles without syntax errors or broken imports.`);
+  lines.push(``);
+
+  // 3. Summary Table
+  lines.push(`## Summary of Findings`);
+  lines.push(``);
+  lines.push(`| # | Severity | Vulnerability Class | Location | CWE |`);
+  lines.push(`|---|---|---|---|---|`);
+  findings.forEach((finding, idx) => {
+    const sev = finding._severityLabel || 'HIGH';
+    const name = getCleanIssueName(finding);
+    const file = finding.primaryLocation?.file || finding.file || 'snippet.js';
+    const line = finding.primaryLocation?.line || finding.line || '';
+    const loc = line ? `${file}:${line}` : file;
+    const cwes = (finding.cwes && finding.cwes.length > 0) ? finding.cwes.join(', ') : 'N/A';
+    lines.push(`| ${idx + 1} | ${sev} | \`${name}\` | \`${loc}\` | ${cwes} |`);
+  });
+  lines.push(``);
+  lines.push(`---`);
+  lines.push(``);
+
+  // 4. Detailed Tasks for each finding
+  lines.push(`## Remediation Tasks`);
+  lines.push(``);
+
+  findings.forEach((finding, idx) => {
+    const num = idx + 1;
+    const sev = finding._severityLabel || 'HIGH';
+    const name = getCleanIssueName(finding);
+    const displayTitle = getFindingDisplayTitle(finding);
+    const file = finding.primaryLocation?.file || finding.file || 'snippet.js';
+    const line = finding.primaryLocation?.line || finding.line;
+    const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
+    const description = finding.description || finding.message || 'Vulnerability detected in source code.';
+    const scenario = getRealWorldScenario(finding);
+    const suggestion = finding.suggestion || finding.remediation || 'Refactor the code according to security best practices.';
+    const prompt = getCodingAgentPrompt(finding);
+    const cwes = finding.cwes && finding.cwes.length > 0 ? finding.cwes.join(', ') : null;
+
+    lines.push(`### Task ${num}: ${name} (${sev})`);
+    lines.push(``);
+    lines.push(`- **Finding:** ${displayTitle}`);
+    lines.push(`- **Severity:** ${sev}`);
+    lines.push(`- **Location:** \`${file}${line ? `:${line}` : ''}\``);
+    if (cwes) lines.push(`- **CWE:** ${cwes}`);
+    lines.push(``);
+
+    if (snippet) {
+      lines.push(`#### Problematic Code`);
+      lines.push(safeCodeFence(snippet));
+      lines.push(``);
+    }
+
+    lines.push(`#### Issue Description`);
+    lines.push(description);
+    lines.push(``);
+
+    lines.push(`#### Exploit Scenario`);
+    lines.push(scenario);
+    lines.push(``);
+
+    lines.push(`#### Required Fix`);
+    lines.push(suggestion);
+    lines.push(``);
+
+    lines.push(`#### Action Prompt for Agent`);
+    lines.push('````markdown');
+    lines.push(prompt);
+    lines.push('````');
+    lines.push(``);
+    lines.push(`---`);
+    lines.push(``);
+  });
+
+  // 5. Verification Checklist
+  lines.push(`## Validation Checklist for Coding Agent`);
+  findings.forEach((finding, idx) => {
+    const name = getCleanIssueName(finding);
+    const file = finding.primaryLocation?.file || finding.file || 'snippet.js';
+    const line = finding.primaryLocation?.line || finding.line || '';
+    const loc = line ? `${file}:${line}` : file;
+    lines.push(`- [ ] Fixed Finding ${idx + 1}: \`${name}\` at \`${loc}\``);
+  });
+  lines.push(`- [ ] Application compiles cleanly with no type or build errors`);
+  lines.push(`- [ ] Preserved all existing user-facing features and test coverage`);
+  lines.push(``);
+
+  return lines.join('\n');
+}
+
+/**
+ * Triggers a robust, cross-platform file download for markdown text.
+ * Works across iOS Safari, iPadOS, Android, macOS, Windows, Linux, and iframe sandboxes
+ * by delaying Object URL revocation and providing automatic Data URI fallback.
+ */
+function downloadMarkdownDocument(filename: string, content: string): boolean {
+  try {
+    // 1. Prepend UTF-8 BOM to guarantee proper text decoding across all text editors and OSes
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/markdown;charset=utf-8' });
+
+    // 2. Legacy Edge / IE support
+    if (typeof window !== 'undefined' && (window.navigator as any)?.msSaveOrOpenBlob) {
+      (window.navigator as any).msSaveOrOpenBlob(blob, filename);
+      return true;
+    }
+
+    // 3. Modern standards-compliant Object URL download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    link.setAttribute('rel', 'noopener');
+    link.style.position = 'fixed';
+    link.style.left = '-9999px';
+    link.style.top = '-9999px';
+    link.style.opacity = '0';
+    document.body.appendChild(link);
+
+    // Dispatch standard mouse click
+    if (typeof MouseEvent !== 'undefined') {
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      link.dispatchEvent(clickEvent);
+    } else {
+      link.click();
+    }
+
+    // CRITICAL: Delay revoking the Object URL and removing the link from DOM.
+    // In Safari (macOS & iOS) and Firefox, calling revokeObjectURL synchronously
+    // cancels the download request before the browser finishes reading the blob!
+    setTimeout(() => {
+      try {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+        window.URL.revokeObjectURL(url);
+      } catch {
+        // Safe cleanup
+      }
+    }, 60000);
+
+    return true;
+  } catch (err) {
+    console.warn('Blob object URL download failed, attempting Data URI fallback:', err);
+    try {
+      // 4. Fallback: Data URI download (useful if object URLs are blocked by CSP/sandbox)
+      const encodedUri = 'data:text/markdown;charset=utf-8,' + encodeURIComponent('\uFEFF' + content);
+      const fallbackLink = document.createElement('a');
+      fallbackLink.href = encodedUri;
+      fallbackLink.setAttribute('download', filename);
+      fallbackLink.setAttribute('rel', 'noopener');
+      fallbackLink.style.position = 'fixed';
+      fallbackLink.style.left = '-9999px';
+      fallbackLink.style.top = '-9999px';
+      fallbackLink.style.opacity = '0';
+      document.body.appendChild(fallbackLink);
+      fallbackLink.click();
+      setTimeout(() => {
+        try {
+          if (fallbackLink.parentNode) {
+            fallbackLink.parentNode.removeChild(fallbackLink);
+          }
+        } catch {
+          // Safe cleanup
+        }
+      }, 5000);
+      return true;
+    } catch (fallbackErr) {
+      console.error('Data URI download failed:', fallbackErr);
+      return false;
+    }
+  }
+}
+
 export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanelProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [isDownloaded, setIsDownloaded] = useState(false);
+  const [isCopiedAll, setIsCopiedAll] = useState(false);
 
   const handleCopyPrompt = (promptText: string, index: number) => {
     navigator.clipboard.writeText(promptText);
@@ -395,6 +622,45 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
 
   const totalFindings = allFindings.length;
 
+  const handleDownloadMarkdown = () => {
+    try {
+      const mdContent = generateRemediationMarkdown(report, allFindings);
+      const rawName = report.repository?.name || (typeof report.repository === 'string' ? report.repository : null) || 'code';
+      const cleanName = rawName.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase() || 'code';
+      const fileName = `${cleanName}-security-remediation.md`;
+
+      const success = downloadMarkdownDocument(fileName, mdContent);
+      if (success) {
+        setIsDownloaded(true);
+        setTimeout(() => {
+          setIsDownloaded(false);
+        }, 2500);
+      } else {
+        // Fallback: If device or browser blocks file download, copy directly to clipboard
+        navigator.clipboard.writeText(mdContent);
+        setIsCopiedAll(true);
+        setTimeout(() => {
+          setIsCopiedAll(false);
+        }, 2500);
+      }
+    } catch (err) {
+      console.error('Failed to download markdown file:', err);
+    }
+  };
+
+  const handleCopyAllMarkdown = () => {
+    try {
+      const mdContent = generateRemediationMarkdown(report, allFindings);
+      navigator.clipboard.writeText(mdContent);
+      setIsCopiedAll(true);
+      setTimeout(() => {
+        setIsCopiedAll(false);
+      }, 2500);
+    } catch (err) {
+      console.error('Failed to copy markdown content:', err);
+    }
+  };
+
   return (
     <div className="w-full bg-white border-l border-gray-200 flex flex-col h-full shrink-0">
       {/* 1. Results Header */}
@@ -409,6 +675,36 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
             </div>
             <p className="text-gray-600">Security could not be confidently verified because additional context is required.</p>
             <p className="text-gray-500 text-sm mt-2 italic">Add the related implementation or supporting files and run the analysis again.</p>
+
+            {totalFindings > 0 && (
+              <div className="mt-3.5 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                <span className="font-semibold text-gray-800 text-sm">
+                  {totalFindings} security {totalFindings === 1 ? 'finding' : 'findings'}
+                </span>
+                <button
+                  id="download-not-verified-md-btn"
+                  onClick={handleDownloadMarkdown}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
+                    isDownloaded
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100'
+                  }`}
+                  title="Download findings as Markdown for your coding agent"
+                >
+                  {isDownloaded ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Downloaded .md</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5 text-gray-600" />
+                      <span>Download .md</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -422,10 +718,34 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
             </div>
             <p className="text-red-700 font-medium">Security vulnerabilities were detected in the provided code.</p>
             
-            <div className="mt-3">
+            <div className="mt-3 flex items-center justify-between gap-2">
               <span className="font-semibold text-gray-800 text-sm">
                 {totalFindings} security {totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'}
               </span>
+              {totalFindings > 0 && (
+                <button
+                  id="download-results-md-btn"
+                  onClick={handleDownloadMarkdown}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
+                    isDownloaded
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100'
+                  }`}
+                  title="Download results as a Markdown file for your coding agent"
+                >
+                  {isDownloaded ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Downloaded .md</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5 text-gray-600" />
+                      <span>Download .md</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -435,6 +755,67 @@ export function SecurityReportPanel({ report, isAnalyzing }: SecurityReportPanel
       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
         {report.verdict === 'FAIL' && totalFindings > 0 && (
           <div className="space-y-6">
+            {/* Download option banner directly above results cards */}
+            <div 
+              id="download-agent-md-banner"
+              className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0 text-gray-700 shadow-2xs">
+                  <FileText className="w-4 h-4 text-gray-700" />
+                </div>
+                <div className="min-w-0">
+                  <h6 className="text-xs font-bold text-gray-900 truncate">Fix with Coding Agent (.md)</h6>
+                  <p className="text-[11px] text-gray-500 truncate">Download all {totalFindings} findings formatted for AI coding tools</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  id="copy-all-md-banner-btn"
+                  onClick={handleCopyAllMarkdown}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
+                    isCopiedAll
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300 active:bg-gray-100'
+                  }`}
+                  title="Copy full remediation markdown to clipboard"
+                >
+                  {isCopiedAll ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-gray-600" />
+                      <span>Copy All</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  id="download-agent-md-banner-btn"
+                  onClick={handleDownloadMarkdown}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-xs cursor-pointer ${
+                    isDownloaded
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700 active:bg-blue-800'
+                  }`}
+                  title="Download results as a Markdown file for your coding agent"
+                >
+                  {isDownloaded ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-white" />
+                      <span>Downloaded .md</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5 text-white" />
+                      <span>Download .md</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
             {allFindings.map((finding: any, i: number) => {
               const isHigh = finding._severityLabel === 'HIGH';
               const isMedium = finding._severityLabel === 'MEDIUM';

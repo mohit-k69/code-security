@@ -17,6 +17,15 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Download Markdown file API endpoint
+  app.post("/api/download-markdown", (req, res) => {
+    const { content, filename } = req.body;
+    const safeFilename = (filename || "security-remediation.md").replace(/[^a-zA-Z0-9._-]/g, '_');
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.send(content || "");
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
