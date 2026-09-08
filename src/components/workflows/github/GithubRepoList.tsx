@@ -45,23 +45,11 @@ export function GithubRepoList({
   });
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {isLimitReached && (
-        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 shrink-0">
-          <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 text-[11px] font-bold shrink-0">
-            5/5
-          </div>
-          <div className="text-left">
-            <p className="text-[13px] font-semibold text-amber-900">5 of 5 Free Reviews Completed</p>
-            <p className="text-[12px] text-amber-700">You have completed all free reviews for this account. Repository scans are stopped.</p>
-          </div>
-        </div>
-      )}
-      <motion.div 
-        layout
-        transition={transitionConfig}
-        className={`grid grid-cols-1 ${viewStyle === 'grid' && selectedRepoId === null ? 'md:grid-cols-2' : ''} gap-4 overflow-y-auto pb-12 pr-2 pt-3 pl-1 custom-scrollbar flex-1`}
-      >
+    <motion.div 
+      layout
+      transition={transitionConfig}
+      className={`grid grid-cols-1 ${viewStyle === 'grid' && selectedRepoId === null ? 'md:grid-cols-2' : ''} gap-4 overflow-y-auto pb-12 pr-2 pt-3 pl-1 custom-scrollbar`}
+    >
       <AnimatePresence mode="popLayout">
         {filteredRepos.map((repo) => {
           const isSelected = selectedRepoId === repo.id;
@@ -139,7 +127,7 @@ export function GithubRepoList({
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
-                        title={isLimitReached ? "Free review limit reached (5/5)" : "Analyze"}
+                        title={isLimitReached ? "Free review limit reached" : "Analyze"}
                       >
                         {isLimitReached ? "Limit Reached" : "Analyze"}
                       </button>
@@ -167,7 +155,7 @@ export function GithubRepoList({
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
-                      title={isLimitReached ? "Free review limit reached (5/5)" : "Analyze"}
+                      title={isLimitReached ? "Free review limit reached" : "Analyze"}
                     >
                       {isLimitReached ? "Limit Reached" : "Analyze"}
                     </button>
@@ -179,6 +167,5 @@ export function GithubRepoList({
         })}
       </AnimatePresence>
     </motion.div>
-    </div>
   );
 }
