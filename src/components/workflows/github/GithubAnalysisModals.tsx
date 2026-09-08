@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, AlertTriangle, Check, X, GitPullRequest } from 'lucide-react';
+import { Loader2, AlertTriangle, Check, X, GitPullRequest, AlertCircle } from 'lucide-react';
 import { GithubRepo } from '../../../hooks/useGithub';
 
 export type AnalysisState = 
@@ -9,6 +9,7 @@ export type AnalysisState =
   | { status: 'no_prs' }
   | { status: 'select_pr'; prs: any[] }
   | { status: 'success'; report: any }
+  | { status: 'limit_reached'; message?: string }
   | { status: 'error'; message: string };
 
 interface GithubAnalysisModalsProps {
@@ -26,7 +27,7 @@ export function GithubAnalysisModals({
   selectedRepoId,
   handleAnalyze
 }: GithubAnalysisModalsProps) {
-  const showModal = ['no_prs', 'select_pr', 'error'].includes(analysisState.status);
+  const showModal = ['no_prs', 'select_pr', 'error', 'limit_reached'].includes(analysisState.status);
 
   return (
     <AnimatePresence>
@@ -87,6 +88,28 @@ export function GithubAnalysisModals({
                   </button>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {analysisState.status === 'limit_reached' && (
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 flex flex-col items-center max-w-sm w-full text-center"
+            >
+              <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4 text-amber-600">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h3 className="text-gray-900 font-semibold text-lg mb-2">Free Review Limit Reached</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                {analysisState.message || "You have completed all 5 free reviews for this account. Additional repository scans cannot be started."}
+              </p>
+              <button
+                onClick={() => setAnalysisState({ status: 'idle' })}
+                className="w-full py-2.5 bg-gray-900 text-white rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors"
+              >
+                Close
+              </button>
             </motion.div>
           )}
 

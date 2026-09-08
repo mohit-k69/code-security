@@ -50,6 +50,29 @@ export function Sidebar({ activeTab, setActiveTab, reviewedItems }: SidebarProps
           </a>
         </div>
       </div>
+
+      {/* Free Quota Usage Card */}
+      <div className="p-4 mx-4 mb-6 rounded-2xl bg-white/5 border border-white/10 text-white">
+        <div className="flex items-center justify-between text-[11px] mb-2 font-medium text-[#d4c4bc]">
+          <span>Free Plan</span>
+          <span className="font-semibold text-white">
+            {Math.min(reviewedItems.length, 5)} / 5
+          </span>
+        </div>
+        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-500 rounded-full ${
+              reviewedItems.length >= 5 ? 'bg-amber-400' : 'bg-emerald-400'
+            }`}
+            style={{ width: `${Math.min(100, (reviewedItems.length / 5) * 100)}%` }}
+          />
+        </div>
+        <p className="text-[11px] text-[#b8a298] mt-2 font-normal">
+          {reviewedItems.length >= 5 
+            ? 'Free reviews limit reached' 
+            : `${5 - reviewedItems.length} free review${5 - reviewedItems.length === 1 ? '' : 's'} remaining`}
+        </p>
+      </div>
     </div>
   );
 }

@@ -58,7 +58,10 @@ export default function App() {
     setReviewedItems,
     handleFileUpload,
     handleCheckVibe,
-    filteredFindings
+    filteredFindings,
+    isLimitReached,
+    freeReviewsLimit,
+    remainingFreeReviews
   } = useAnalysis(user);
 
   const {
@@ -168,6 +171,8 @@ export default function App() {
           setIsProfileOpen={setIsProfileOpen}
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
+          reviewCount={reviewedItems.length}
+          isLimitReached={isLimitReached}
         />
 
         <div className="flex-1 flex overflow-hidden">
@@ -220,59 +225,63 @@ export default function App() {
                           onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
                         >
                           {activeWorkflow === 'none' && (
-                          <WorkflowSelector 
-                            setActiveWorkflow={setActiveWorkflow}
-                            hasUploadedCode={hasUploadedCode}
-                            uploadedFilesCount={uploadedFiles.length}
-                            hasPastedCode={hasPastedCode}
-                            githubConnected={githubConnected}
-                            onClearState={handleReturnHome}
-                          />
-                        )}
+                            <WorkflowSelector 
+                              setActiveWorkflow={setActiveWorkflow}
+                              hasUploadedCode={hasUploadedCode}
+                              uploadedFilesCount={uploadedFiles.length}
+                              hasPastedCode={hasPastedCode}
+                              githubConnected={githubConnected}
+                              onClearState={handleReturnHome}
+                              reviewCount={reviewedItems.length}
+                              isLimitReached={isLimitReached}
+                            />
+                          )}
 
-                        {activeWorkflow === 'upload' && (
-                          <UploadWorkflow 
-                            setActiveWorkflow={handleReturnHome}
-                            uploadedFiles={uploadedFiles}
-                            setUploadedFiles={setUploadedFiles}
-                            setFileContents={setFileContents}
-                            handleFileUpload={handleFileUpload}
-                          />
-                        )}
+                          {activeWorkflow === 'upload' && (
+                            <UploadWorkflow 
+                              setActiveWorkflow={handleReturnHome}
+                              uploadedFiles={uploadedFiles}
+                              setUploadedFiles={setUploadedFiles}
+                              setFileContents={setFileContents}
+                              handleFileUpload={handleFileUpload}
+                            />
+                          )}
 
-                        {activeWorkflow === 'paste' && (
-                          <PasteWorkflow 
-                            setActiveWorkflow={handleReturnHome}
-                            pastedCode={pastedCode}
-                            setPastedCode={setPastedCode}
-                            handleCheckVibe={handleCheckVibe}
-                            isAnalyzing={isAnalyzing}
-                          />
-                        )}
+                          {activeWorkflow === 'paste' && (
+                            <PasteWorkflow 
+                              setActiveWorkflow={handleReturnHome}
+                              pastedCode={pastedCode}
+                              setPastedCode={setPastedCode}
+                              handleCheckVibe={handleCheckVibe}
+                              isAnalyzing={isAnalyzing}
+                              isLimitReached={isLimitReached}
+                            />
+                          )}
 
-                        {activeWorkflow === 'github' && (
-                          <GithubWorkflow 
-                            user={user}
-                            setActiveWorkflow={handleReturnHome}
-                            isFetchingRepos={isFetchingRepos}
-                            githubReposError={githubReposError}
-                            githubConnectionStatus={githubConnectionStatus}
-                            isGithubConnected={isGithubConnected}
-                            fetchGithubRepositories={fetchGithubRepositories}
-                            githubSearchQuery={githubSearchQuery}
-                            setGithubSearchQuery={setGithubSearchQuery}
-                            githubRepos={githubRepos}
-                            selectedRepoId={selectedRepoId}
-                            setSelectedRepoId={setSelectedRepoId}
-                            providerTokenSetupError={providerTokenSetupError}
-                            retryProviderTokenSetup={retryProviderTokenSetup}
-                            setReviewedItems={setReviewedItems}
-                            analysisResult={analysisResult}
-                            setAnalysisResult={setAnalysisResult}
-                            isAnalyzing={isAnalyzing}
-                            setIsAnalyzing={setIsAnalyzing}
-                          />
-                        )}
+                          {activeWorkflow === 'github' && (
+                            <GithubWorkflow 
+                              user={user}
+                              setActiveWorkflow={handleReturnHome}
+                              isFetchingRepos={isFetchingRepos}
+                              githubReposError={githubReposError}
+                              githubConnectionStatus={githubConnectionStatus}
+                              isGithubConnected={isGithubConnected}
+                              fetchGithubRepositories={fetchGithubRepositories}
+                              githubSearchQuery={githubSearchQuery}
+                              setGithubSearchQuery={setGithubSearchQuery}
+                              githubRepos={githubRepos}
+                              selectedRepoId={selectedRepoId}
+                              setSelectedRepoId={setSelectedRepoId}
+                              providerTokenSetupError={providerTokenSetupError}
+                              retryProviderTokenSetup={retryProviderTokenSetup}
+                              reviewedItems={reviewedItems}
+                              setReviewedItems={setReviewedItems}
+                              analysisResult={analysisResult}
+                              setAnalysisResult={setAnalysisResult}
+                              isAnalyzing={isAnalyzing}
+                              setIsAnalyzing={setIsAnalyzing}
+                            />
+                          )}
                       </div>
                     </div>
                   </div>

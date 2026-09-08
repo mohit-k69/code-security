@@ -9,6 +9,8 @@ interface WorkflowSelectorProps {
   hasPastedCode: boolean;
   githubConnected: boolean;
   onClearState: () => void;
+  reviewCount?: number;
+  isLimitReached?: boolean;
 }
 
 export function WorkflowSelector({
@@ -17,7 +19,9 @@ export function WorkflowSelector({
   uploadedFilesCount,
   hasPastedCode,
   githubConnected,
-  onClearState
+  onClearState,
+  reviewCount = 0,
+  isLimitReached = false
 }: WorkflowSelectorProps) {
   return (
     <motion.div 
@@ -102,6 +106,23 @@ export function WorkflowSelector({
             <span className="text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium px-2 leading-tight text-center">Repos & PRs</span>
           </div>
         </button>
+      </div>
+
+      {/* Free Plan Status */}
+      <div className="mt-8">
+        {isLimitReached ? (
+          <div className="px-4 py-2 bg-amber-50 border border-amber-200/80 rounded-full flex items-center justify-center gap-2 text-[12px] font-medium text-amber-800 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>5 of 5 free reviews completed &bull; Scans stopped</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-[12px] text-gray-500 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>
+              {Math.max(0, 5 - reviewCount)} of 5 free reviews remaining
+            </span>
+          </div>
+        )}
       </div>
     </motion.div>
   );

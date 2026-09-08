@@ -1,6 +1,12 @@
 import { supabase } from './supabase';
 import { type AnalysisResult } from '../analyzer';
 
+export const FREE_REVIEW_LIMIT = 5;
+
+export function isFreeLimitReached(count: number): boolean {
+  return count >= FREE_REVIEW_LIMIT;
+}
+
 export interface ReviewedItem {
   id?: string;
   name: string;

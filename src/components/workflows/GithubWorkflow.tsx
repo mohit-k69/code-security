@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { GithubRepo, GithubConnectionStatus } from '../../hooks/useGithub';
-import { saveUserReview, type ReviewedItem } from '../../lib/reviewsService';
+import { saveUserReview, type ReviewedItem, isFreeLimitReached, FREE_REVIEW_LIMIT } from '../../lib/reviewsService';
 import { type User } from '../../hooks/useAuth';
 import { trackEvent } from '../../lib/posthog';
 
@@ -28,6 +28,7 @@ interface GithubWorkflowProps {
   setSelectedRepoId: (id: number | null) => void;
   providerTokenSetupError?: string | null;
   retryProviderTokenSetup?: () => void;
+  reviewedItems: ReviewedItem[];
   setReviewedItems: React.Dispatch<React.SetStateAction<ReviewedItem[]>>;
   analysisResult: any;
   setAnalysisResult: (result: any) => void;
@@ -50,6 +51,7 @@ export function GithubWorkflow({
   setSelectedRepoId,
   providerTokenSetupError,
   retryProviderTokenSetup,
+  reviewedItems = [],
   setReviewedItems,
   analysisResult,
   setAnalysisResult,
@@ -61,6 +63,8 @@ export function GithubWorkflow({
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'idle' });
   const [linkError, setLinkError] = useState<string>('');
   const [isConnectingGithub, setIsConnectingGithub] = useState<boolean>(false);
+
+  const isLimitReached = isFreeLimitReached(reviewedItems.length);
 
   React.useEffect(() => {
     const handleOAuthError = (e: any) => {
@@ -137,6 +141,14 @@ export function GithubWorkflow({
   };
 
   const handleAnalyze = async (repo: GithubRepo, prNumber?: number) => {
+    if (isLimitReached) {
+      setAnalysisState({
+        status: 'limit_reached',
+        message: 'You have completed all 5 free reviews. Additional repository scans cannot be started on this account.'
+      });
+      return;
+    }
+
     setSelectedRepoId(repo.id);
     setIsAnalyzing(true);
     setAnalysisResult(null);
@@ -271,6 +283,7 @@ export function GithubWorkflow({
               selectedRepoId={selectedRepoId}
               handleAnalyze={handleAnalyze}
               viewStyle={viewStyle}
+              isLimitReached={isLimitReached}
             />
 
             <GithubAnalysisModals 

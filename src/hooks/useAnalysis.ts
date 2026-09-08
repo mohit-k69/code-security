@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { analyzeCode, type AnalysisResult, type Category, type Finding } from '../analyzer';
 import { supabase } from '../lib/supabase';
-import { type ReviewedItem, fetchUserReviews, saveUserReview } from '../lib/reviewsService';
+import { type ReviewedItem, fetchUserReviews, saveUserReview, FREE_REVIEW_LIMIT, isFreeLimitReached } from '../lib/reviewsService';
 import { type User } from './useAuth';
 import { trackEvent } from '../lib/posthog';
 
 export type { ReviewedItem };
+export { FREE_REVIEW_LIMIT };
 
 export function useAnalysis(user?: User | null) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -99,6 +100,12 @@ export function useAnalysis(user?: User | null) {
 
     if (!allCode.trim()) return;
 
+    if (reviewedItems.length >= FREE_REVIEW_LIMIT) {
+      console.warn(`[LIMIT] Free review limit reached (${reviewedItems.length}/${FREE_REVIEW_LIMIT}). Scan cannot start.`);
+      trackEvent('free_limit_reached', { review_type: 'paste', total_reviews: reviewedItems.length });
+      return;
+    }
+
     const reviewType: 'upload' | 'paste' = uploadedFiles.length > 0 ? 'upload' : 'paste';
     trackEvent('analysis_started', { review_type: reviewType });
 
@@ -180,11 +187,14 @@ export function useAnalysis(user?: User | null) {
         console.error('Failed to persist review:', err);
       });
     }
-  }, [fileContents, pastedCode, uploadedFiles, user?.id]);
+  }, [fileContents, pastedCode, uploadedFiles, user?.id, reviewedItems.length]);
 
   const filteredFindings = Array.isArray(analysisResult?.findings) 
     ? analysisResult.findings.filter((f: any) => activeCategory === 'all' || f.category === activeCategory)
     : [];
+
+  const isLimitReached = isFreeLimitReached(reviewedItems.length);
+  const remainingFreeReviews = Math.max(0, FREE_REVIEW_LIMIT - reviewedItems.length);
 
   return {
     isAnalyzing,
@@ -205,6 +215,9 @@ export function useAnalysis(user?: User | null) {
     setReviewedItems,
     handleFileUpload,
     handleCheckVibe,
-    filteredFindings
+    filteredFindings,
+    isLimitReached,
+    freeReviewsLimit: FREE_REVIEW_LIMIT,
+    remainingFreeReviews
   };
 }
