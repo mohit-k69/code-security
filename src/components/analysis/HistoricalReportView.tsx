@@ -189,22 +189,16 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
       {/* 1. Sticky Navigation Header */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 py-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            id="back-to-reviews-btn"
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Reviews</span>
-          </button>
-
-          <div className="flex items-center gap-2 text-sm text-gray-400 truncate">
-            <span>/</span>
-            <span className="font-semibold text-gray-800 truncate">{review.name}</span>
-          </div>
-        </div>
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 py-3.5 flex items-center justify-between gap-4">
+        <button
+          id="back-to-reviews-btn"
+          onClick={onBack}
+          aria-label="Back to Reviews"
+          title="Back to Reviews"
+          className="p-2 -ml-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
 
         {totalFindings > 0 && (
           <button
