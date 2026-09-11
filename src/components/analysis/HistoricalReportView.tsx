@@ -3,7 +3,6 @@ import {
   ArrowLeft, 
   Check, 
   AlertTriangle, 
-  Download, 
   Copy, 
   Calendar, 
   GitPullRequest, 
@@ -18,9 +17,7 @@ import type { ReviewedItem } from '../../lib/reviewsService';
 import {
   getRealWorldScenario,
   getFindingDisplayTitle,
-  getCodingAgentPrompt,
-  generateRemediationMarkdown,
-  downloadMarkdownDocument
+  getCodingAgentPrompt
 } from '../workflows/SecurityReportPanel';
 
 interface HistoricalReportViewProps {
@@ -37,7 +34,6 @@ interface ProcessedFinding {
 
 export function HistoricalReportView({ review, onBack }: HistoricalReportViewProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [isDownloaded, setIsDownloaded] = useState(false);
 
   const handleCopyPrompt = (promptText: string, index: number) => {
     navigator.clipboard.writeText(promptText);
@@ -161,35 +157,10 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
     return 'File Upload';
   };
 
-  const handleDownloadMarkdown = () => {
-    try {
-      const reportForDownload = {
-        ...(report || {}),
-        verdict: effectiveVerdict,
-        repository: {
-          name: review.repoName || review.name || 'code-review'
-        }
-      };
-      const mdContent = generateRemediationMarkdown(reportForDownload, allFindings);
-      const cleanName = (review.repoName || review.name || 'code-review').replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
-      const fileName = `${cleanName}-security-remediation.md`;
-
-      const success = downloadMarkdownDocument(fileName, mdContent);
-      if (success) {
-        setIsDownloaded(true);
-        setTimeout(() => {
-          setIsDownloaded(false);
-        }, 2500);
-      }
-    } catch (err) {
-      console.error('Failed to download markdown report:', err);
-    }
-  };
-
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
-      {/* 1. Sticky Navigation Header */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 py-3.5 flex items-center justify-between gap-4">
+      {/* 1. Navigation Header */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm px-6 py-3.5 flex items-center">
         <button
           id="back-to-reviews-btn"
           onClick={onBack}
@@ -199,31 +170,6 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-
-        {totalFindings > 0 && (
-          <button
-            id="historical-download-md-btn"
-            onClick={handleDownloadMarkdown}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border cursor-pointer shrink-0 ${
-              isDownloaded
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-300'
-            }`}
-            title="Download remediation guide in markdown format"
-          >
-            {isDownloaded ? (
-              <>
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span>Downloaded</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 text-gray-500" />
-                <span>Download Report (.md)</span>
-              </>
-            )}
-          </button>
-        )}
       </div>
 
       <div className="max-w-4xl w-full mx-auto p-6 md:p-8 space-y-6">
