@@ -23,6 +23,9 @@ export interface OnboardingEmailStepProps {
   setForgotError: (val: string) => void;
   setForgotSuccess: (val: boolean) => void;
   direction: number;
+  isCheckingEmail?: boolean;
+  isDuplicateEmail?: boolean;
+  onEmailBlur?: () => void;
 }
 
 export function OnboardingEmailStep({
@@ -30,7 +33,8 @@ export function OnboardingEmailStep({
   emailError, setEmailError, isLoading, handleEmailContinue,
   handleGithubSignIn, handleGoogleSignIn, isGoogleLoading = false,
   setShowForgotPassword, setForgotEmail,
-  setForgotError, setForgotSuccess, direction
+  setForgotError, setForgotSuccess, direction,
+  isCheckingEmail = false, isDuplicateEmail = false, onEmailBlur
 }: OnboardingEmailStepProps) {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [slideDirection, setSlideDirection] = useState(1);
@@ -44,7 +48,17 @@ export function OnboardingEmailStep({
     setEmailError('');
   };
 
+  const isPasswordError = Boolean(
+    emailError &&
+    (emailError.toLowerCase().includes('password') || emailError.toLowerCase().includes('credential'))
+  );
+
+  const isEmailInvalid = Boolean(
+    (emailError && !isPasswordError) || (mode === 'signup' && isDuplicateEmail)
+  );
+
   const isFormReady = Boolean(email.trim() && password.trim());
+  const isSubmitDisabled = !isFormReady || isLoading || (mode === 'signup' && (isCheckingEmail || isDuplicateEmail));
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -302,27 +316,51 @@ export function OnboardingEmailStep({
                 <div className="relative">
                   <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
+                    id="onboarding-email-input"
                     type="email"
                     value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleEmailContinue()}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (isEmailInvalid) {
+                        setEmailError('');
+                      }
+                    }}
+                    onBlur={onEmailBlur}
+                    onKeyDown={(e) => e.key === 'Enter' && !isSubmitDisabled && handleEmailContinue()}
                     placeholder="name@email.com"
                     autoFocus
-                    className={`w-full bg-transparent border-b-2 ${emailError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+                    className={`w-full bg-transparent border-b-2 ${isEmailInvalid ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
                   />
                 </div>
+                {mode === 'signup' && isCheckingEmail && (
+                  <div id="email-checking-indicator" className="flex items-center gap-1.5 mt-1.5 text-[12px] text-gray-400 animate-pulse">
+                    <Loader2 size={12} className="animate-spin text-gray-400 shrink-0" />
+                    <span>Checking email…</span>
+                  </div>
+                )}
+                {mode === 'signup' && isDuplicateEmail && (
+                  <div id="email-duplicate-inline-warning" className="flex items-center gap-1.5 mt-1.5 text-[12px] text-red-500 font-medium">
+                    <span>Account already exists. Please use a different email.</span>
+                  </div>
+                )}
               </div>
 
               <div className="w-full mb-2">
                 <div className="relative">
                   <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
+                    id="onboarding-password-input"
                     type="password"
                     value={password}
-                    onChange={(e) => { setPassword(e.target.value); setEmailError(''); }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleEmailContinue()}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (isPasswordError) {
+                        setEmailError('');
+                      }
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && !isSubmitDisabled && handleEmailContinue()}
                     placeholder="Password"
-                    className={`w-full bg-transparent border-b-2 ${emailError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+                    className={`w-full bg-transparent border-b-2 ${isPasswordError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
                   />
                 </div>
               </div>
@@ -330,9 +368,9 @@ export function OnboardingEmailStep({
               <button
                 id="email-submit-btn"
                 onClick={handleEmailContinue}
-                disabled={!isFormReady || isLoading}
+                disabled={isSubmitDisabled}
                 className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-6 rounded-full ${
-                  isFormReady && !isLoading
+                  !isSubmitDisabled
                     ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 }`}

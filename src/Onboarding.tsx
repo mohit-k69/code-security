@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
@@ -28,6 +28,161 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+
+  // Duplicate email pre-check state (Sign up flow only)
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
+
+  const checkedEmailsCache = useRef<Record<string, boolean>>({});
+  const checkDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const checkAbortControllerRef = useRef<AbortController | null>(null);
+  const checkReqIdRef = useRef<number>(0);
+  const lastCheckedEmailRef = useRef<string>('');
+
+  const checkEmailDuplicate = useCallback(async (rawEmail: string, immediate = false) => {
+    if (mode !== 'signup') {
+      setIsCheckingEmail(false);
+      setIsDuplicateEmail(false);
+      return;
+    }
+
+    const normalized = normalizeEmail(rawEmail);
+
+    // If incomplete or invalid format/domain, do not issue an API request
+    if (!normalized || !isValidEmailFormat(normalized) || !isValidEmailDomain(normalized)) {
+      if (checkDebounceTimerRef.current) {
+        clearTimeout(checkDebounceTimerRef.current);
+        checkDebounceTimerRef.current = null;
+      }
+      if (checkAbortControllerRef.current) {
+        checkAbortControllerRef.current.abort();
+        checkAbortControllerRef.current = null;
+      }
+      setIsCheckingEmail(false);
+      if (isDuplicateEmail) {
+        setIsDuplicateEmail(false);
+        setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+      }
+      return;
+    }
+
+    // Check cache first to avoid redundant API requests
+    if (checkedEmailsCache.current[normalized] !== undefined) {
+      const exists = checkedEmailsCache.current[normalized];
+      lastCheckedEmailRef.current = normalized;
+      setIsCheckingEmail(false);
+      setIsDuplicateEmail(exists);
+      if (exists) {
+        setEmailError('Account already exists. Please use a different email.');
+      } else {
+        setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+      }
+      return;
+    }
+
+    // Cancel any pending debounce timer
+    if (checkDebounceTimerRef.current) {
+      clearTimeout(checkDebounceTimerRef.current);
+      checkDebounceTimerRef.current = null;
+    }
+
+    const runCheck = async () => {
+      // Safely abort any in-flight request for previous email
+      if (checkAbortControllerRef.current) {
+        checkAbortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      checkAbortControllerRef.current = controller;
+      const currentReqId = ++checkReqIdRef.current;
+
+      setIsCheckingEmail(true);
+
+      try {
+        const res = await fetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ email: normalized }),
+          signal: controller.signal,
+        });
+
+        if (currentReqId !== checkReqIdRef.current) return;
+
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const result = await res.json();
+          if (currentReqId !== checkReqIdRef.current) return;
+
+          const exists = Boolean(result.exists);
+          checkedEmailsCache.current[normalized] = exists;
+          lastCheckedEmailRef.current = normalized;
+          setIsDuplicateEmail(exists);
+
+          if (exists) {
+            setEmailError('Account already exists. Please use a different email.');
+          } else {
+            setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+          }
+        } else {
+          // Temporary server error: do not falsely claim email exists; do not block signup
+          setIsDuplicateEmail(false);
+          setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        // Temporary network failure: do not falsely claim email exists; submit path remains final authority
+        if (currentReqId === checkReqIdRef.current) {
+          setIsDuplicateEmail(false);
+          setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+        }
+      } finally {
+        if (currentReqId === checkReqIdRef.current) {
+          setIsCheckingEmail(false);
+        }
+      }
+    };
+
+    if (immediate) {
+      runCheck();
+    } else {
+      checkDebounceTimerRef.current = setTimeout(runCheck, 500);
+    }
+  }, [mode, isDuplicateEmail]);
+
+  // Debounced duplicate check on email or mode change
+  useEffect(() => {
+    if (mode === 'signup') {
+      const normalized = normalizeEmail(email);
+      if (normalized !== lastCheckedEmailRef.current) {
+        checkEmailDuplicate(email, false);
+      }
+    } else {
+      // In signin mode: cancel any pending check
+      if (checkDebounceTimerRef.current) {
+        clearTimeout(checkDebounceTimerRef.current);
+        checkDebounceTimerRef.current = null;
+      }
+      if (checkAbortControllerRef.current) {
+        checkAbortControllerRef.current.abort();
+        checkAbortControllerRef.current = null;
+      }
+      setIsCheckingEmail(false);
+      setIsDuplicateEmail(false);
+      setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+    }
+  }, [email, mode, checkEmailDuplicate]);
+
+  // Trigger immediate check on blur if changed and not yet checked
+  const handleEmailBlur = useCallback(() => {
+    if (mode === 'signup') {
+      const normalized = normalizeEmail(email);
+      if (normalized && isValidEmailFormat(normalized) && isValidEmailDomain(normalized)) {
+        if (checkedEmailsCache.current[normalized] === undefined) {
+          checkEmailDuplicate(email, true);
+        }
+      }
+    }
+  }, [mode, email, checkEmailDuplicate]);
   
   // Track onboarding view & handle OAuth URL errors
   useEffect(() => {
@@ -66,6 +221,12 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
   const handleEmailContinue = useCallback(async () => {
     if (isLoading) return;
+    if (mode === 'signup' && (isCheckingEmail || isDuplicateEmail)) {
+      if (isDuplicateEmail) {
+        setEmailError('Account already exists. Please use a different email.');
+      }
+      return;
+    }
     const rawEmail = email;
     if (!rawEmail.trim()) return;
 
@@ -200,7 +361,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setIsLoading(false);
       }
     }
-  }, [email, password, mode, onLogin, isLoading]);
+  }, [email, password, mode, onLogin, isLoading, isCheckingEmail, isDuplicateEmail]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -344,6 +505,9 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setForgotError={setForgotError}
         setForgotSuccess={setForgotSuccess}
         direction={direction}
+        isCheckingEmail={isCheckingEmail}
+        isDuplicateEmail={isDuplicateEmail}
+        onEmailBlur={handleEmailBlur}
       />
     );
   };
