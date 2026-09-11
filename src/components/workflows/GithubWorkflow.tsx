@@ -121,7 +121,7 @@ export function GithubWorkflow({
       if (error) {
         setIsConnectingGithub(false);
         if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
-          setLinkError('This GitHub account is already connected to another Code Vibe account. Please disconnect it from the other account or use a different GitHub account.');
+          setLinkError('This GitHub account is already connected to another Cody account. Please disconnect it from the other account or use a different GitHub account.');
         } else {
           setLinkError(error.message || 'Failed to connect GitHub. Please try again.');
         }

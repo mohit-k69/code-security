@@ -101,11 +101,11 @@ export default function App() {
     if (!user) return;
 
     if (activeTab === 'reviewed') {
-      trackPageView('/reviewed', 'Code Vibe - Review History');
+      trackPageView('/reviewed', 'Cody - Review History');
       trackEvent('review_history_opened');
     } else {
       const path = activeWorkflow === 'none' ? '/home' : `/${activeWorkflow}`;
-      const title = `Code Vibe - ${activeWorkflow === 'none' ? 'Home' : activeWorkflow.toUpperCase()}`;
+      const title = `Cody - ${activeWorkflow === 'none' ? 'Home' : activeWorkflow.toUpperCase()}`;
       trackPageView(path, title);
     }
   }, [activeTab, activeWorkflow, user]);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { CodeXml, CheckCircle2 } from 'lucide-react';
 import { ReviewedItem } from '../../hooks/useAnalysis';
+import { CodeVibeIcon } from '../common/CodeVibeLogo';
 
 interface SidebarProps {
   activeTab: string;
@@ -12,9 +13,9 @@ export function Sidebar({ activeTab, setActiveTab, reviewedItems }: SidebarProps
   return (
     <div className="w-[280px] bg-[#3f2a24] flex flex-col z-20 h-full">
       <div className="p-6">
-        <h1 className="text-white font-bold text-[22px] tracking-tight flex items-center gap-2">
-          <CodeXml className="h-6 w-6 text-[#d4c4bc]" />
-          Code Vibe
+        <h1 className="text-white font-bold text-[22px] tracking-tight flex items-center gap-2.5">
+          <CodeVibeIcon size={24} variant="light" className="shrink-0" />
+          Cody
         </h1>
       </div>
       

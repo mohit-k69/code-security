@@ -10,6 +10,7 @@ import {
   OnboardingSignupSuccess
 } from './components/auth/onboarding/OnboardingSteps';
 
+import { CodeVibeIcon } from './components/common/CodeVibeLogo';
 import { type User } from './hooks/useAuth';
 
 interface OnboardingProps {
@@ -24,15 +25,13 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   
   // Track onboarding view & handle OAuth URL errors
   useEffect(() => {
-    trackPageView('/onboarding', 'Code Vibe - Welcome');
+    trackPageView('/onboarding', 'Cody - Welcome');
 
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -88,14 +87,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
       return;
     }
 
-    // Signup: also require name fields
-    if (mode === 'signup') {
-      if (!firstName.trim() || !lastName.trim()) {
-        setEmailError('Please enter your first and last name');
-        return;
-      }
-    }
-
     setEmailError('');
     setIsLoading(true);
 
@@ -137,13 +128,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: {
-            data: {
-              first_name: firstName.trim(),
-              last_name: lastName.trim(),
-              full_name: `${firstName.trim()} ${lastName.trim()}`,
-            },
-          },
         });
 
         if (error) {
@@ -163,7 +147,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setIsLoading(false);
       }
     }
-  }, [email, password, mode, firstName, lastName, onLogin]);
+  }, [email, password, mode, onLogin]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -283,8 +267,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           setMode={setMode}
           setEmail={setEmail}
           setPassword={setPassword}
-          setFirstName={setFirstName}
-          setLastName={setLastName}
         />
       );
     }
@@ -297,10 +279,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setEmail={setEmail}
         password={password}
         setPassword={setPassword}
-        firstName={firstName}
-        setFirstName={setFirstName}
-        lastName={lastName}
-        setLastName={setLastName}
         emailError={emailError}
         setEmailError={setEmailError}
         isLoading={isLoading}
@@ -319,50 +297,40 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
   return (
     <div className="flex h-screen w-full font-sans antialiased">
-      <div className="hidden lg:flex w-[580px] bg-[#3f2a24] flex-col justify-between p-16 relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L5 30l25 25 25-25z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E")`,
+      <div className="hidden lg:flex w-[580px] bg-[#3A2722] flex-col justify-between p-16 relative overflow-hidden shrink-0">
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L5 30l25 25 25-25z' fill='none' stroke='%2349332D' stroke-width='0.75'/%3E%3C/svg%3E")`,
         }} />
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <svg width="32" height="32" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
-              <path d="M7 10L3 14L7 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M21 10L25 14L21 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="13" cy="13" r="4" stroke="currentColor" strokeWidth="2.5"/>
-              <path d="M16 16L19 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span className="font-bold text-2xl text-white tracking-wide">Code Vibe</span>
+            <CodeVibeIcon size={34} variant="light" className="shrink-0 drop-shadow-[0_2px_8px_rgba(36,23,19,0.4)]" />
+            <span className="font-bold text-2xl text-[#F7F4F0] tracking-wide">Cody</span>
           </div>
         </div>
 
         <div className="relative z-10">
-          <h1 className="text-white text-[36px] font-bold leading-tight mb-4">
+          <h1 className="text-[#F7F4F0] text-[36px] font-bold leading-tight mb-4">
             Check the vibe<br />of your code.
           </h1>
-          <p className="text-[#b8a298] text-[16px] leading-relaxed max-w-[340px]">
+          <p className="text-[#B9AAA2] text-[16px] leading-relaxed max-w-[340px]">
             Analyze your code for security issues, best practices, and quality — all in seconds.
           </p>
         </div>
 
-        <div className="relative z-10 text-[#8b6f61] text-[13px]">
-          © 2026 Code Vibe
+        <div className="relative z-10 text-[#8F7D74] text-[13px]">
+          © 2026 Cody
         </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center bg-white px-6 overflow-hidden">
         <div className="w-full max-w-[440px] flex flex-col items-center">
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#3f2a24]">
-              <path d="M7 10L3 14L7 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M21 10L25 14L21 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="13" cy="13" r="4" stroke="currentColor" strokeWidth="2.5"/>
-              <path d="M16 16L19 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span className="font-bold text-xl text-[#3f2a24] tracking-wide">Code Vibe</span>
+            <CodeVibeIcon size={28} variant="dark" className="shrink-0" />
+            <span className="font-bold text-xl text-[#3A2722] tracking-wide">Cody</span>
           </div>
 
-          <div className="w-full relative min-h-[520px] flex flex-col justify-center">
+          <div className="w-full relative min-h-[520px] flex flex-col items-center justify-start pt-6">
             <AnimatePresence mode="wait">
               {renderRightContent()}
             </AnimatePresence>

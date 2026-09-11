@@ -1,4 +1,4 @@
-// Static code analysis engine for Code Vibe
+// Static code analysis engine for Cody
 // Runs entirely client-side using pattern matching and heuristics
 
 export type Severity = 'critical' | 'warning' | 'info';
