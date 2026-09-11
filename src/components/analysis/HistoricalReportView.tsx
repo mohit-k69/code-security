@@ -1,23 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   ArrowLeft, 
   Check, 
   AlertTriangle, 
-  Copy, 
   Calendar, 
   GitPullRequest, 
   FolderGit2, 
   FileCode2, 
-  Clock, 
-  ShieldCheck, 
-  ShieldAlert, 
   Layers
 } from 'lucide-react';
 import type { ReviewedItem } from '../../lib/reviewsService';
 import {
   getRealWorldScenario,
-  getFindingDisplayTitle,
-  getCodingAgentPrompt
+  getFindingDisplayTitle
 } from '../workflows/SecurityReportPanel';
 
 interface HistoricalReportViewProps {
@@ -33,16 +28,6 @@ interface ProcessedFinding {
 }
 
 export function HistoricalReportView({ review, onBack }: HistoricalReportViewProps) {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
-  const handleCopyPrompt = (promptText: string, index: number) => {
-    navigator.clipboard.writeText(promptText);
-    setCopiedIndex(index);
-    setTimeout(() => {
-      setCopiedIndex(null);
-    }, 2000);
-  };
-
   // Check if review data is invalid or missing
   if (!review) {
     return (
@@ -159,57 +144,36 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
-      {/* 1. Navigation Header */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm px-6 py-3.5 flex items-center">
-        <button
-          id="back-to-reviews-btn"
-          onClick={onBack}
-          aria-label="Back to Reviews"
-          title="Back to Reviews"
-          className="p-2 -ml-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      </div>
+      <div className="max-w-4xl w-full mx-auto px-6 md:px-8 pt-4 pb-8 space-y-4">
+        {/* 1. Navigation Header */}
+        <div>
+          <button
+            id="back-to-reviews-btn"
+            onClick={onBack}
+            aria-label="Back to Reviews"
+            title="Back to Reviews"
+            className="p-2 -ml-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer inline-flex items-center shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
 
-      <div className="max-w-4xl w-full mx-auto p-6 md:p-8 space-y-6">
         {/* 2. Review Metadata Summary Bar */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200/80">
-            <div>
-              <div className="flex items-center gap-2.5 mb-1">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-gray-200 text-gray-700">
-                  <FileCode2 className="w-3.5 h-3.5 text-gray-500" />
-                  {getReviewTypeLabel()}
-                </span>
-                {review.pr !== null && review.pr !== undefined && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700">
-                    <GitPullRequest className="w-3.5 h-3.5 text-blue-600" />
-                    PR #{review.pr}
-                  </span>
-                )}
-              </div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">{review.name}</h1>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span 
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
-                  effectiveVerdict === 'PASS'
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                    : effectiveVerdict === 'FAIL'
-                      ? 'bg-red-100 text-red-800 border border-red-200'
-                      : 'bg-orange-100 text-orange-800 border border-orange-200'
-                }`}
-              >
-                {effectiveVerdict === 'PASS' ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                )}
-                {effectiveVerdict}
+          <div className="pb-4 border-b border-gray-200/80">
+            <div className="flex items-center gap-2.5 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-gray-200 text-gray-700">
+                <FileCode2 className="w-3.5 h-3.5 text-gray-500" />
+                {getReviewTypeLabel()}
               </span>
+              {review.pr !== null && review.pr !== undefined && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700">
+                  <GitPullRequest className="w-3.5 h-3.5 text-blue-600" />
+                  PR #{review.pr}
+                </span>
+              )}
             </div>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{review.name}</h1>
           </div>
 
           <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
@@ -324,8 +288,6 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
                 const explanation = finding.description || finding.message || 'Vulnerability detected in source code.';
                 const scenario = getRealWorldScenario(finding);
                 const suggestion = finding.suggestion || finding.remediation;
-                const agentPrompt = getCodingAgentPrompt(finding);
-                const isCopied = copiedIndex === i;
 
                 return (
                   <div
@@ -411,7 +373,7 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
                     {/* Recommended Remediation (if available) */}
                     {suggestion && (
-                      <div className="mb-4 pt-3 border-t border-gray-100">
+                      <div className="pt-3 border-t border-gray-100">
                         <h5 className="text-[15px] font-bold text-gray-900 mb-1.5 tracking-tight">
                           Recommended Remediation
                         </h5>
@@ -420,41 +382,6 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
                         </p>
                       </div>
                     )}
-
-                    {/* Fix with Coding Agent Prompt */}
-                    <div className="pt-3 border-t border-gray-100">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <h5 className="text-[15px] font-bold text-gray-900 tracking-tight">
-                          Fix with Coding Agent
-                        </h5>
-                        <button
-                          onClick={() => handleCopyPrompt(agentPrompt, i)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
-                            isCopied
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                          }`}
-                          title="Copy prompt for AI coding agent"
-                        >
-                          {isCopied ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5 text-gray-500" />
-                              <span>Copy Prompt</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                      <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-                        <p className="text-xs font-mono text-gray-800 leading-relaxed break-words whitespace-pre-wrap select-all">
-                          {agentPrompt}
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 );
               })}
