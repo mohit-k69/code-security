@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ArrowLeft, 
   Check, 
@@ -7,7 +7,9 @@ import {
   GitPullRequest, 
   FolderGit2, 
   FileCode2, 
-  Layers
+  Layers,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import type { ReviewedItem } from '../../lib/reviewsService';
 import {
@@ -28,6 +30,15 @@ interface ProcessedFinding {
 }
 
 export function HistoricalReportView({ review, onBack }: HistoricalReportViewProps) {
+  const [expandedFindings, setExpandedFindings] = useState<Record<number, boolean>>({});
+
+  const toggleFinding = (index: number) => {
+    setExpandedFindings(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   // Check if review data is invalid or missing
   if (!review) {
     return (
@@ -103,6 +114,20 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
   const totalFindings = allFindings.length;
 
+  const allFindingsExpanded = allFindings.length > 0 && allFindings.every((_: any, idx: number) => !!expandedFindings[idx]);
+
+  const toggleAllFindings = () => {
+    if (allFindingsExpanded) {
+      setExpandedFindings({});
+    } else {
+      const next: Record<number, boolean> = {};
+      allFindings.forEach((_: any, idx: number) => {
+        next[idx] = true;
+      });
+      setExpandedFindings(next);
+    }
+  };
+
   const isPasteReview =
     review.reviewType === 'paste' ||
     report?.reviewType === 'paste' ||
@@ -144,7 +169,7 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
-      <div className="max-w-4xl w-full mx-auto px-6 md:px-8 pt-4 pb-8 space-y-4">
+      <div className="w-full max-w-5xl px-6 md:px-8 pt-4 pb-12 space-y-4 text-left">
         {/* 1. Navigation Header */}
         <div>
           <button
@@ -159,7 +184,7 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
         </div>
 
         {/* 2. Review Metadata Summary Bar */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-left">
           <div className="pb-4 border-b border-gray-200/80">
             <div className="flex items-center gap-2.5 mb-1">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-gray-200 text-gray-700">
@@ -176,35 +201,40 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{review.name}</h1>
           </div>
 
-          <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div>
+          <div className="pt-3 flex flex-wrap items-start gap-x-8 gap-y-3 text-xs">
+            <div className="min-w-0 shrink-0">
               <span className="text-gray-500 block mb-0.5">Date Reviewed</span>
               <span className="font-medium text-gray-800 inline-flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                {dateFormatted}
+                <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span>{dateFormatted}</span>
               </span>
             </div>
 
             {review.repoName && (
-              <div>
+              <div className="min-w-0 max-w-xs sm:max-w-sm">
                 <span className="text-gray-500 block mb-0.5">Repository</span>
-                <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 truncate">
+                <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 max-w-full">
                   <FolderGit2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  <span className="truncate">{review.repoOwner ? `${review.repoOwner}/${review.repoName}` : review.repoName}</span>
+                  <span 
+                    className="truncate block"
+                    title={review.repoOwner ? `${review.repoOwner}/${review.repoName}` : review.repoName}
+                  >
+                    {review.repoOwner ? `${review.repoOwner}/${review.repoName}` : review.repoName}
+                  </span>
                 </span>
               </div>
             )}
 
-            <div>
+            <div className="min-w-0 shrink-0">
               <span className="text-gray-500 block mb-0.5">Vulnerabilities</span>
               <span className="font-medium text-gray-800 inline-flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-gray-400" />
-                {totalFindings} {totalFindings === 1 ? 'finding' : 'findings'}
+                <Layers className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span>{totalFindings} {totalFindings === 1 ? 'finding' : 'findings'}</span>
               </span>
             </div>
 
             {review.commitSha && (
-              <div>
+              <div className="min-w-0 shrink-0">
                 <span className="text-gray-500 block mb-0.5">Commit</span>
                 <span className="font-mono text-gray-800 font-medium">
                   {review.commitSha.slice(0, 7)}
@@ -216,50 +246,42 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
         {/* 3. Overall Verdict Banner */}
         {effectiveVerdict === 'PASS' ? (
-          <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-6 text-center sm:text-left flex flex-col sm:flex-row items-center gap-5">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-              <Check className="w-8 h-8 text-emerald-600" />
+          <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-5 text-left flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+              <Check className="w-5 h-5 text-emerald-600" />
             </div>
-            <div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <h2 className="text-2xl font-bold text-gray-900">PASS</h2>
-              </div>
-              <p className="text-gray-700 text-sm font-medium mb-1">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+              <h2 className="text-xl font-bold text-gray-900">PASS</h2>
+              <span className="text-emerald-700 font-semibold text-sm">
                 No security vulnerabilities detected.
-              </p>
-              <p className="text-gray-500 text-xs leading-relaxed">
-                All checked security checkpoints passed cleanly during this review scan.
-              </p>
+              </span>
             </div>
           </div>
         ) : effectiveVerdict === 'FAIL' ? (
-          <div className="bg-red-50/40 border border-red-200 rounded-xl p-6">
-            <div className="flex items-center gap-3.5 mb-2">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-7 h-7 text-red-600" />
+          <div className="bg-red-50/40 border border-red-200 rounded-xl p-5 text-left">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">FAIL</h2>
-                <p className="text-red-700 font-semibold text-sm">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <h2 className="text-xl font-bold text-gray-900">FAIL</h2>
+                <span className="text-red-700 font-semibold text-sm">
                   {totalFindings} security {totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'} detected.
-                </p>
+                </span>
               </div>
             </div>
-            <p className="text-gray-600 text-xs mt-2 leading-relaxed">
-              Security vulnerabilities were detected in this historical review. Review the details, real-world consequences, and remediation steps below.
-            </p>
           </div>
         ) : (
-          <div className="bg-orange-50/40 border border-orange-200 rounded-xl p-6">
-            <div className="flex items-center gap-3.5 mb-2">
-              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-7 h-7 text-orange-600" />
+          <div className="bg-orange-50/40 border border-orange-200 rounded-xl p-5 text-left">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-orange-600" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">NOT VERIFIED</h2>
-                <p className="text-orange-800 font-medium text-sm">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <h2 className="text-xl font-bold text-gray-900">NOT VERIFIED</h2>
+                <span className="text-orange-800 font-medium text-sm">
                   Security could not be confidently verified because additional context is required.
-                </p>
+                </span>
               </div>
             </div>
           </div>
@@ -267,17 +289,23 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
         {/* 4. Failed Security Checkpoints & Findings */}
         {effectiveVerdict === 'FAIL' && totalFindings > 0 && (
-          <div className="space-y-6 pt-2">
+          <div className="space-y-4 pt-2 text-left">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-              <h3 className="text-base font-bold text-gray-900 uppercase tracking-wider text-xs">
+              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Security Findings ({totalFindings})
               </h3>
-              <span className="text-xs text-gray-500">
-                Sorted by severity: High to Low
-              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleAllFindings}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer transition-colors"
+                >
+                  {allFindingsExpanded ? 'Collapse All' : 'Expand All'}
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-2.5">
               {allFindings.map((finding: ProcessedFinding, i: number) => {
                 const isCritical = finding._severityLabel === 'CRITICAL';
                 const isHigh = finding._severityLabel === 'HIGH';
@@ -288,98 +316,111 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
                 const explanation = finding.description || finding.message || 'Vulnerability detected in source code.';
                 const scenario = getRealWorldScenario(finding);
                 const suggestion = finding.suggestion || finding.remediation;
+                const isExpanded = !!expandedFindings[i];
 
                 return (
                   <div
                     key={i}
-                    className={`border rounded-xl p-6 transition-all ${
-                      isCritical || isHigh
-                        ? 'border-red-200 bg-red-50/10'
-                        : isMedium
-                          ? 'border-orange-200 bg-orange-50/10'
-                          : 'border-blue-200 bg-blue-50/10'
+                    className={`border rounded-xl bg-white overflow-hidden transition-all text-left ${
+                      isExpanded
+                        ? isCritical || isHigh
+                          ? 'border-red-300 shadow-xs'
+                          : isMedium
+                            ? 'border-orange-300 shadow-xs'
+                            : 'border-blue-300 shadow-xs'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {/* Severity Badge & Header */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                      <span
-                        className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-0.5 rounded-md border ${
-                          isCritical
-                            ? 'bg-red-100 text-red-900 border-red-300'
-                            : isHigh
-                              ? 'bg-red-100 text-red-800 border-red-200'
-                              : isMedium
-                                ? 'bg-orange-100 text-orange-800 border-orange-200'
-                                : 'bg-blue-100 text-blue-800 border-blue-200'
-                        }`}
-                      >
-                        {finding._severityLabel}
-                      </span>
-
-                      {finding.cwes && finding.cwes.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {finding.cwes.map((cwe: string, idx: number) => (
-                            <span key={idx} className="text-[10px] uppercase font-mono bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded">
-                              {cwe}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Finding Title & Location */}
-                    <h4
-                      className={`text-lg font-bold mb-3 ${
-                        isCritical || isHigh
-                          ? 'text-red-950'
-                          : isMedium
-                            ? 'text-orange-950'
-                            : 'text-blue-950'
-                      }`}
+                    {/* Index List Row Header (Clickable) */}
+                    <button
+                      type="button"
+                      onClick={() => toggleFinding(i)}
+                      className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-gray-50/80 transition-colors cursor-pointer"
+                      aria-expanded={isExpanded}
                     >
-                      {displayTitle}
-                    </h4>
-
-                    {/* Problematic Code Snippet (if available) */}
-                    {snippet && (
-                      <div className="rounded-lg bg-gray-900 p-4 mb-4 overflow-x-auto border border-gray-800">
-                        <code className="text-xs font-mono text-gray-100 whitespace-pre">
-                          {snippet}
-                        </code>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-bold shrink-0">
+                          {i + 1}
+                        </span>
+                        <span
+                          className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border shrink-0 ${
+                            isCritical
+                              ? 'bg-red-100 text-red-900 border-red-300'
+                              : isHigh
+                                ? 'bg-red-100 text-red-800 border-red-200'
+                                : isMedium
+                                  ? 'bg-orange-100 text-orange-800 border-orange-200'
+                                  : 'bg-blue-100 text-blue-800 border-blue-200'
+                          }`}
+                        >
+                          {finding._severityLabel}
+                        </span>
+                        <span className="font-semibold text-sm text-gray-900 truncate">
+                          {displayTitle}
+                        </span>
+                        {finding.cwes && finding.cwes.length > 0 && (
+                          <span className="hidden sm:inline-block text-[10px] uppercase font-mono bg-gray-100 border border-gray-200 text-gray-600 px-1.5 py-0.5 rounded shrink-0">
+                            {finding.cwes[0]}
+                          </span>
+                        )}
                       </div>
-                    )}
 
-                    {/* Clear description: Why the code is vulnerable / Why it matters */}
-                    {explanation && (
-                      <div className="mb-4">
-                        <h5 className="text-[15px] font-bold text-gray-900 mb-1.5 tracking-tight">
-                          Why it matters
-                        </h5>
-                        <p className="text-gray-700 leading-relaxed text-sm">
-                          {explanation}
-                        </p>
+                      <div className="shrink-0 text-gray-400 pl-2">
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-gray-600" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        )}
                       </div>
-                    )}
+                    </button>
 
-                    {/* Real-world Scenario: What could actually happen */}
-                    <div className="mb-4 pt-3 border-t border-gray-100">
-                      <h5 className="text-[15px] font-bold text-gray-900 mb-1.5 tracking-tight">
-                        Real-world scenario
-                      </h5>
-                      <p className="text-gray-700 leading-relaxed text-sm">
-                        {scenario}
-                      </p>
-                    </div>
+                    {/* Expanded Details Revealed On Click */}
+                    {isExpanded && (
+                      <div className="px-4 pb-5 pt-1 border-t border-gray-100 space-y-4 text-left">
+                        {/* Problematic Code Snippet (if available) */}
+                        {snippet && (
+                          <div className="rounded-lg bg-gray-900 p-3.5 mt-2 overflow-x-auto border border-gray-800">
+                            <code className="text-xs font-mono text-gray-100 whitespace-pre block">
+                              {snippet}
+                            </code>
+                          </div>
+                        )}
 
-                    {/* Recommended Remediation (if available) */}
-                    {suggestion && (
-                      <div className="pt-3 border-t border-gray-100">
-                        <h5 className="text-[15px] font-bold text-gray-900 mb-1.5 tracking-tight">
-                          Recommended Remediation
-                        </h5>
-                        <p className="text-gray-700 leading-relaxed text-sm">
-                          {suggestion}
-                        </p>
+                        {/* Why it matters */}
+                        {explanation && (
+                          <div className="pt-1">
+                            <h5 className="text-[14px] font-bold text-gray-900 mb-1 tracking-tight">
+                              Why it matters
+                            </h5>
+                            <p className="text-gray-700 leading-relaxed text-sm">
+                              {explanation}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Scenario */}
+                        {scenario && (
+                          <div className="pt-3 border-t border-gray-100">
+                            <h5 className="text-[14px] font-bold text-gray-900 mb-1 tracking-tight">
+                              Scenario
+                            </h5>
+                            <p className="text-gray-700 leading-relaxed text-sm">
+                              {scenario}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Recommended Remediation (if available) */}
+                        {suggestion && (
+                          <div className="pt-3 border-t border-gray-100">
+                            <h5 className="text-[14px] font-bold text-gray-900 mb-1 tracking-tight">
+                              Recommended Remediation
+                            </h5>
+                            <p className="text-gray-700 leading-relaxed text-sm">
+                              {suggestion}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
