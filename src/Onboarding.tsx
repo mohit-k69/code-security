@@ -135,9 +135,11 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           const res = await fetch('/api/auth/check-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ email: normalizedEmail }),
           });
-          if (res.ok) {
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
             const result = await res.json();
             if (result.exists) {
               isDuplicate = true;
@@ -152,7 +154,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           return;
         }
 
-        // 2. Perform Supabase Auth SignUp
+        // 2. Perform Supabase Auth SignUp (authoritative race-condition enforcement)
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,

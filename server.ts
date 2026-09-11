@@ -26,16 +26,61 @@ export async function checkAuthEmailExists(rawEmail: string): Promise<boolean> {
   const admin = getSupabaseAdmin();
   if (!admin) return false;
 
-  let page = 1;
-  while (true) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
-    if (error || !data?.users || data.users.length === 0) break;
-    if (data.users.some((u: any) => u.email && u.email.trim().toLowerCase() === normalized)) {
+  // 1. Direct authoritative check via Supabase Auth Admin generateLink (O(1), primary email check)
+  try {
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: 'recovery',
+      email: normalized,
+    });
+    if (!error && data?.user?.id) {
       return true;
     }
-    if (data.users.length < 1000) break;
-    page++;
+  } catch {
+    // Continue to comprehensive scan
   }
+
+  // 2. Comprehensive check across all auth users (including user_metadata and linked OAuth identities)
+  try {
+    let page = 1;
+    while (true) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error || !data?.users || data.users.length === 0) break;
+
+      for (const u of data.users) {
+        if (u.email && u.email.trim().toLowerCase() === normalized) {
+          return true;
+        }
+        if (u.user_metadata?.email && String(u.user_metadata.email).trim().toLowerCase() === normalized) {
+          return true;
+        }
+
+        // For OAuth providers (Google, GitHub, etc.), inspect linked identities if needed
+        const providers = u.app_metadata?.providers || [];
+        if (providers.some((p: string) => p !== 'email')) {
+          try {
+            const userDetail = await admin.auth.admin.getUserById(u.id);
+            const identities = userDetail.data?.user?.identities || [];
+            for (const ident of identities) {
+              if (ident.email && ident.email.trim().toLowerCase() === normalized) {
+                return true;
+              }
+              if (ident.identity_data?.email && String(ident.identity_data.email).trim().toLowerCase() === normalized) {
+                return true;
+              }
+            }
+          } catch {
+            // Ignore single user detail error and continue
+          }
+        }
+      }
+
+      if (data.users.length < 1000) break;
+      page++;
+    }
+  } catch (err) {
+    console.error("Error in checkAuthEmailExists listUsers:", err);
+  }
+
   return false;
 }
 
@@ -51,14 +96,23 @@ async function startServer() {
   });
 
   // Check if an email already belongs to an existing Supabase Auth user (authoritative duplicate check)
-  app.post("/api/auth/check-email", async (req, res) => {
+  app.all("/api/auth/check-email", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
     try {
-      const email = req.body?.email;
+      const email = req.body?.email || req.query?.email;
       if (!email || typeof email !== 'string') {
         return res.status(400).json({ error: "Email is required", exists: false });
       }
       const normalizedEmail = email.trim().toLowerCase();
       const exists = await checkAuthEmailExists(normalizedEmail);
+      console.log(`[check-email] Checked "${normalizedEmail}": exists=${exists}`);
       return res.json({ exists, email: normalizedEmail });
     } catch (err: any) {
       console.error("Error in /api/auth/check-email:", err);
