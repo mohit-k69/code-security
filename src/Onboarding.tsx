@@ -59,10 +59,8 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         checkAbortControllerRef.current = null;
       }
       setIsCheckingEmail(false);
-      if (isDuplicateEmail) {
-        setIsDuplicateEmail(false);
-        setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-      }
+      setIsDuplicateEmail(false);
+      setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
       return;
     }
 
@@ -101,7 +99,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         const res = await fetch('/api/auth/check-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
           body: JSON.stringify({ email: normalized }),
           signal: controller.signal,
         });
@@ -124,7 +121,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
             setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
           }
         } else {
-          // Temporary server error: do not falsely claim email exists; do not block signup
+          // Temporary server/network error: do not falsely claim email exists; do not block signup
           setIsDuplicateEmail(false);
           setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
         }
@@ -147,13 +144,15 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     } else {
       checkDebounceTimerRef.current = setTimeout(runCheck, 500);
     }
-  }, [mode, isDuplicateEmail]);
+  }, [mode]);
 
   // Debounced duplicate check on email or mode change
   useEffect(() => {
     if (mode === 'signup') {
       const normalized = normalizeEmail(email);
       if (normalized !== lastCheckedEmailRef.current) {
+        setIsDuplicateEmail(false);
+        setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
         checkEmailDuplicate(email, false);
       }
     } else {

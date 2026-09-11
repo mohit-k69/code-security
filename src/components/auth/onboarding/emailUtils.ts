@@ -38,9 +38,10 @@ export function isValidEmailDomain(email: string): boolean {
   if (parts.length !== 2) return false;
   const domain = parts[1].toLowerCase();
   if (VALID_DOMAINS.has(domain)) return true;
-  return VALID_TLDS.some(tld => domain.endsWith(tld));
+  if (VALID_TLDS.some(tld => domain.endsWith(tld))) return true;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(domain);
 }
 
 export function isValidEmailFormat(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return /^[^\s@]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/.test(email);
 }

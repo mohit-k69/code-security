@@ -300,7 +300,7 @@ export function OnboardingEmailStep({
               </p>
 
               <AnimatePresence>
-                {emailError && (
+                {emailError && emailError !== 'Account already exists. Please use a different email.' && (
                   <motion.div
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -321,7 +321,7 @@ export function OnboardingEmailStep({
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      if (isEmailInvalid) {
+                      if (emailError && !isPasswordError) {
                         setEmailError('');
                       }
                     }}
@@ -333,13 +333,13 @@ export function OnboardingEmailStep({
                   />
                 </div>
                 {mode === 'signup' && isCheckingEmail && (
-                  <div id="email-checking-indicator" className="flex items-center gap-1.5 mt-1.5 text-[12px] text-gray-400 animate-pulse">
-                    <Loader2 size={12} className="animate-spin text-gray-400 shrink-0" />
+                  <div id="email-checking-indicator" className="flex items-center gap-1.5 mt-2 text-[12px] text-gray-500">
+                    <Loader2 size={13} className="animate-spin text-gray-400 shrink-0" />
                     <span>Checking email…</span>
                   </div>
                 )}
-                {mode === 'signup' && isDuplicateEmail && (
-                  <div id="email-duplicate-inline-warning" className="flex items-center gap-1.5 mt-1.5 text-[12px] text-red-500 font-medium">
+                {mode === 'signup' && (isDuplicateEmail || emailError === 'Account already exists. Please use a different email.') && !isCheckingEmail && (
+                  <div id="email-duplicate-inline-warning" className="flex items-center gap-1.5 mt-2 text-[12px] text-red-500 font-medium">
                     <span>Account already exists. Please use a different email.</span>
                   </div>
                 )}
