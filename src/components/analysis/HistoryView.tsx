@@ -1,15 +1,7 @@
-import React from 'react';
-import { Search, ChevronDown, FileText, ChevronRight } from 'lucide-react';
-
-interface ReviewedItem {
-  id?: string;
-  name: string;
-  verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
-  pr: number | null;
-  date: Date;
-  result: any;
-  reviewType?: string;
-}
+import React, { useState, useEffect } from 'react';
+import { Search, ChevronDown, FileText, ChevronRight, AlertTriangle, ArrowLeft } from 'lucide-react';
+import type { ReviewedItem } from '../../lib/reviewsService';
+import { HistoricalReportView } from './HistoricalReportView';
 
 interface HistoryViewProps {
   reviewedItems: ReviewedItem[];
@@ -32,11 +24,109 @@ export function HistoryView({
   filterOption,
   setFilterOption,
   setActiveTab,
-  setAnalysisResult
+  setAnalysisResult: _setAnalysisResult
 }: HistoryViewProps) {
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('reviewId') || null;
+    }
+    return null;
+  });
+
+  const [cachedReview, setCachedReview] = useState<ReviewedItem | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('cody_active_historical_review');
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // Safe fallback
+      }
+    }
+    return null;
+  });
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Synchronize browser history / popstate
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSelectedReviewId(params.get('reviewId') || null);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleSelectReview = (item: ReviewedItem | null) => {
+    if (item) {
+      const id = item.id || item.name;
+      setSelectedReviewId(id);
+      setCachedReview(item);
+      try {
+        sessionStorage.setItem('cody_active_historical_review', JSON.stringify(item));
+      } catch {
+        // Safe fallback
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'reviewed');
+      url.searchParams.set('reviewId', id);
+      window.history.pushState({ reviewId: id }, '', url.toString());
+    } else {
+      setSelectedReviewId(null);
+      setCachedReview(null);
+      try {
+        sessionStorage.removeItem('cody_active_historical_review');
+      } catch {
+        // Safe fallback
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reviewId');
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
+  // If a historical review is currently selected, render the dedicated report view
+  if (selectedReviewId) {
+    const activeReview = 
+      reviewedItems.find(item => (item.id && item.id === selectedReviewId) || item.name === selectedReviewId) ||
+      (cachedReview && ((cachedReview.id && cachedReview.id === selectedReviewId) || cachedReview.name === selectedReviewId) ? cachedReview : null);
+
+    if (activeReview) {
+      return (
+        <HistoricalReportView
+          key={activeReview.id || activeReview.name}
+          review={activeReview}
+          onBack={() => handleSelectReview(null)}
+        />
+      );
+    }
+
+    // Historical review was not found (or failed to load) - show clear error state, NOT PASS
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
+        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+          <AlertTriangle className="w-6 h-6 text-red-600" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Unable to load this review.</h3>
+        <p className="text-gray-500 text-sm max-w-md mb-6">
+          The requested historical review could not be found or has expired.
+        </p>
+        <button
+          onClick={() => handleSelectReview(null)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Reviews
+        </button>
+      </div>
+    );
+  }
+
+  // Standard Reviews list view
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white">
-      {/* Reviewed items layout */}
+      {/* Header with Title and Search/Filter Controls */}
       <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
         <div>
           <h2 className="text-[20px] font-semibold text-gray-900 tracking-tight">Previous Reviews</h2>
@@ -47,13 +137,17 @@ export function HistoryView({
           <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-full transition-all duration-300 overflow-hidden ${isSearchExpanded ? 'w-[280px]' : 'w-[40px]'}`}>
             <button 
               onClick={() => setIsSearchExpanded(true)}
-              className="w-[40px] h-[40px] flex-shrink-0 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors focus:outline-none"
+              className="w-[40px] h-[40px] flex-shrink-0 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-colors focus:outline-none cursor-pointer"
+              title="Search reviews"
+              aria-label="Search reviews"
             >
               <Search className="w-4 h-4" />
             </button>
             <input 
               type="text"
               placeholder="Search by description or filename"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full bg-transparent pr-4 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 outline-none ${isSearchExpanded ? 'opacity-100' : 'opacity-0'}`}
               onBlur={(e) => {
                 if (e.target.value === '') {
@@ -66,7 +160,7 @@ export function HistoryView({
           <div className="relative">
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="flex items-center gap-2 px-5 py-2 rounded-full bg-white text-gray-900 text-[13px] font-medium hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm focus:outline-none"
+              className="flex items-center gap-2 px-5 py-2 rounded-full bg-white text-gray-900 text-[13px] font-medium hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm focus:outline-none cursor-pointer"
             >
               {filterOption}
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
@@ -75,13 +169,13 @@ export function HistoryView({
               <div className="absolute top-full right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl overflow-hidden z-10 shadow-lg">
                 <button 
                   onClick={() => { setFilterOption('Alphabetically'); setIsFilterOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-[13px] text-gray-900 hover:bg-gray-50 transition-colors"
+                  className="w-full text-left px-4 py-2 text-[13px] text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Alphabetically
                 </button>
                 <button 
                   onClick={() => { setFilterOption('By date'); setIsFilterOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  className="w-full text-left px-4 py-2 text-[13px] text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer"
                 >
                   By date
                 </button>
@@ -91,6 +185,7 @@ export function HistoryView({
         </div>
       </div>
 
+      {/* Table Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 text-gray-500 text-[14px]">
         <div className="flex-1">Name</div>
         <div className="w-[120px] text-center">Verdict</div>
@@ -99,12 +194,17 @@ export function HistoryView({
         <div className="w-[60px]"></div>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      {/* Reviews List */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="flex flex-col">
           {reviewedItems
             .filter(item => {
               const itemDate = item.date instanceof Date ? item.date : new Date(item.date || Date.now());
               return Date.now() - itemDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
+            })
+            .filter(item => {
+              if (!searchQuery.trim()) return true;
+              return item.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
             })
             .sort((a, b) => {
               if (filterOption === 'Alphabetically') return a.name.localeCompare(b.name);
@@ -117,10 +217,7 @@ export function HistoryView({
               return (
                 <div 
                   key={item.id || i} 
-                  onClick={() => {
-                    setAnalysisResult(item.result);
-                    setActiveTab('new');
-                  }}
+                  onClick={() => handleSelectReview(item)}
                   className="flex items-center justify-between px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group cursor-pointer"
                 >
                   <div className="flex-1 flex items-center gap-3">
@@ -182,7 +279,7 @@ export function HistoryView({
               <p className="text-[14px]">No reviews yet.</p>
               <button 
                 onClick={() => setActiveTab('new')}
-                className="mt-4 px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors"
+                className="mt-4 px-4 py-2 bg-white border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Start a Review
               </button>

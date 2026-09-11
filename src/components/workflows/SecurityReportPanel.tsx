@@ -11,7 +11,7 @@ interface SecurityReportPanelProps {
 /**
  * Derives a concrete, practical consequence of the vulnerability in simple developer-friendly terms.
  */
-function getRealWorldScenario(finding: any): string {
+export function getRealWorldScenario(finding: any): string {
   if (finding.scenario || finding.realWorldScenario || finding.impact || finding.consequence) {
     return finding.scenario || finding.realWorldScenario || finding.impact || finding.consequence;
   }
@@ -232,7 +232,7 @@ function getRealWorldScenario(finding: any): string {
  * Formats the issue display title combining the rule/title and file location
  * e.g. "SECRET_EXPOSURE: test-vulnerability.js:4"
  */
-function getFindingDisplayTitle(finding: any): string {
+export function getFindingDisplayTitle(finding: any): string {
   const rawTitle = finding.title || finding.rule || 'Security Finding';
   const fileName = finding.primaryLocation?.file || finding.file;
   const lineNum = finding.primaryLocation?.line || finding.line;
@@ -254,7 +254,7 @@ function getFindingDisplayTitle(finding: any): string {
  * Strips file paths, line numbers, or location suffixes from the issue title/rule
  * so that only the pure issue name (e.g. "SECRET_EXPOSURE") is shown without redundancy in prompts.
  */
-function getCleanIssueName(finding: any): string {
+export function getCleanIssueName(finding: any): string {
   let name = finding.title || finding.rule || 'Security Finding';
   const fileName = finding.primaryLocation?.file || finding.file;
   const lineNum = finding.primaryLocation?.line || finding.line;
@@ -289,7 +289,7 @@ function getCleanIssueName(finding: any): string {
 /**
  * Builds a structured, concise, and actionable prompt for an AI coding agent.
  */
-function getCodingAgentPrompt(finding: any): string {
+export function getCodingAgentPrompt(finding: any): string {
   const file = finding.primaryLocation?.file || finding.file || 'source file';
   const lineNum = finding.primaryLocation?.line || finding.line;
   const locationText = [
@@ -329,7 +329,7 @@ function safeCodeFence(code: string, lang = 'javascript'): string {
 /**
  * Generates an end-to-end, structured Markdown remediation document tailored for AI coding agents.
  */
-function generateRemediationMarkdown(report: any, findings: any[]): string {
+export function generateRemediationMarkdown(report: any, findings: any[]): string {
   const timestamp = report?.generatedAt || report?.timestamp || new Date().toISOString();
   const dateStr = new Date(timestamp).toLocaleString('en-US', {
     year: 'numeric',
@@ -460,7 +460,7 @@ function generateRemediationMarkdown(report: any, findings: any[]): string {
  * Works across iOS Safari, iPadOS, Android, macOS, Windows, Linux, and iframe sandboxes
  * by delaying Object URL revocation and providing automatic Data URI fallback.
  */
-function downloadMarkdownDocument(filename: string, content: string): boolean {
+export function downloadMarkdownDocument(filename: string, content: string): boolean {
   try {
     // 1. Prepend UTF-8 BOM to guarantee proper text decoding across all text editors and OSes
     const blob = new Blob(['\uFEFF' + content], { type: 'text/markdown;charset=utf-8' });

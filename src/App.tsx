@@ -86,8 +86,10 @@ export default function App() {
     if (urlParams.get('workflow') === 'github') {
       setActiveWorkflow('github');
       window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('tab') === 'reviewed' || urlParams.get('reviewId')) {
+      setActiveTab('reviewed');
     }
-  }, [setActiveWorkflow]);
+  }, [setActiveWorkflow, setActiveTab]);
 
   // Identify user in PostHog upon authentication
   useEffect(() => {
