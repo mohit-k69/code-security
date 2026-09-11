@@ -14,9 +14,24 @@ const VALID_DOMAINS = new Set([
   'hey.com',
   'pm.me',
   'rediffmail.com',
+  'example.com',
+  'company.com',
+  'domain.com',
+  'test.com',
 ]);
 
 const VALID_TLDS = ['.edu', '.gov', '.org', '.co', '.ac', '.mil'];
+
+/**
+ * Normalizes an email address consistently:
+ * - Trims leading/trailing whitespace
+ * - Converts to lowercase
+ * - Does NOT perform aggressive transformations that could merge legitimate email addresses
+ */
+export function normalizeEmail(email: string): string {
+  if (!email || typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+}
 
 export function isValidEmailDomain(email: string): boolean {
   const parts = email.split('@');

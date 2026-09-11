@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
-import { isValidEmailFormat, isValidEmailDomain } from './components/auth/onboarding/emailUtils';
+import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
 import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
 
 import {
@@ -65,14 +65,18 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleEmailContinue = useCallback(async () => {
-    if (!email.trim()) return;
+    if (isLoading) return;
+    const rawEmail = email;
+    if (!rawEmail.trim()) return;
 
-    if (!isValidEmailFormat(email)) {
+    const normalizedEmail = normalizeEmail(rawEmail);
+
+    if (!isValidEmailFormat(normalizedEmail)) {
       setEmailError('Please enter a valid email address');
       return;
     }
 
-    if (!isValidEmailDomain(email)) {
+    if (!isValidEmailDomain(normalizedEmail)) {
       setEmailError('Please use a valid email from a recognized provider');
       return;
     }
@@ -93,7 +97,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     if (mode === 'signin') {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: normalizedEmail,
           password,
         });
 
@@ -114,7 +118,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           onLogin({
             id: data.user.id,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
-            email: data.user.email || email,
+            email: data.user.email || normalizedEmail,
           });
         }
       } catch (err: any) {
@@ -123,19 +127,59 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setIsLoading(false);
       }
     } else {
-      // Signup: create account directly — no tour, no extra steps
+      // Signup: create account directly — duplicate email prevention
       try {
+        // 1. Authoritative Backend Check for duplicate account against Supabase Auth
+        let isDuplicate = false;
+        try {
+          const res = await fetch('/api/auth/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail }),
+          });
+          if (res.ok) {
+            const result = await res.json();
+            if (result.exists) {
+              isDuplicate = true;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('Backend duplicate check unavailable, falling back to Auth signUp validation:', fetchErr);
+        }
+
+        if (isDuplicate) {
+          setEmailError('Account already exists. Please use a different email.');
+          return;
+        }
+
+        // 2. Perform Supabase Auth SignUp
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: normalizedEmail,
           password,
         });
 
         if (error) {
-          let friendlyError = error.message;
-          if (error.message.toLowerCase().includes('already registered')) {
-            friendlyError = 'An account with this email already exists. Try signing in instead.';
+          const errLower = error.message.toLowerCase();
+          if (
+            errLower.includes('already registered') ||
+            errLower.includes('already exists') ||
+            errLower.includes('user already exists') ||
+            errLower.includes('email address is already in use') ||
+            errLower.includes('identity_already_exists') ||
+            (error as any).status === 422
+          ) {
+            setEmailError('Account already exists. Please use a different email.');
+          } else if (errLower.includes('password') && (errLower.includes('short') || errLower.includes('character'))) {
+            setEmailError('Password must be at least 6 characters');
+          } else {
+            setEmailError(error.message || 'An unexpected signup error occurred.');
           }
-          setEmailError(friendlyError);
+          return;
+        }
+
+        // 3. Check for empty identities array (GoTrue email confirmation behavior for existing accounts)
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setEmailError('Account already exists. Please use a different email.');
           return;
         }
 
@@ -147,7 +191,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setIsLoading(false);
       }
     }
-  }, [email, password, mode, onLogin]);
+  }, [email, password, mode, onLogin, isLoading]);
 
   const handleGoogleSignIn = async () => {
     try {
