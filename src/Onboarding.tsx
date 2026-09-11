@@ -160,19 +160,26 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
         if (error) {
           const errLower = error.message.toLowerCase();
+          const errCode = ((error as any).code || '').toLowerCase();
           if (
             errLower.includes('already registered') ||
             errLower.includes('already exists') ||
             errLower.includes('user already exists') ||
             errLower.includes('email address is already in use') ||
             errLower.includes('identity_already_exists') ||
+            errCode.includes('already_exists') ||
+            errCode === 'user_already_exists' ||
             (error as any).status === 422
           ) {
             setEmailError('Account already exists. Please use a different email.');
-          } else if (errLower.includes('password') && (errLower.includes('short') || errLower.includes('character'))) {
+          } else if (errLower.includes('password') && (errLower.includes('short') || errLower.includes('character') || errLower.includes('weak'))) {
             setEmailError('Password must be at least 6 characters');
+          } else if (errLower.includes('rate limit') || (error as any).status === 429) {
+            setEmailError('Too many signup attempts. Please try again later.');
+          } else if (errLower.includes('invalid') && errLower.includes('email')) {
+            setEmailError('Please enter a valid email address');
           } else {
-            setEmailError(error.message || 'An unexpected signup error occurred.');
+            setEmailError('Unable to create account. Please try again later.');
           }
           return;
         }
@@ -186,7 +193,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         trackEvent('user_signed_up', { method: 'email' });
         setSignupSuccess(true);
       } catch (err: any) {
-        setEmailError(err.message || 'An unexpected signup error occurred.');
+        setEmailError('Unable to create account. Please try again later.');
       } finally {
         setIsLoading(false);
       }
