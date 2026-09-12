@@ -52,7 +52,7 @@ async function checkAuthEmailExists(normalizedEmail: string, timeoutMs = 4500): 
       while (page <= maxPages) {
         const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
         if (error) {
-          throw error;
+          throw new Error(`listUsers error: ${error.message} (status: ${error.status})`);
         }
 
         const users = data?.users || [];
@@ -83,7 +83,8 @@ async function checkAuthEmailExists(normalizedEmail: string, timeoutMs = 4500): 
       return false;
     } catch (err: any) {
       console.error("[check-email] listUsers check error:", err?.message || err);
-      throw new AuthCheckError("LOOKUP_FAILED", "Failed to query users from Supabase");
+      const underlying = err?.message || String(err);
+      throw new AuthCheckError("LOOKUP_FAILED", `Failed to query users from Supabase: ${underlying}`);
     }
   })();
 
@@ -204,6 +205,11 @@ export default async function handler(req: any, res: any) {
 
     console.error(`[check-email] lookup error (${errorDuration}ms):`, err?.message || err);
     console.log("[check-email] response sent", { statusCode: 500 });
-    return sendJson(res, 500, { error: "EMAIL_CHECK_FAILED" });
+    return sendJson(res, 500, {
+      error: "EMAIL_CHECK_FAILED",
+      details: String(err?.message || err || "unknown"),
+      name: err?.name,
+      code: err?.code,
+    });
   }
 }
