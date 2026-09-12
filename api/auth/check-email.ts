@@ -188,12 +188,18 @@ export default async function handler(req: any, res: any) {
     console.log("[check-email] validation complete", { emailLength: normalizedEmail.length });
     console.log("[check-email] admin client initialized", { hasUrl, hasServiceRoleKey, projectRef });
 
-    if (!hasServiceRoleKey) {
-      console.warn("[check-email] service unavailable: SUPABASE_SERVICE_ROLE_KEY missing");
+    const serviceRoleInfo = getSafeJwtRole(serviceKey);
+    if (!hasServiceRoleKey || serviceRoleInfo.role !== "service_role") {
+      const reason = !hasServiceRoleKey ? "KEY_MISSING" : "KEY_HAS_ANON_ROLE";
+      console.warn(`[check-email] service unavailable: SUPABASE_SERVICE_ROLE_KEY ${reason}`);
       return sendJson(res, 503, {
         error: "EMAIL_CHECK_UNAVAILABLE",
         reason: "ADMIN_CLIENT_UNAVAILABLE",
-        env: { hasUrl, projectRef, hasServiceRoleKey: false },
+        details:
+          serviceRoleInfo.role === "anon"
+            ? "SUPABASE_SERVICE_ROLE_KEY is configured with an 'anon' role key instead of 'service_role'. Please update SUPABASE_SERVICE_ROLE_KEY in Vercel project settings."
+            : "SUPABASE_SERVICE_ROLE_KEY is missing.",
+        env: { hasUrl, projectRef, hasServiceRoleKey: Boolean(serviceKey), role: serviceRoleInfo.role },
       });
     }
 
