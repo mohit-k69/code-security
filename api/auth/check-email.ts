@@ -107,6 +107,24 @@ function sendJson(res: any, status: number, body: Record<string, any>) {
   return res.end(JSON.stringify(body));
 }
 
+function getSafeJwtRole(token: string | undefined): { role?: string; iss?: string; length?: number } {
+  if (!token) return {};
+  try {
+    const parts = token.split(".");
+    if (parts.length >= 2) {
+      const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
+      return {
+        role: payload.role,
+        iss: payload.iss,
+        length: token.length,
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return { length: token?.length };
+}
+
 export default async function handler(req: any, res: any) {
   const reqStart = Date.now();
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -119,13 +137,12 @@ export default async function handler(req: any, res: any) {
   }
 
   const hasUrl = Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL);
-  const hasServiceRoleKey = Boolean(
+  const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_ADMIN_KEY
-  );
-  const hasAnonKey = Boolean(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+    process.env.SUPABASE_ADMIN_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   const projectRef = getSafeProjectRef();
 
   // Safe diagnostics endpoint on GET
@@ -137,8 +154,10 @@ export default async function handler(req: any, res: any) {
       env: {
         hasUrl,
         projectRef,
-        hasServiceRoleKey,
-        hasAnonKey,
+        hasServiceRoleKey: Boolean(serviceKey),
+        serviceRoleKeyInfo: getSafeJwtRole(serviceKey),
+        hasAnonKey: Boolean(anonKey),
+        anonKeyInfo: getSafeJwtRole(anonKey),
       },
     });
   }
