@@ -30,18 +30,31 @@ async function startServer() {
       return res.sendStatus(204);
     }
 
+    const reqStart = Date.now();
     try {
       const email = req.body?.email || req.query?.email;
       if (!email || typeof email !== 'string') {
-        return res.status(400).json({ error: "Email is required", exists: false });
+        return res.status(400).json({ error: "Email is required" });
       }
       const normalizedEmail = email.trim().toLowerCase();
-      const exists = await checkAuthEmailExists(normalizedEmail);
-      console.log(`[check-email] Checked "${normalizedEmail}": exists=${exists}`);
+      console.log(`[check-email] starting Supabase lookup for "${normalizedEmail}"`);
+      const exists = await checkAuthEmailExists(normalizedEmail, 4500);
+      console.log(`[check-email] lookup completed in ${Date.now() - reqStart}ms: exists=${exists}`);
       return res.json({ exists, email: normalizedEmail });
     } catch (err: any) {
-      console.error("Error in /api/auth/check-email:", err);
-      return res.status(500).json({ error: "Failed to verify email existence", exists: false });
+      const errorDuration = Date.now() - reqStart;
+      if (err?.name === 'AuthCheckError') {
+        if (err.code === 'ADMIN_CLIENT_UNAVAILABLE') {
+          console.warn(`[check-email] service unavailable (${errorDuration}ms): ${err.message}`);
+          return res.status(503).json({ error: "EMAIL_CHECK_UNAVAILABLE", reason: "ADMIN_CLIENT_UNAVAILABLE" });
+        }
+        if (err.code === 'LOOKUP_TIMEOUT') {
+          console.warn(`[check-email] lookup timed out (${errorDuration}ms): ${err.message}`);
+          return res.status(504).json({ error: "EMAIL_CHECK_TIMEOUT", reason: "LOOKUP_TIMEOUT" });
+        }
+      }
+      console.error(`[check-email] error in /api/auth/check-email (${errorDuration}ms):`, err);
+      return res.status(500).json({ error: "EMAIL_CHECK_FAILED" });
     }
   });
 

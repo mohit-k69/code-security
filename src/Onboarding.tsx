@@ -38,11 +38,13 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const checkAbortControllerRef = useRef<AbortController | null>(null);
   const checkReqIdRef = useRef<number>(0);
   const lastCheckedEmailRef = useRef<string>('');
+  const inFlightEmailRef = useRef<string | null>(null);
 
   const checkEmailDuplicate = useCallback(async (rawEmail: string, immediate = false) => {
     if (mode !== 'signup') {
       setIsCheckingEmail(false);
       setIsDuplicateEmail(false);
+      inFlightEmailRef.current = null;
       return;
     }
 
@@ -58,6 +60,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         checkAbortControllerRef.current.abort();
         checkAbortControllerRef.current = null;
       }
+      inFlightEmailRef.current = null;
       setIsCheckingEmail(false);
       setIsDuplicateEmail(false);
       setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
@@ -68,6 +71,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     if (checkedEmailsCache.current[normalized] !== undefined) {
       const exists = checkedEmailsCache.current[normalized];
       lastCheckedEmailRef.current = normalized;
+      inFlightEmailRef.current = null;
       setIsCheckingEmail(false);
       setIsDuplicateEmail(exists);
       if (exists) {
@@ -92,8 +96,14 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
       const controller = new AbortController();
       checkAbortControllerRef.current = controller;
       const currentReqId = ++checkReqIdRef.current;
+      inFlightEmailRef.current = normalized;
 
       setIsCheckingEmail(true);
+
+      // Client-side safety timeout (5500ms): guarantees request never remains pending indefinitely in browser
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 5500);
 
       try {
         const res = await fetch('/api/auth/check-email', {
@@ -110,18 +120,24 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           const result = await res.json();
           if (currentReqId !== checkReqIdRef.current) return;
 
-          const exists = Boolean(result.exists);
-          checkedEmailsCache.current[normalized] = exists;
-          lastCheckedEmailRef.current = normalized;
-          setIsDuplicateEmail(exists);
+          if (typeof result.exists === 'boolean') {
+            const exists = result.exists;
+            checkedEmailsCache.current[normalized] = exists;
+            lastCheckedEmailRef.current = normalized;
+            setIsDuplicateEmail(exists);
 
-          if (exists) {
-            setEmailError('Account already exists. Please use a different email.');
+            if (exists) {
+              setEmailError('Account already exists. Please use a different email.');
+            } else {
+              setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+            }
           } else {
+            // Controlled error response (e.g. EMAIL_CHECK_UNAVAILABLE): do not block signup
+            setIsDuplicateEmail(false);
             setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
           }
         } else {
-          // Temporary server/network error: do not falsely claim email exists; do not block signup
+          // Temporary server/network error (503/504/500): do not falsely claim email exists; do not block signup
           setIsDuplicateEmail(false);
           setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
         }
@@ -133,6 +149,10 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
         }
       } finally {
+        clearTimeout(timeoutId);
+        if (inFlightEmailRef.current === normalized) {
+          inFlightEmailRef.current = null;
+        }
         if (currentReqId === checkReqIdRef.current) {
           setIsCheckingEmail(false);
         }
@@ -165,18 +185,20 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         checkAbortControllerRef.current.abort();
         checkAbortControllerRef.current = null;
       }
+      inFlightEmailRef.current = null;
       setIsCheckingEmail(false);
       setIsDuplicateEmail(false);
       setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
     }
   }, [email, mode, checkEmailDuplicate]);
 
-  // Trigger immediate check on blur if changed and not yet checked
+  // Trigger immediate check on blur if changed and not already in flight or checked
   const handleEmailBlur = useCallback(() => {
     if (mode === 'signup') {
       const normalized = normalizeEmail(email);
       if (normalized && isValidEmailFormat(normalized) && isValidEmailDomain(normalized)) {
-        if (checkedEmailsCache.current[normalized] === undefined) {
+        // If already cached, or if this exact email is currently in flight, do not re-trigger or abort
+        if (checkedEmailsCache.current[normalized] === undefined && inFlightEmailRef.current !== normalized) {
           checkEmailDuplicate(email, true);
         }
       }
