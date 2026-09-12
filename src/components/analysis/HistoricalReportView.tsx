@@ -5,7 +5,6 @@ import {
   AlertTriangle, 
   Calendar, 
   GitPullRequest, 
-  FolderGit2, 
   FileCode2, 
   Layers,
   ChevronDown,
@@ -171,19 +170,68 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
     return 'File Upload';
   };
 
-  // Repository display
+  const isGitHubReview = (review.reviewType || (report?.repository ? 'github' : '')) === 'github';
+
+  // Primary Title:
+  // GitHub: repository name (mohit-k69/repo-name or repo-name)
+  // Non-GitHub: existing review/file/code identifier
   const repoOwner = review.repoOwner || report?.repository?.owner || null;
   const repoName = review.repoName || report?.repository?.name || null;
-  const repositoryDisplay = repoOwner && repoName
+  const githubRepoTitle = repoOwner && repoName
     ? `${repoOwner}/${repoName}`
-    : (repoName || (review.reviewType === 'github' && review.name && review.name.includes('/') ? review.name : '—'));
+    : (repoName || (review.name && review.name.includes('/') ? review.name : review.name || 'Repository'));
+  
+  const primaryTitle = isGitHubReview
+    ? githubRepoTitle
+    : (review.name || (isPasteReview ? 'Pasted Code' : 'Uploaded File'));
 
-  // Primary review title / identifier (PR title, review name, or fallback)
+  // Stored PR information for the second category
   const storedPrTitle = (report?.prTitle || report?.title || report?.pullRequest?.title || review.result?.prTitle || review.result?.title)?.trim();
-  const primaryTitle = storedPrTitle || (prNumber ? `Pull Request #${prNumber}` : review.name || 'Code Review');
 
-  // PR / Code Reviewed display label
-  const prOrCodeReviewed = prNumber ? `PR #${prNumber}` : (storedPrTitle || review.name || 'Full Scan');
+  // Category 2 Label & Content
+  const category2Label = isGitHubReview
+    ? 'PR'
+    : (isPasteReview ? 'Code Reviewed' : 'File Reviewed');
+
+  const renderCategory2Value = () => {
+    if (isGitHubReview) {
+      if (storedPrTitle && prNumber !== null && prNumber !== undefined) {
+        return (
+          <span className="truncate block" title={`${storedPrTitle} / PR #${prNumber}`}>
+            <span className="block truncate font-medium text-gray-800">{storedPrTitle}</span>
+            <span className="text-gray-500 font-normal">PR #{prNumber}</span>
+          </span>
+        );
+      }
+      if (storedPrTitle) {
+        return (
+          <span className="truncate block font-medium text-gray-800" title={storedPrTitle}>
+            {storedPrTitle}
+          </span>
+        );
+      }
+      if (prNumber !== null && prNumber !== undefined) {
+        return (
+          <span className="font-medium text-gray-800">
+            PR #{prNumber}
+          </span>
+        );
+      }
+      return (
+        <span className="font-medium text-gray-800 truncate block">
+          Full Scan
+        </span>
+      );
+    }
+
+    // Non-GitHub reviews
+    const nonGithubValue = review.name || (isPasteReview ? 'Pasted Snippet' : 'Uploaded File');
+    return (
+      <span className="truncate block font-medium text-gray-800" title={nonGithubValue}>
+        {nonGithubValue}
+      </span>
+    );
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
@@ -209,43 +257,35 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
                 <FileCode2 className="w-3.5 h-3.5 text-gray-500" />
                 {getReviewTypeLabel()}
               </span>
-              {prNumber !== null && prNumber !== undefined && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700">
-                  <GitPullRequest className="w-3.5 h-3.5 text-blue-600" />
-                  PR #{prNumber}
-                </span>
-              )}
             </div>
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{primaryTitle}</h1>
           </div>
 
           <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            {/* 1. Repository */}
+            {/* 1. Date Reviewed */}
             <div className="min-w-0">
-              <span className="text-gray-500 block mb-0.5">Repository</span>
+              <span className="text-gray-500 block mb-0.5">Date Reviewed</span>
               <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 max-w-full">
-                <FolderGit2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span 
-                  className="truncate block"
-                  title={repositoryDisplay}
-                >
-                  {repositoryDisplay}
+                <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span className="truncate block" title={dateFormatted}>
+                  {dateFormatted}
                 </span>
               </span>
             </div>
 
-            {/* 2. PR / Code Reviewed */}
+            {/* 2. PR / Code Reviewed / File Reviewed */}
             <div className="min-w-0">
-              <span className="text-gray-500 block mb-0.5">PR / Code Reviewed</span>
-              <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 max-w-full">
-                <GitPullRequest className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span 
-                  className="truncate block"
-                  title={prOrCodeReviewed}
-                >
-                  {prOrCodeReviewed}
-                </span>
-              </span>
+              <span className="text-gray-500 block mb-0.5">{category2Label}</span>
+              <div className="inline-flex items-center gap-1.5 max-w-full">
+                {isGitHubReview ? (
+                  <GitPullRequest className="w-3.5 h-3.5 text-gray-400 shrink-0 self-start mt-0.5" />
+                ) : (
+                  <FileCode2 className="w-3.5 h-3.5 text-gray-400 shrink-0 self-start mt-0.5" />
+                )}
+                <div className="min-w-0 max-w-full">
+                  {renderCategory2Value()}
+                </div>
+              </div>
             </div>
 
             {/* 3. Vulnerabilities */}
@@ -280,50 +320,7 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
           </div>
         </div>
 
-        {/* 3. Overall Verdict Banner */}
-        {effectiveVerdict === 'PASS' ? (
-          <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-5 text-left flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-              <Check className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <h2 className="text-xl font-bold text-gray-900">PASS</h2>
-              <span className="text-emerald-700 font-semibold text-sm">
-                No security vulnerabilities detected.
-              </span>
-            </div>
-          </div>
-        ) : effectiveVerdict === 'FAIL' ? (
-          <div className="bg-red-50/40 border border-red-200 rounded-xl p-5 text-left">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                <h2 className="text-xl font-bold text-gray-900">FAIL</h2>
-                <span className="text-red-700 font-semibold text-sm">
-                  {totalFindings} security {totalFindings === 1 ? 'vulnerability' : 'vulnerabilities'} detected.
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-orange-50/40 border border-orange-200 rounded-xl p-5 text-left">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-orange-600" />
-              </div>
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                <h2 className="text-xl font-bold text-gray-900">NOT VERIFIED</h2>
-                <span className="text-orange-800 font-medium text-sm">
-                  Security could not be confidently verified because additional context is required.
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 4. Failed Security Checkpoints & Findings */}
+        {/* 3. Security Findings List */}
         {effectiveVerdict === 'FAIL' && totalFindings > 0 && (
           <div className="space-y-3 pt-2 text-left">
             <div className="flex items-center justify-between pb-1">
