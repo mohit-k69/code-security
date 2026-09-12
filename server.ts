@@ -30,6 +30,31 @@ async function startServer() {
       return res.sendStatus(204);
     }
 
+    const hasUrl = Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL);
+    const hasServiceRoleKey = Boolean(
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_KEY ||
+      process.env.SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_ADMIN_KEY
+    );
+    const hasAnonKey = Boolean(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+    const match = url.match(/https?:\/\/([^.]+)\.supabase\.co/);
+    const projectRef = match ? match[1] : (url ? "custom-url" : "missing");
+
+    if (req.method === "GET") {
+      return res.json({
+        status: "ready",
+        service: "check-email",
+        env: {
+          hasUrl,
+          projectRef,
+          hasServiceRoleKey,
+          hasAnonKey,
+        },
+      });
+    }
+
     const reqStart = Date.now();
     try {
       const email = req.body?.email || req.query?.email;

@@ -42,59 +42,46 @@ export async function checkAuthEmailExists(rawEmail: string, timeoutMs = 4500): 
   }
 
   const lookupPromise = (async (): Promise<boolean> => {
-    // 1. Direct authoritative check via Supabase Auth Admin generateLink (fast O(1) query)
+    // Authoritative check via Supabase Auth Admin listUsers (bounded search)
     try {
-      const { data, error } = await admin.auth.admin.generateLink({
-        type: 'recovery',
-        email: normalized,
-      });
+      let page = 1;
+      const perPage = 100;
+      const maxPages = 10; // bounded to max 1,000 users
 
-      if (!error && data?.user?.id) {
-        return true;
-      }
-
-      // Check if Supabase explicitly reported user not found
-      if (
-        error &&
-        (error.status === 404 ||
-          error.message?.toLowerCase().includes('not found') ||
-          (error as any).code === 'user_not_found')
-      ) {
-        return false;
-      }
-    } catch (err: any) {
-      if (err?.status === 404 || err?.message?.toLowerCase().includes('not found')) {
-        return false;
-      }
-      console.warn('[check-email] generateLink threw, falling back to listUsers:', err?.message || err);
-    }
-
-    // 2. Safe fallback check using listUsers bounded to 1 page (up to 100 users)
-    try {
-      const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
-      if (error) {
-        throw error;
-      }
-
-      for (const u of data?.users || []) {
-        if (u.email && u.email.trim().toLowerCase() === normalized) {
-          return true;
+      while (page <= maxPages) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+        if (error) {
+          throw error;
         }
-        if (u.user_metadata?.email && String(u.user_metadata.email).trim().toLowerCase() === normalized) {
-          return true;
-        }
-        const identities = (u as any).identities || [];
-        for (const ident of identities) {
-          const identEmail = ident.email || ident.identity_data?.email;
-          if (identEmail && String(identEmail).trim().toLowerCase() === normalized) {
+
+        const users = data?.users || [];
+        for (const u of users) {
+          if (u.email && u.email.trim().toLowerCase() === normalized) {
             return true;
           }
+          const identities = (u as any).identities || [];
+          for (const ident of identities) {
+            const identEmail = ident.email || ident.identity_data?.email;
+            if (identEmail && String(identEmail).trim().toLowerCase() === normalized) {
+              return true;
+            }
+          }
         }
+
+        if (users.length < perPage) {
+          return false;
+        }
+
+        if (typeof data.total === 'number' && page * perPage >= data.total) {
+          return false;
+        }
+
+        page++;
       }
 
       return false;
     } catch (err: any) {
-      console.error('[check-email] Fallback listUsers check error:', err?.message || err);
+      console.error('[check-email] listUsers check error:', err?.message || err);
       throw new AuthCheckError('LOOKUP_FAILED', 'Failed to query users from Supabase');
     }
   })();
