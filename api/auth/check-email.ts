@@ -148,6 +148,9 @@ export default async function handler(req: any, res: any) {
   // Safe diagnostics endpoint on GET
   if (req.method === "GET") {
     console.log("[check-email] GET diagnostic request received");
+    const matchingEnvKeys = Object.keys(process.env).filter(
+      (k) => k.includes("SUPABASE") || k.includes("SERVICE") || k.includes("ROLE") || k.includes("KEY")
+    );
     return sendJson(res, 200, {
       status: "ready",
       service: "check-email",
@@ -158,6 +161,7 @@ export default async function handler(req: any, res: any) {
         serviceRoleKeyInfo: getSafeJwtRole(serviceKey),
         hasAnonKey: Boolean(anonKey),
         anonKeyInfo: getSafeJwtRole(anonKey),
+        matchingEnvKeys,
       },
     });
   }
