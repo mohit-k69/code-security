@@ -145,6 +145,10 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
     effectiveVerdict = totalFindings === 0 ? 'PASS' : 'FAIL';
   }
 
+  // Effective PR number and commit SHA
+  const prNumber = review.pr ?? report?.pr ?? report?.prNumber ?? report?.repository?.prNumber ?? null;
+  const commitSha = review.commitSha ?? report?.commitSha ?? report?.repository?.commitSha ?? null;
+
   // Format date
   const reviewDate = review.date instanceof Date 
     ? review.date 
@@ -166,6 +170,20 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
     if (type === 'paste') return 'Paste Code';
     return 'File Upload';
   };
+
+  // Repository display
+  const repoOwner = review.repoOwner || report?.repository?.owner || null;
+  const repoName = review.repoName || report?.repository?.name || null;
+  const repositoryDisplay = repoOwner && repoName
+    ? `${repoOwner}/${repoName}`
+    : (repoName || (review.reviewType === 'github' && review.name && review.name.includes('/') ? review.name : '—'));
+
+  // Primary review title / identifier (PR title, review name, or fallback)
+  const storedPrTitle = (report?.prTitle || report?.title || report?.pullRequest?.title || review.result?.prTitle || review.result?.title)?.trim();
+  const primaryTitle = storedPrTitle || (prNumber ? `Pull Request #${prNumber}` : review.name || 'Code Review');
+
+  // PR / Code Reviewed display label
+  const prOrCodeReviewed = prNumber ? `PR #${prNumber}` : (storedPrTitle || review.name || 'Full Scan');
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
@@ -191,41 +209,47 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
                 <FileCode2 className="w-3.5 h-3.5 text-gray-500" />
                 {getReviewTypeLabel()}
               </span>
-              {review.pr !== null && review.pr !== undefined && (
+              {prNumber !== null && prNumber !== undefined && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700">
                   <GitPullRequest className="w-3.5 h-3.5 text-blue-600" />
-                  PR #{review.pr}
+                  PR #{prNumber}
                 </span>
               )}
             </div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{review.name}</h1>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{primaryTitle}</h1>
           </div>
 
-          <div className="pt-3 flex flex-wrap items-start gap-x-8 gap-y-3 text-xs">
-            <div className="min-w-0 shrink-0">
-              <span className="text-gray-500 block mb-0.5">Date Reviewed</span>
-              <span className="font-medium text-gray-800 inline-flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span>{dateFormatted}</span>
+          <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            {/* 1. Repository */}
+            <div className="min-w-0">
+              <span className="text-gray-500 block mb-0.5">Repository</span>
+              <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 max-w-full">
+                <FolderGit2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span 
+                  className="truncate block"
+                  title={repositoryDisplay}
+                >
+                  {repositoryDisplay}
+                </span>
               </span>
             </div>
 
-            {review.repoName && (
-              <div className="min-w-0 max-w-xs sm:max-w-sm">
-                <span className="text-gray-500 block mb-0.5">Repository</span>
-                <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 max-w-full">
-                  <FolderGit2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  <span 
-                    className="truncate block"
-                    title={review.repoOwner ? `${review.repoOwner}/${review.repoName}` : review.repoName}
-                  >
-                    {review.repoOwner ? `${review.repoOwner}/${review.repoName}` : review.repoName}
-                  </span>
+            {/* 2. PR / Code Reviewed */}
+            <div className="min-w-0">
+              <span className="text-gray-500 block mb-0.5">PR / Code Reviewed</span>
+              <span className="font-medium text-gray-800 inline-flex items-center gap-1.5 max-w-full">
+                <GitPullRequest className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span 
+                  className="truncate block"
+                  title={prOrCodeReviewed}
+                >
+                  {prOrCodeReviewed}
                 </span>
-              </div>
-            )}
+              </span>
+            </div>
 
-            <div className="min-w-0 shrink-0">
+            {/* 3. Vulnerabilities */}
+            <div className="min-w-0">
               <span className="text-gray-500 block mb-0.5">Vulnerabilities</span>
               <span className="font-medium text-gray-800 inline-flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -233,14 +257,26 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
               </span>
             </div>
 
-            {review.commitSha && (
-              <div className="min-w-0 shrink-0">
-                <span className="text-gray-500 block mb-0.5">Commit</span>
-                <span className="font-mono text-gray-800 font-medium">
-                  {review.commitSha.slice(0, 7)}
+            {/* 4. Result */}
+            <div className="min-w-0">
+              <span className="text-gray-500 block mb-0.5">Result</span>
+              {effectiveVerdict === 'PASS' ? (
+                <span className="font-bold text-emerald-600 inline-flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>PASS</span>
                 </span>
-              </div>
-            )}
+              ) : effectiveVerdict === 'FAIL' ? (
+                <span className="font-bold text-red-600 inline-flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                  <span>FAIL</span>
+                </span>
+              ) : (
+                <span className="font-bold text-orange-600 inline-flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                  <span>NOT VERIFIED</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
