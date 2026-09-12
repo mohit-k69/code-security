@@ -49,30 +49,30 @@ export async function checkAuthEmailExists(rawEmail: string, timeoutMs = 4500): 
       const maxPages = 10; // bounded to max 1,000 users
 
       while (page <= maxPages) {
-        const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-        if (error) {
-          throw error;
+        const result = await admin.auth.admin.listUsers({ page, perPage });
+        if (result.error) {
+          throw result.error;
         }
 
-        const users = data?.users || [];
+        const users = result.data.users;
         for (const u of users) {
           if (u.email && u.email.trim().toLowerCase() === normalized) {
             return true;
           }
-          const identities = (u as any).identities || [];
+          const identities = u.identities || [];
           for (const ident of identities) {
-            const identEmail = ident.email || ident.identity_data?.email;
+            const identEmail = ident.identity_data?.email;
             if (identEmail && String(identEmail).trim().toLowerCase() === normalized) {
               return true;
             }
           }
+          const metaEmail = u.user_metadata?.email;
+          if (metaEmail && String(metaEmail).trim().toLowerCase() === normalized) {
+            return true;
+          }
         }
 
         if (users.length < perPage) {
-          return false;
-        }
-
-        if (typeof data.total === 'number' && page * perPage >= data.total) {
           return false;
         }
 

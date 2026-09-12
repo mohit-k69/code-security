@@ -23,6 +23,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src"],
+  "include": ["src", "api"],
   "exclude": ["supabase", "server.ts"]
 }
