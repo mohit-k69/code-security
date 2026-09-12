@@ -301,24 +301,6 @@ export function useAuth() {
 
     syncSession();
 
-    // BroadcastChannel for reliable cross-tab/popup auth sync
-    let authChannel: BroadcastChannel | null = null;
-    try {
-      authChannel = new BroadcastChannel('codevibe_auth_channel');
-      authChannel.onmessage = (msg) => {
-        if (msg.data?.type === 'AUTH_STATE_CHANGED') {
-          syncSession();
-        }
-      };
-    } catch {}
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'codevibe_auth_event' || e.key?.startsWith('sb-')) {
-        syncSession();
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       // Clean up URL if returning from OAuth redirect
       if (window.location.search.includes('code=') || window.location.hash.includes('access_token=')) {
@@ -342,10 +324,6 @@ export function useAuth() {
           }
         }
         const workflow = new URLSearchParams(window.location.search).get('workflow');
-        try {
-          authChannel?.postMessage({ type: 'AUTH_STATE_CHANGED', workflow });
-          localStorage.setItem('codevibe_auth_event', Date.now().toString());
-        } catch {}
 
         if (window.opener) {
           try {
@@ -360,7 +338,7 @@ export function useAuth() {
     });
 
     const handleMessage = (e: MessageEvent) => {
-      if (e.data?.type === 'OAUTH_AUTH_SUCCESS' || e.data?.type === 'AUTH_STATE_CHANGED') {
+      if (e.data?.type === 'OAUTH_AUTH_SUCCESS') {
         syncSession();
       }
     };
@@ -368,9 +346,7 @@ export function useAuth() {
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('storage', handleStorage);
       window.removeEventListener('message', handleMessage);
-      if (authChannel) authChannel.close();
     };
   }, []);
 
