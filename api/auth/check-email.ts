@@ -142,6 +142,7 @@ export default async function handler(req: any, res: any) {
     process.env.SUPABASE_SERVICE_KEY ||
     process.env.SERVICE_ROLE_KEY ||
     process.env.SUPABASE_ADMIN_KEY;
+  const hasServiceRoleKey = Boolean(serviceKey);
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   const projectRef = getSafeProjectRef();
 
