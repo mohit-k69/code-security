@@ -545,14 +545,14 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center bg-white px-6 overflow-hidden">
-        <div className="w-full max-w-[440px] flex flex-col items-center">
-          <div className="lg:hidden flex items-center gap-3 mb-10">
-            <CodeVibeIcon size={28} variant="dark" className="shrink-0" />
-            <span className="font-bold text-xl text-[#3A2722] tracking-wide">Cody</span>
+      <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 sm:px-8 py-8 lg:py-0 overflow-y-auto lg:overflow-hidden min-h-[100dvh] lg:min-h-0">
+        <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto lg:my-0">
+          <div className="lg:hidden flex items-center gap-2.5 mb-[58px]">
+            <CodeVibeIcon size={30} variant="dark" className="shrink-0" />
+            <span className="font-bold text-[22px] text-[#3A2722] tracking-wide">Cody</span>
           </div>
 
-          <div className="w-full relative min-h-[520px] flex flex-col items-center justify-start pt-6">
+          <div className="w-full relative min-h-0 lg:min-h-[520px] flex flex-col items-center justify-start pt-0 lg:pt-6">
             <AnimatePresence mode="wait">
               {renderRightContent()}
             </AnimatePresence>

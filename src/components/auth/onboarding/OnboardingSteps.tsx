@@ -54,7 +54,7 @@ export function OnboardingEmailStep({
   return (
     <div className="w-full flex flex-col items-center">
       {/* ── Content & Buttons ── */}
-      <div className="w-full relative overflow-hidden min-h-[380px]">
+      <div className="w-full relative overflow-hidden min-h-0 lg:min-h-[380px]">
         <AnimatePresence custom={slideDirection} initial={false} mode="popLayout">
           {!showEmailForm ? (
             <motion.div
@@ -86,10 +86,10 @@ export function OnboardingEmailStep({
               }}
               className="w-full flex flex-col items-center"
             >
-              <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">
+              <h2 className="text-[34px] sm:text-[36px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-3 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
                 Welcome to Cody
               </h2>
-              <p className="text-[14px] text-gray-500 mb-6 text-center">
+              <p className="text-[17px] sm:text-[18px] lg:text-[14px] text-gray-500 mb-9 lg:mb-6 text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
@@ -107,22 +107,22 @@ export function OnboardingEmailStep({
               </AnimatePresence>
 
               {/* Three options: vertically stacked and back-to-back */}
-              <div className="w-full flex flex-col gap-2.5">
+              <div className="w-full flex flex-col gap-3 lg:gap-2.5">
                 {/* 1. Continue with Google */}
                 <button
                   id="google-signin-btn"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading || isGoogleLoading}
-                  className="w-full flex items-center justify-center gap-3 rounded-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-3 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3.5 lg:gap-3 rounded-full bg-white border border-gray-200 lg:border-gray-300 hover:border-gray-300 lg:hover:border-gray-400 active:bg-gray-50 lg:hover:bg-gray-50 px-5 py-3.5 lg:px-4 lg:py-3 h-[58px] lg:h-auto text-[16px] lg:text-[14px] font-medium lg:font-semibold text-gray-800 lg:text-gray-700 hover:text-gray-900 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isGoogleLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                      <Loader2 className="w-5 h-5 lg:w-4 lg:h-4 animate-spin text-gray-500" />
                       <span>Connecting to Google...</span>
                     </>
                   ) : (
                     <>
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <svg className="w-[22px] h-[22px] lg:w-4 lg:h-4 shrink-0" viewBox="0 0 24 24">
                         <path
                           fill="#4285F4"
                           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -150,9 +150,9 @@ export function OnboardingEmailStep({
                   id="github-signin-btn"
                   onClick={handleGithubSignIn}
                   disabled={isLoading || isGoogleLoading}
-                  className="w-full flex items-center justify-center gap-3 rounded-full bg-[#24292e] border border-[#24292e] px-4 py-3 text-[14px] font-semibold text-white hover:bg-[#1b1f23] transition-colors shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3.5 lg:gap-3 rounded-full bg-white lg:bg-[#24292e] border border-gray-200 lg:border-[#24292e] hover:border-gray-300 lg:hover:border-[#1b1f23] active:bg-gray-50 lg:hover:bg-[#1b1f23] px-5 py-3.5 lg:px-4 lg:py-3 h-[58px] lg:h-auto text-[16px] lg:text-[14px] font-medium lg:font-semibold text-gray-800 lg:text-white transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-[22px] h-[22px] lg:w-4 lg:h-4 text-[#24292e] lg:text-white shrink-0" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                   </svg>
                   <span>Continue with GitHub</span>
@@ -168,14 +168,14 @@ export function OnboardingEmailStep({
                     setEmailError('');
                   }}
                   disabled={isLoading || isGoogleLoading}
-                  className="w-full flex items-center justify-center gap-3 rounded-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-3 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3.5 lg:gap-3 rounded-full bg-white border border-gray-200 lg:border-gray-300 hover:border-gray-300 lg:hover:border-gray-400 active:bg-gray-50 lg:hover:bg-gray-50 px-5 py-3.5 lg:px-4 lg:py-3 h-[58px] lg:h-auto text-[16px] lg:text-[14px] font-medium lg:font-semibold text-gray-800 lg:text-gray-700 hover:text-gray-900 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Mail className="w-4 h-4 text-gray-500" />
+                  <Mail className="w-[22px] h-[22px] lg:w-4 lg:h-4 text-gray-600 lg:text-gray-500 shrink-0" />
                   <span>Continue with email</span>
                 </button>
               </div>
 
-              <p className="text-[11px] text-gray-400 text-center leading-relaxed mt-6">
+              <p className="text-[13px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-8 lg:mt-6 max-w-[320px] lg:max-w-none mx-auto">
                 By continuing, you agree to our{' '}
                 <a href="#" className="text-gray-500 underline hover:text-gray-700">Terms of Service</a>{' '}
                 and{' '}
@@ -221,16 +221,16 @@ export function OnboardingEmailStep({
                   setShowEmailForm(false);
                   setEmailError('');
                 }}
-                className="flex items-center gap-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors cursor-pointer self-start"
+                className="flex items-center gap-1.5 text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-gray-900 mb-6 lg:mb-4 transition-colors cursor-pointer self-start"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </button>
 
-              <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">
+              <h2 className="text-[34px] sm:text-[36px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-3 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
                 Welcome to Cody
               </h2>
-              <p className="text-[14px] text-gray-500 mb-6 text-center">
+              <p className="text-[17px] sm:text-[18px] lg:text-[14px] text-gray-500 mb-8 lg:mb-6 text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
@@ -264,7 +264,7 @@ export function OnboardingEmailStep({
                     onKeyDown={(e) => e.key === 'Enter' && !isSubmitDisabled && handleEmailContinue()}
                     placeholder="name@email.com"
                     autoFocus
-                    className={`w-full bg-transparent border-b-2 ${isEmailInvalid ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+                    className={`w-full bg-transparent border-b-2 ${isEmailInvalid ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
                   />
                 </div>
                 {isCheckingEmail && (
@@ -295,7 +295,7 @@ export function OnboardingEmailStep({
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && !isSubmitDisabled && handleEmailContinue()}
                     placeholder="Password"
-                    className={`w-full bg-transparent border-b-2 ${isPasswordError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+                    className={`w-full bg-transparent border-b-2 ${isPasswordError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
                   />
                 </div>
               </div>
@@ -305,7 +305,7 @@ export function OnboardingEmailStep({
                 type="button"
                 onClick={handleEmailContinue}
                 disabled={isSubmitDisabled}
-                className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-3 rounded-full ${
+                className={`w-full text-center h-[58px] lg:h-auto py-3.5 lg:py-3 text-[16px] lg:text-[14px] font-medium transition-colors mt-6 lg:mt-4 mb-3 rounded-full ${
                   !isSubmitDisabled
                     ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
@@ -326,12 +326,12 @@ export function OnboardingEmailStep({
                   setForgotSuccess(false);
                   setEmailError('');
                 }}
-                className="text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-4 self-center cursor-pointer"
+                className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-4 self-center cursor-pointer"
               >
                 Forgot password?
               </button>
 
-              <p className="text-[11px] text-gray-400 text-center leading-relaxed mt-2">
+              <p className="text-[13px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-4 lg:mt-2 max-w-[320px] lg:max-w-none mx-auto">
                 By continuing, you agree to our{' '}
                 <a href="#" className="text-gray-500 underline hover:text-gray-700">Terms of Service</a>{' '}
                 and{' '}
@@ -403,8 +403,8 @@ export function OnboardingForgotPassword({
       transition={{ duration: 0.18, ease: 'easeInOut' }}
       className="w-full flex flex-col items-center"
     >
-      <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">Reset your password</h2>
-      <p className="text-[14px] text-gray-500 mb-8 text-center">Enter your email and we'll send you a reset link</p>
+      <h2 className="text-[30px] sm:text-[32px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-3 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">Reset your password</h2>
+      <p className="text-[16px] lg:text-[14px] text-gray-500 mb-8 text-center leading-relaxed">Enter your email and we'll send you a reset link</p>
 
       <div className="w-full mb-4">
         <div className="relative">
@@ -415,7 +415,7 @@ export function OnboardingForgotPassword({
             onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
             onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
             placeholder="name@email.com"
-            className={`w-full bg-transparent border-b-2 ${forgotError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+            className={`w-full bg-transparent border-b-2 ${forgotError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
           />
         </div>
         <AnimatePresence>
@@ -435,7 +435,7 @@ export function OnboardingForgotPassword({
       <button
         onClick={handleForgotPassword}
         disabled={!forgotEmail.trim() || forgotLoading}
-        className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-6 rounded-full ${
+        className={`w-full text-center h-[58px] lg:h-auto py-3.5 lg:py-3 text-[16px] lg:text-[14px] font-medium transition-colors mt-6 lg:mt-4 mb-5 lg:mb-6 rounded-full ${
           forgotEmail.trim() && !forgotLoading
             ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
             : 'bg-gray-100 text-gray-300 cursor-not-allowed'
@@ -450,7 +450,7 @@ export function OnboardingForgotPassword({
           setForgotEmail('');
           setForgotError('');
         }}
-        className="text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors"
+        className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 cursor-pointer"
       >
         ← Back to Sign In
       </button>
