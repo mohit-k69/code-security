@@ -533,7 +533,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
         <div className="relative z-10">
           <h1 className="text-[#F7F4F0] text-[36px] font-bold leading-tight mb-4">
-            Check the vibe<br />of your code.
+            Check the security<br />of your code.
           </h1>
           <p className="text-[#B9AAA2] text-[16px] leading-relaxed max-w-[340px]">
             Analyze your code for security issues, best practices, and quality — all in seconds.
