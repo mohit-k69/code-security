@@ -235,7 +235,7 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-white overflow-y-auto custom-scrollbar">
-      <div className="w-full max-w-5xl px-6 md:px-8 pt-4 pb-12 space-y-4 text-left">
+      <div className="w-full max-w-5xl px-3.5 sm:px-6 md:px-8 pt-4 pb-12 space-y-4 text-left">
         {/* 1. Navigation Header */}
         <div>
           <button
@@ -243,14 +243,14 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
             onClick={onBack}
             aria-label="Back to Reviews"
             title="Back to Reviews"
-            className="p-2 -ml-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer inline-flex items-center shrink-0"
+            className="p-2 -ml-1 sm:-ml-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer inline-flex items-center shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
 
         {/* 2. Review Metadata Summary Bar */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-left">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 sm:p-5 text-left">
           <div className="pb-4 border-b border-gray-200/80">
             <div className="flex items-center gap-2.5 mb-1">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-gray-200 text-gray-700">
@@ -258,7 +258,7 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
                 {getReviewTypeLabel()}
               </span>
             </div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{primaryTitle}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight break-words">{primaryTitle}</h1>
           </div>
 
           <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
