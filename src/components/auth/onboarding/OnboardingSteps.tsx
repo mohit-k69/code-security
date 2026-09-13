@@ -212,7 +212,7 @@ export function OnboardingEmailStep({
               }}
               className="w-full flex flex-col items-center"
             >
-              {/* Back to authentication options button */}
+              {/* Desktop-only back button (mobile has Back placed below action) */}
               <button
                 type="button"
                 id="back-to-auth-options-btn"
@@ -221,16 +221,17 @@ export function OnboardingEmailStep({
                   setShowEmailForm(false);
                   setEmailError('');
                 }}
-                className="flex items-center gap-1.5 text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-gray-900 mb-6 lg:mb-4 transition-colors cursor-pointer self-start"
+                className="hidden lg:flex items-center gap-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors cursor-pointer self-start"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </button>
 
-              <h2 className="text-[34px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-2.5 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
+              {/* Desktop-only: Welcome to Cody and Subtitle (hidden on mobile as requested) */}
+              <h2 className="hidden lg:block text-[24px] font-semibold text-gray-900 mb-2 text-center">
                 Welcome to Cody
               </h2>
-              <p className="text-[17px] lg:text-[14px] text-gray-500 mb-8 lg:mb-6 text-center leading-relaxed">
+              <p className="hidden lg:block text-[14px] text-gray-500 mb-6 text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
@@ -326,12 +327,27 @@ export function OnboardingEmailStep({
                   setForgotSuccess(false);
                   setEmailError('');
                 }}
-                className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-4 self-center cursor-pointer"
+                className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-3 self-center cursor-pointer"
               >
                 Forgot password?
               </button>
 
-              <p className="text-[12.5px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-[30px] lg:mt-2 max-w-[300px] lg:max-w-none mx-auto">
+              {/* Mobile-only Back button below action as requested */}
+              <button
+                type="button"
+                id="mobile-back-to-auth-options-btn"
+                onClick={() => {
+                  setSlideDirection(-1);
+                  setShowEmailForm(false);
+                  setEmailError('');
+                }}
+                className="lg:hidden flex items-center justify-center gap-1.5 text-[15px] font-medium text-gray-500 hover:text-gray-800 active:text-gray-900 transition-colors py-2 mb-2 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+
+              <p className="text-[12.5px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-4 lg:mt-2 max-w-[300px] lg:max-w-none mx-auto">
                 By continuing, you agree to our{' '}
                 <a href="#" className="text-gray-500 underline hover:text-gray-700">Terms of Service</a>{' '}
                 and{' '}
