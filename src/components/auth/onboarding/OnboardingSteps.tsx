@@ -54,7 +54,7 @@ export function OnboardingEmailStep({
   return (
     <div className="w-full flex flex-col items-center">
       {/* ── Content & Buttons ── */}
-      <div className="w-full relative overflow-hidden min-h-0 lg:min-h-[380px]">
+      <div className="w-full relative overflow-hidden min-h-0">
         <AnimatePresence custom={slideDirection} initial={false} mode="popLayout">
           {!showEmailForm ? (
             <motion.div
@@ -86,10 +86,10 @@ export function OnboardingEmailStep({
               }}
               className="w-full flex flex-col items-center"
             >
-              <h2 className="text-[34px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-2.5 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
+              <h2 className="text-[34px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-2.5 lg:mb-2.5 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
                 Welcome to Cody
               </h2>
-              <p className="text-[17px] lg:text-[14px] text-gray-500 mb-8 lg:mb-6 text-center leading-relaxed">
+              <p className="text-[17px] lg:text-[14px] text-gray-500 mb-8 lg:mb-[30px] text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
@@ -107,7 +107,7 @@ export function OnboardingEmailStep({
               </AnimatePresence>
 
               {/* Three options: vertically stacked and back-to-back */}
-              <div className="w-full flex flex-col gap-3 lg:gap-2.5">
+              <div className="w-full flex flex-col gap-3 lg:gap-3">
                 {/* 1. Continue with Google */}
                 <button
                   id="google-signin-btn"
@@ -175,7 +175,7 @@ export function OnboardingEmailStep({
                 </button>
               </div>
 
-              <p className="text-[12.5px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-[30px] lg:mt-6 max-w-[300px] lg:max-w-none mx-auto">
+              <p className="text-[12.5px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-[30px] lg:mt-[30px] max-w-[300px] lg:max-w-none mx-auto">
                 By continuing, you agree to our{' '}
                 <a href="#" className="text-gray-500 underline hover:text-gray-700">Terms of Service</a>{' '}
                 and{' '}
@@ -228,10 +228,10 @@ export function OnboardingEmailStep({
               </button>
 
               {/* Desktop-only: Welcome to Cody and Subtitle (hidden on mobile as requested) */}
-              <h2 className="hidden lg:block text-[24px] font-semibold text-gray-900 mb-2 text-center">
+              <h2 className="hidden lg:block text-[24px] font-semibold text-gray-900 mb-2.5 text-center">
                 Welcome to Cody
               </h2>
-              <p className="hidden lg:block text-[14px] text-gray-500 mb-6 text-center leading-relaxed">
+              <p className="hidden lg:block text-[14px] text-gray-500 mb-[30px] text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
