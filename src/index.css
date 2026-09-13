@@ -108,8 +108,8 @@
 .animate-blink-cursor { animation: blink-cursor 1s step-end infinite; }
 .animate-orbit { animation: orbit 6s linear infinite; }
 
-/* ─── Mobile Cody C Logo Smooth Back-and-Forth Turn (Turn & Return) ─── */
-@keyframes cody-mobile-turn-and-return {
+/* ─── Cody C Logo Smooth Back-and-Forth Turn (Turn & Return) ─── */
+@keyframes cody-turn-and-return {
   0% {
     transform: rotate(0deg);
   }
@@ -121,18 +121,18 @@
   }
 }
 
-@media (max-width: 767px) {
-  @media (prefers-reduced-motion: no-preference) {
-    .cody-mobile-logo-rotate {
-      transform-box: view-box;
-      transform-origin: 50% 50%;
-      animation: cody-mobile-turn-and-return 1.3s cubic-bezier(0.42, 0, 0.58, 1) 1 forwards;
-    }
+@media (prefers-reduced-motion: no-preference) {
+  .cody-mobile-logo-rotate,
+  .cody-logo-rotate {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    animation: cody-turn-and-return 1.3s cubic-bezier(0.42, 0, 0.58, 1) 1 forwards;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cody-mobile-logo-rotate {
+  .cody-mobile-logo-rotate,
+  .cody-logo-rotate {
     animation: none !important;
     transform: none !important;
   }

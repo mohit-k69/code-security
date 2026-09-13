@@ -524,12 +524,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L5 30l25 25 25-25z' fill='none' stroke='%2349332D' stroke-width='0.75'/%3E%3C/svg%3E")`,
         }} />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <CodeVibeIcon size={34} variant="light" className="shrink-0 drop-shadow-[0_2px_8px_rgba(36,23,19,0.4)]" />
-            <span className="font-bold text-2xl text-[#F7F4F0] tracking-wide">Cody</span>
-          </div>
-        </div>
+        <div className="relative z-10" />
 
         <div className="relative z-10">
           <h1 className="text-[#F7F4F0] text-[36px] font-bold leading-tight mb-4">
@@ -547,8 +542,8 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
       <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 sm:px-8 py-8 lg:py-0 overflow-y-auto lg:overflow-hidden min-h-[100dvh] lg:min-h-0">
         <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto">
-          <div className="lg:hidden flex items-center gap-3 mb-[40px]">
-            <CodeVibeIcon size={34} variant="dark" className="shrink-0 cody-mobile-logo-rotate" />
+          <div className="flex items-center gap-3 mb-[40px] lg:mb-[28px]">
+            <CodeVibeIcon size={34} variant="dark" className="shrink-0 cody-logo-rotate" />
             <span className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none">Cody</span>
           </div>
 
