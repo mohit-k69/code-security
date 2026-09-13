@@ -38,7 +38,7 @@ export function WorkflowSelector({
       {/* Mobile: Constrained 2-column grid; Desktop: Centered horizontal flex row */}
       <div 
         id="cody-workflow-grid"
-        className="grid grid-cols-2 gap-3 min-[360px]:gap-3.5 w-fit mx-auto md:flex md:items-center md:justify-center md:gap-6 md:w-full" 
+        className="grid grid-cols-2 gap-2.5 min-[375px]:gap-3 min-[414px]:gap-3.5 w-fit mx-auto md:flex md:items-center md:justify-center md:gap-6 md:w-full" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Row 1 / Col 1: Upload Files Button (Disabled - Coming Soon) */}
@@ -47,17 +47,17 @@ export function WorkflowSelector({
           disabled
           type="button"
           aria-disabled="true"
-          className="w-[144px] min-[360px]:w-[158px] min-[390px]:w-[164px] md:w-[145px] h-[80px] min-[360px]:h-[88px] min-[390px]:h-[91px] md:h-[110px] flex flex-col items-center justify-center gap-1 min-[360px]:gap-1.5 md:gap-1.5 rounded-2xl md:rounded-3xl border border-gray-200 bg-white shadow-xs md:shadow-sm cursor-not-allowed select-none transition-all p-2 min-[360px]:p-2.5 md:p-3"
+          className="w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-center justify-center gap-1 min-[375px]:gap-1.5 md:gap-1.5 rounded-2xl md:rounded-3xl border border-gray-200 bg-white shadow-xs md:shadow-sm cursor-not-allowed select-none transition-all p-2.5 min-[375px]:p-3 md:p-3"
           title="Upload Files - Coming Soon"
         >
-          <div className="w-7 h-7 min-[360px]:w-7.5 min-[360px]:h-7.5 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-blue-50/70 text-blue-300 shrink-0">
-            <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          <div className="w-8 h-8 min-[375px]:w-8.5 min-[375px]:h-8.5 min-[414px]:w-9 min-[414px]:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-blue-50/70 text-blue-300 shrink-0">
+            <Upload className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" />
           </div>
           <div className="flex flex-col items-center gap-0.5 md:gap-1">
-            <span className="text-[12px] min-[360px]:text-[12.5px] md:text-[13px] font-semibold text-gray-400 leading-tight">
+            <span className="text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-semibold text-gray-400 leading-tight">
               Upload Files
             </span>
-            <span className="text-[9px] min-[360px]:text-[9.5px] md:text-[10px] font-medium text-gray-500 bg-gray-100 border border-gray-200/60 px-1.5 py-0.2 md:px-2 md:py-0.5 rounded-full leading-tight">
+            <span className="text-[9.5px] min-[414px]:text-[10px] font-medium text-gray-500 bg-gray-100 border border-gray-200/60 px-1.5 py-0.5 rounded-full leading-tight">
               Coming Soon
             </span>
           </div>
@@ -68,21 +68,21 @@ export function WorkflowSelector({
           id="paste-code-card-btn"
           type="button"
           onClick={() => setActiveWorkflow('paste')}
-          className={`w-[144px] min-[360px]:w-[158px] min-[390px]:w-[164px] md:w-[145px] h-[80px] min-[360px]:h-[88px] min-[390px]:h-[91px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[360px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2 min-[360px]:p-2.5 md:p-3 cursor-pointer ${
+          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[375px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2.5 min-[375px]:p-3 md:p-3 cursor-pointer ${
             hasPastedCode
               ? 'bg-emerald-50 border-emerald-300'
               : 'bg-white border-gray-200 hover:border-gray-300'
           }`}
         >
-          <div className={`w-7 h-7 min-[360px]:w-7.5 min-[360px]:h-7.5 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
+          <div className={`w-8 h-8 min-[375px]:w-8.5 min-[375px]:h-8.5 min-[414px]:w-9 min-[414px]:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
             hasPastedCode
               ? 'bg-emerald-100 text-emerald-600'
               : 'bg-purple-50 text-purple-600'
           }`}>
-            {hasPastedCode ? <Check className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Clipboard className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+            {hasPastedCode ? <Check className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" /> : <Clipboard className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" />}
           </div>
           <div className="flex flex-col items-center gap-0.5 md:gap-1">
-            <span className={`text-[12px] min-[360px]:text-[12.5px] md:text-[13px] font-semibold leading-tight ${hasPastedCode ? 'text-emerald-700' : 'text-gray-900'}`}>
+            <span className={`text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-semibold leading-tight ${hasPastedCode ? 'text-emerald-700' : 'text-gray-900'}`}>
               {hasPastedCode ? 'Code Added' : 'Paste Code'}
             </span>
             <span className="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium px-2 leading-tight hidden md:block">Text or snippets</span>
@@ -94,21 +94,21 @@ export function WorkflowSelector({
           id="github-card-btn"
           type="button"
           onClick={() => setActiveWorkflow('github')}
-          className={`w-[144px] min-[360px]:w-[158px] min-[390px]:w-[164px] md:w-[145px] h-[80px] min-[360px]:h-[88px] min-[390px]:h-[91px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[360px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2 min-[360px]:p-2.5 md:p-3 cursor-pointer ${
+          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[375px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2.5 min-[375px]:p-3 md:p-3 cursor-pointer ${
             githubConnected
               ? 'bg-emerald-50 border-emerald-300'
               : 'bg-white border-gray-200 hover:border-gray-300'
           }`}
         >
-          <div className={`w-7 h-7 min-[360px]:w-7.5 min-[360px]:h-7.5 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
+          <div className={`w-8 h-8 min-[375px]:w-8.5 min-[375px]:h-8.5 min-[414px]:w-9 min-[414px]:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
             githubConnected
               ? 'bg-emerald-100 text-emerald-600'
               : 'bg-gray-100 text-gray-900'
           }`}>
-            {githubConnected ? <Check className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Github className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+            {githubConnected ? <Check className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" /> : <Github className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" />}
           </div>
           <div className="flex flex-col items-center gap-0.5 md:gap-1">
-            <span className={`text-[12px] min-[360px]:text-[12.5px] md:text-[13px] font-semibold leading-tight ${githubConnected ? 'text-emerald-700' : 'text-gray-900'}`}>
+            <span className={`text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-semibold leading-tight ${githubConnected ? 'text-emerald-700' : 'text-gray-900'}`}>
               {githubConnected ? 'Connected' : 'GitHub'}
             </span>
             <span className="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium px-2 leading-tight text-center hidden md:block">Repos & PRs</span>
