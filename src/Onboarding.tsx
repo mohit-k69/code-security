@@ -7,7 +7,6 @@ import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
 import {
   OnboardingEmailStep,
   OnboardingForgotPassword,
-  OnboardingSignupSuccess
 } from './components/auth/onboarding/OnboardingSteps';
 
 import { CodeVibeIcon } from './components/common/CodeVibeLogo';
@@ -18,18 +17,14 @@ interface OnboardingProps {
 }
 
 export default function Onboarding({ onLogin }: OnboardingProps) {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [direction] = useState(1);
-
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
 
-  // Duplicate email pre-check state (Sign up flow only)
+  // Duplicate email pre-check & existing user state
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
 
@@ -41,13 +36,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   const inFlightEmailRef = useRef<string | null>(null);
 
   const checkEmailDuplicate = useCallback(async (rawEmail: string, immediate = false) => {
-    if (mode !== 'signup') {
-      setIsCheckingEmail(false);
-      setIsDuplicateEmail(false);
-      inFlightEmailRef.current = null;
-      return;
-    }
-
     const normalized = normalizeEmail(rawEmail);
 
     // If incomplete or invalid format/domain, do not issue an API request
@@ -164,46 +152,28 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     } else {
       checkDebounceTimerRef.current = setTimeout(runCheck, 500);
     }
-  }, [mode]);
+  }, []);
 
-  // Debounced duplicate check on email or mode change
+  // Debounced duplicate check on email change
   useEffect(() => {
-    if (mode === 'signup') {
-      const normalized = normalizeEmail(email);
-      if (normalized !== lastCheckedEmailRef.current) {
-        setIsDuplicateEmail(false);
-        setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-        checkEmailDuplicate(email, false);
-      }
-    } else {
-      // In signin mode: cancel any pending check
-      if (checkDebounceTimerRef.current) {
-        clearTimeout(checkDebounceTimerRef.current);
-        checkDebounceTimerRef.current = null;
-      }
-      if (checkAbortControllerRef.current) {
-        checkAbortControllerRef.current.abort();
-        checkAbortControllerRef.current = null;
-      }
-      inFlightEmailRef.current = null;
-      setIsCheckingEmail(false);
+    const normalized = normalizeEmail(email);
+    if (normalized !== lastCheckedEmailRef.current) {
       setIsDuplicateEmail(false);
       setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
+      checkEmailDuplicate(email, false);
     }
-  }, [email, mode, checkEmailDuplicate]);
+  }, [email, checkEmailDuplicate]);
 
   // Trigger immediate check on blur if changed and not already in flight or checked
   const handleEmailBlur = useCallback(() => {
-    if (mode === 'signup') {
-      const normalized = normalizeEmail(email);
-      if (normalized && isValidEmailFormat(normalized) && isValidEmailDomain(normalized)) {
-        // If already cached, or if this exact email is currently in flight, do not re-trigger or abort
-        if (checkedEmailsCache.current[normalized] === undefined && inFlightEmailRef.current !== normalized) {
-          checkEmailDuplicate(email, true);
-        }
+    const normalized = normalizeEmail(email);
+    if (normalized && isValidEmailFormat(normalized) && isValidEmailDomain(normalized)) {
+      // If already cached, or if this exact email is currently in flight, do not re-trigger or abort
+      if (checkedEmailsCache.current[normalized] === undefined && inFlightEmailRef.current !== normalized) {
+        checkEmailDuplicate(email, true);
       }
     }
-  }, [mode, email, checkEmailDuplicate]);
+  }, [email, checkEmailDuplicate]);
   
   // Track onboarding view & handle OAuth URL errors
   useEffect(() => {
@@ -242,12 +212,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
   const handleEmailContinue = useCallback(async () => {
     if (isLoading) return;
-    if (mode === 'signup' && (isCheckingEmail || isDuplicateEmail)) {
-      if (isDuplicateEmail) {
-        setEmailError('Account already exists. Please use a different email.');
-      }
-      return;
-    }
     const rawEmail = email;
     if (!rawEmail.trim()) return;
 
@@ -276,8 +240,37 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     setEmailError('');
     setIsLoading(true);
 
-    if (mode === 'signin') {
-      try {
+    try {
+      // 1. Authoritative check if user exists (check state, cache, or call /api/auth/check-email)
+      let isExisting = isDuplicateEmail;
+
+      if (!isExisting && checkedEmailsCache.current[normalizedEmail] === undefined) {
+        try {
+          const res = await fetch('/api/auth/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ email: normalizedEmail }),
+          });
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            const result = await res.json();
+            if (result.exists) {
+              isExisting = true;
+              setIsDuplicateEmail(true);
+              checkedEmailsCache.current[normalizedEmail] = true;
+            } else if (result.exists === false) {
+              checkedEmailsCache.current[normalizedEmail] = false;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('Backend check-email error:', fetchErr);
+        }
+      }
+
+      if (isExisting) {
+        // Existing user: SIGN IN with password
+        // Supabase signUp() is NEVER called for existing accounts
         const { data, error } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password,
@@ -303,15 +296,9 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
             email: data.user.email || normalizedEmail,
           });
         }
-      } catch (err: any) {
-        setEmailError(err.message || 'An unexpected authentication error occurred.');
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      // Signup: create account directly — duplicate email prevention
-      try {
-        // 1. Authoritative Backend Check for duplicate account against Supabase Auth
+      } else {
+        // New user: SIGN UP
+        // Authoritative Submit-time check against /api/auth/check-email to prevent race conditions
         let isDuplicate = false;
         try {
           const res = await fetch('/api/auth/check-email', {
@@ -332,11 +319,12 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         }
 
         if (isDuplicate) {
+          setIsDuplicateEmail(true);
           setEmailError('Account already exists. Please use a different email.');
           return;
         }
 
-        // 2. Perform Supabase Auth SignUp (authoritative race-condition enforcement)
+        // Perform Supabase Auth SignUp
         const { data, error } = await supabase.auth.signUp({
           email: normalizedEmail,
           password,
@@ -355,6 +343,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
             errCode === 'user_already_exists' ||
             (error as any).status === 422
           ) {
+            setIsDuplicateEmail(true);
             setEmailError('Account already exists. Please use a different email.');
           } else if (errLower.includes('password') && (errLower.includes('short') || errLower.includes('character') || errLower.includes('weak'))) {
             setEmailError('Password must be at least 6 characters');
@@ -368,27 +357,36 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           return;
         }
 
-        // 3. Check for empty identities array (GoTrue email confirmation behavior for existing accounts)
+        // Check for empty identities array (GoTrue duplicate protection)
         if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setIsDuplicateEmail(true);
           setEmailError('Account already exists. Please use a different email.');
           return;
         }
 
+        // Account created successfully! Supabase Confirm Email is OFF so user is logged in immediately.
         trackEvent('user_signed_up', { method: 'email' });
-        setSignupSuccess(true);
-      } catch (err: any) {
-        setEmailError('Unable to create account. Please try again later.');
-      } finally {
-        setIsLoading(false);
+        if (data.user) {
+          identifyUser(data.user.id);
+          onLogin({
+            id: data.user.id,
+            name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
+            email: data.user.email || normalizedEmail,
+          });
+        }
       }
+    } catch (err: any) {
+      setEmailError(err.message || 'An unexpected authentication error occurred.');
+    } finally {
+      setIsLoading(false);
     }
-  }, [email, password, mode, onLogin, isLoading, isCheckingEmail, isDuplicateEmail]);
+  }, [email, password, isDuplicateEmail, onLogin, isLoading]);
 
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
       setEmailError('');
-      trackEvent('oauth_signin_initiated', { provider: 'google', mode });
+      trackEvent('oauth_signin_initiated', { provider: 'google', mode: 'unified' });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -429,7 +427,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     try {
       setIsLoading(true);
       setEmailError('');
-      trackEvent('oauth_signin_initiated', { provider: 'github', mode });
+      trackEvent('oauth_signin_initiated', { provider: 'github', mode: 'unified' });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
@@ -495,21 +493,8 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
       );
     }
 
-    if (signupSuccess) {
-      return (
-        <OnboardingSignupSuccess
-          setSignupSuccess={setSignupSuccess}
-          setMode={setMode}
-          setEmail={setEmail}
-          setPassword={setPassword}
-        />
-      );
-    }
-
     return (
       <OnboardingEmailStep
-        mode={mode}
-        setMode={setMode}
         email={email}
         setEmail={setEmail}
         password={password}
@@ -525,7 +510,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         setForgotEmail={setForgotEmail}
         setForgotError={setForgotError}
         setForgotSuccess={setForgotSuccess}
-        direction={direction}
         isCheckingEmail={isCheckingEmail}
         isDuplicateEmail={isDuplicateEmail}
         onEmailBlur={handleEmailBlur}

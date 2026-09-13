@@ -5,8 +5,8 @@ import { slideVariants } from './OnboardingComponents';
 
 // --- Types ---
 export interface OnboardingEmailStepProps {
-  mode: 'signin' | 'signup';
-  setMode: (mode: 'signin' | 'signup') => void;
+  mode?: 'signin' | 'signup';
+  setMode?: (mode: 'signin' | 'signup') => void;
   email: string;
   setEmail: (val: string) => void;
   password: string;
@@ -22,31 +22,22 @@ export interface OnboardingEmailStepProps {
   setForgotEmail: (val: string) => void;
   setForgotError: (val: string) => void;
   setForgotSuccess: (val: boolean) => void;
-  direction: number;
+  direction?: number;
   isCheckingEmail?: boolean;
   isDuplicateEmail?: boolean;
   onEmailBlur?: () => void;
 }
 
 export function OnboardingEmailStep({
-  mode, setMode, email, setEmail, password, setPassword,
+  email, setEmail, password, setPassword,
   emailError, setEmailError, isLoading, handleEmailContinue,
   handleGithubSignIn, handleGoogleSignIn, isGoogleLoading = false,
   setShowForgotPassword, setForgotEmail,
-  setForgotError, setForgotSuccess, direction,
+  setForgotError, setForgotSuccess,
   isCheckingEmail = false, isDuplicateEmail = false, onEmailBlur
 }: OnboardingEmailStepProps) {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [slideDirection, setSlideDirection] = useState(1);
-  const [animationType, setAnimationType] = useState<'mode' | 'form'>('mode');
-
-  const handleModeSwitch = (newMode: 'signin' | 'signup') => {
-    if (newMode === mode) return;
-    setSlideDirection(newMode === 'signup' ? 1 : -1);
-    setAnimationType('mode');
-    setMode(newMode);
-    setEmailError('');
-  };
 
   const isPasswordError = Boolean(
     emailError &&
@@ -54,79 +45,25 @@ export function OnboardingEmailStep({
   );
 
   const isEmailInvalid = Boolean(
-    (emailError && !isPasswordError) || (mode === 'signup' && isDuplicateEmail)
+    (emailError && !isPasswordError && emailError !== 'Account already exists. Please use a different email.') || isDuplicateEmail
   );
 
   const isFormReady = Boolean(email.trim() && password.trim());
-  const isSubmitDisabled = !isFormReady || isLoading || (mode === 'signup' && (isCheckingEmail || isDuplicateEmail));
+  const isSubmitDisabled = !isFormReady || isLoading || isCheckingEmail;
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* ── Slide Button (Segmented Bar) - Completely Stable & Stationary ── */}
-      <div
-        id="auth-mode-toggle-bar"
-        role="tablist"
-        aria-label="Sign in or Sign up"
-        className="relative flex bg-gray-100 p-1 rounded-full mb-8 w-full max-w-[240px] shrink-0 select-none shadow-xs border border-gray-200/60"
-      >
-        {/* Sliding Button Pill */}
-        <motion.div
-          className="absolute top-1 bottom-1 bg-white rounded-full shadow-sm cursor-grab active:cursor-grabbing"
-          initial={false}
-          animate={{
-            left: mode === 'signin' ? '4px' : 'calc(50% + 2px)',
-            width: 'calc(50% - 6px)',
-          }}
-          transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.25}
-          onDragEnd={(_, info) => {
-            if (info.offset.x > 25 && mode === 'signin') {
-              handleModeSwitch('signup');
-            } else if (info.offset.x < -25 && mode === 'signup') {
-              handleModeSwitch('signin');
-            }
-          }}
-        />
-
-        <button
-          type="button"
-          role="tab"
-          id="toggle-signin-btn"
-          aria-selected={mode === 'signin'}
-          onClick={() => handleModeSwitch('signin')}
-          className={`relative flex-1 py-1.5 text-[13px] font-semibold rounded-full transition-colors z-10 cursor-pointer text-center ${
-            mode === 'signin' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          Sign In
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="toggle-signup-btn"
-          aria-selected={mode === 'signup'}
-          onClick={() => handleModeSwitch('signup')}
-          className={`relative flex-1 py-1.5 text-[13px] font-semibold rounded-full transition-colors z-10 cursor-pointer text-center ${
-            mode === 'signup' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          Sign Up
-        </button>
-      </div>
-
-      {/* ── Content & Buttons Below - Only This Moves ── */}
+      {/* ── Content & Buttons ── */}
       <div className="w-full relative overflow-hidden min-h-[380px]">
         <AnimatePresence custom={slideDirection} initial={false} mode="popLayout">
           {!showEmailForm ? (
             <motion.div
-              key={`options-${mode}`}
+              key="auth-options"
               custom={slideDirection}
               variants={{
-                enter: (dir: number) => ({
-                  x: animationType === 'mode' ? (dir > 0 ? 140 : -140) : 0,
-                  y: animationType === 'form' ? -12 : 0,
+                enter: () => ({
+                  x: 0,
+                  y: -12,
                   opacity: 0,
                 }),
                 center: {
@@ -134,9 +71,9 @@ export function OnboardingEmailStep({
                   y: 0,
                   opacity: 1,
                 },
-                exit: (dir: number) => ({
-                  x: animationType === 'mode' ? (dir > 0 ? -140 : 140) : 0,
-                  y: animationType === 'form' ? 12 : 0,
+                exit: () => ({
+                  x: 0,
+                  y: 12,
                   opacity: 0,
                 }),
               }}
@@ -144,16 +81,16 @@ export function OnboardingEmailStep({
               animate="center"
               exit="exit"
               transition={{
-                x: { type: 'spring', stiffness: 380, damping: 34 },
+                y: { type: 'spring', stiffness: 380, damping: 34 },
                 opacity: { duration: 0.18 },
               }}
               className="w-full flex flex-col items-center"
             >
               <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">
-                {mode === 'signup' ? 'Create an account' : 'Welcome back'}
+                Welcome to Cody
               </h2>
               <p className="text-[14px] text-gray-500 mb-6 text-center">
-                {mode === 'signup' ? 'Get started with Cody today' : 'Sign in to your account to continue'}
+                Sign in or create your account to continue
               </p>
 
               <AnimatePresence>
@@ -226,7 +163,6 @@ export function OnboardingEmailStep({
                   id="email-signin-btn"
                   type="button"
                   onClick={() => {
-                    setAnimationType('form');
                     setSlideDirection(1);
                     setShowEmailForm(true);
                     setEmailError('');
@@ -248,12 +184,12 @@ export function OnboardingEmailStep({
             </motion.div>
           ) : (
             <motion.div
-              key={`form-${mode}`}
+              key="auth-form"
               custom={slideDirection}
               variants={{
-                enter: (dir: number) => ({
-                  x: animationType === 'mode' ? (dir > 0 ? 140 : -140) : 0,
-                  y: animationType === 'form' ? 12 : 0,
+                enter: () => ({
+                  x: 0,
+                  y: 12,
                   opacity: 0,
                 }),
                 center: {
@@ -261,9 +197,9 @@ export function OnboardingEmailStep({
                   y: 0,
                   opacity: 1,
                 },
-                exit: (dir: number) => ({
-                  x: animationType === 'mode' ? (dir > 0 ? -140 : 140) : 0,
-                  y: animationType === 'form' ? -12 : 0,
+                exit: () => ({
+                  x: 0,
+                  y: -12,
                   opacity: 0,
                 }),
               }}
@@ -271,7 +207,7 @@ export function OnboardingEmailStep({
               animate="center"
               exit="exit"
               transition={{
-                x: { type: 'spring', stiffness: 380, damping: 34 },
+                y: { type: 'spring', stiffness: 380, damping: 34 },
                 opacity: { duration: 0.18 },
               }}
               className="w-full flex flex-col items-center"
@@ -281,7 +217,6 @@ export function OnboardingEmailStep({
                 type="button"
                 id="back-to-auth-options-btn"
                 onClick={() => {
-                  setAnimationType('form');
                   setSlideDirection(-1);
                   setShowEmailForm(false);
                   setEmailError('');
@@ -293,10 +228,10 @@ export function OnboardingEmailStep({
               </button>
 
               <h2 className="text-[24px] font-semibold text-gray-900 mb-2 text-center">
-                {mode === 'signup' ? 'Create an account' : 'Welcome back'}
+                Welcome to Cody
               </h2>
               <p className="text-[14px] text-gray-500 mb-6 text-center">
-                {mode === 'signup' ? 'Get started with Cody today' : 'Sign in to your account to continue'}
+                Sign in or create your account to continue
               </p>
 
               <AnimatePresence>
@@ -332,13 +267,13 @@ export function OnboardingEmailStep({
                     className={`w-full bg-transparent border-b-2 ${isEmailInvalid ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-6 pb-3 pt-1 text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
                   />
                 </div>
-                {mode === 'signup' && isCheckingEmail && (
+                {isCheckingEmail && (
                   <div id="email-checking-indicator" className="flex items-center gap-1.5 mt-2 text-[12px] text-gray-500">
                     <Loader2 size={13} className="animate-spin text-gray-400 shrink-0" />
                     <span>Checking email…</span>
                   </div>
                 )}
-                {mode === 'signup' && (isDuplicateEmail || emailError === 'Account already exists. Please use a different email.') && !isCheckingEmail && (
+                {(isDuplicateEmail || emailError === 'Account already exists. Please use a different email.') && !isCheckingEmail && (
                   <div id="email-duplicate-inline-warning" className="flex items-center gap-1.5 mt-2 text-[12px] text-red-500 font-medium">
                     <span>Account already exists. Please use a different email.</span>
                   </div>
@@ -367,34 +302,34 @@ export function OnboardingEmailStep({
 
               <button
                 id="email-submit-btn"
+                type="button"
                 onClick={handleEmailContinue}
                 disabled={isSubmitDisabled}
-                className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-6 rounded-full ${
+                className={`w-full text-center py-3 text-[14px] font-medium transition-colors mt-4 mb-3 rounded-full ${
                   !isSubmitDisabled
                     ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 }`}
               >
                 {isLoading
-                  ? (mode === 'signup' ? 'Creating account...' : 'Signing in...')
-                  : mode === 'signup' ? 'Create Account' : 'Sign In'}
+                  ? (isDuplicateEmail ? 'Signing in...' : 'Creating account...')
+                  : isDuplicateEmail ? 'Sign In' : 'Create Account'}
               </button>
 
-              {mode === 'signin' && (
-                <button
-                  id="forgot-password-link"
-                  onClick={() => {
-                    setShowForgotPassword(true);
-                    setForgotEmail(email);
-                    setForgotError('');
-                    setForgotSuccess(false);
-                    setEmailError('');
-                  }}
-                  className="text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-4 self-center"
-                >
-                  Forgot password?
-                </button>
-              )}
+              <button
+                id="forgot-password-link"
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(true);
+                  setForgotEmail(email);
+                  setForgotError('');
+                  setForgotSuccess(false);
+                  setEmailError('');
+                }}
+                className="text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-4 self-center cursor-pointer"
+              >
+                Forgot password?
+              </button>
 
               <p className="text-[11px] text-gray-400 text-center leading-relaxed mt-2">
                 By continuing, you agree to our{' '}
