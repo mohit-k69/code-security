@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
 import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
@@ -27,6 +27,25 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   // Duplicate email pre-check & existing user state
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
+
+  // Mobile-only entrance animation state (Apple-style smooth C scale & content reveal)
+  const [shouldPlayEntrance] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isMobile = window.innerWidth < 768;
+    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return isMobile && !prefersReduced;
+  });
+
+  const [entranceCompleted, setEntranceCompleted] = useState(() => !shouldPlayEntrance);
+
+  useEffect(() => {
+    if (shouldPlayEntrance && !entranceCompleted) {
+      const timer = setTimeout(() => {
+        setEntranceCompleted(true);
+      }, 1450);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldPlayEntrance, entranceCompleted]);
 
   const checkedEmailsCache = useRef<Record<string, boolean>>({});
   const checkDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -548,15 +567,56 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
       <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 sm:px-8 py-8 lg:py-0 overflow-y-auto lg:overflow-hidden min-h-[100dvh] lg:min-h-0">
         <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto lg:my-0">
           <div className="lg:hidden flex items-center gap-3 mb-[40px]">
-            <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
-            <span className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none">Cody</span>
+            <motion.div
+              initial={shouldPlayEntrance && !entranceCompleted ? {
+                scale: 2.85,
+                y: -48,
+                x: 40,
+              } : false}
+              animate={{
+                scale: 1,
+                y: 0,
+                x: 0,
+              }}
+              transition={{
+                duration: 1.15,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              onAnimationComplete={() => {
+                setEntranceCompleted(true);
+              }}
+              className="shrink-0 origin-center"
+            >
+              <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
+            </motion.div>
+            <motion.span
+              initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0 } : false}
+              animate={{ opacity: 1 }}
+              transition={{
+                delay: 0.75,
+                duration: 0.5,
+                ease: [0.25, 1, 0.5, 1],
+              }}
+              className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none"
+            >
+              Cody
+            </motion.span>
           </div>
 
-          <div className="w-full relative min-h-0 lg:min-h-[520px] flex flex-col items-center justify-start pt-0 lg:pt-6">
+          <motion.div
+            initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={{
+              delay: 0.75,
+              duration: 0.55,
+              ease: [0.25, 1, 0.5, 1],
+            }}
+            className="w-full relative min-h-0 lg:min-h-[520px] flex flex-col items-center justify-start pt-0 lg:pt-6"
+          >
             <AnimatePresence mode="wait">
               {renderRightContent()}
             </AnimatePresence>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
