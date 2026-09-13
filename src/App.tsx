@@ -215,6 +215,8 @@ export default function App() {
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'github' || activeWorkflow === 'upload')}
+          onBack={handleReturnHome}
         />
 
         <div className="flex-1 flex overflow-hidden">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Menu } from 'lucide-react';
+import { User, Menu, ArrowLeft } from 'lucide-react';
 import { User as UserType } from '../../hooks/useAuth';
 
 interface HeaderProps {
@@ -9,6 +9,8 @@ interface HeaderProps {
   openProfileModal: () => void;
   onSignOut: () => void;
   onToggleMobileSidebar?: () => void;
+  showBackButton?: boolean;
+  onBack?: () => void;
 }
 
 export function Header({ 
@@ -17,20 +19,35 @@ export function Header({
   setIsProfileOpen, 
   openProfileModal, 
   onSignOut,
-  onToggleMobileSidebar
+  onToggleMobileSidebar,
+  showBackButton = false,
+  onBack
 }: HeaderProps) {
   return (
     <header className="h-[60px] flex items-center justify-between md:justify-end px-4 sm:px-6 md:px-8 border-b border-gray-200 bg-white shrink-0 z-10">
-      {/* Mobile Hamburger Button (Top-Left on mobile, hidden on desktop) */}
-      <button 
-        id="mobile-sidebar-toggle-btn"
-        type="button"
-        onClick={onToggleMobileSidebar}
-        className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
-        aria-label="Open sidebar navigation menu"
-      >
-        <Menu className="w-5 h-5 text-gray-700" />
-      </button>
+      {/* Mobile Navigation Slot: Back Button when in sub-workflow (Paste / GitHub), Hamburger on root */}
+      {showBackButton ? (
+        <button 
+          id="mobile-header-back-btn"
+          type="button"
+          onClick={onBack}
+          className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
+          aria-label="Back to home"
+          title="Back to home"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-700" />
+        </button>
+      ) : (
+        <button 
+          id="mobile-sidebar-toggle-btn"
+          type="button"
+          onClick={onToggleMobileSidebar}
+          className="md:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer"
+          aria-label="Open sidebar navigation menu"
+        >
+          <Menu className="w-5 h-5 text-gray-700" />
+        </button>
+      )}
 
       {/* Top-Right Account / Avatar Button */}
       <div className="relative">
