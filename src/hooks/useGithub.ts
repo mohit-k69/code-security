@@ -39,7 +39,14 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       email: user?.email
     });
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-github-repositories');
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : undefined;
+
+      const { data, error } = await supabase.functions.invoke('fetch-github-repositories', {
+        headers
+      });
       console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_RESULT', {
         success: !error && !data?.error,
         count: Array.isArray(data) ? data.length : undefined,
@@ -61,6 +68,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       if (data?.error) throw new Error(data.error);
       setGithubRepos(data || []);
       setGithubReposError('');
+      window.dispatchEvent(new CustomEvent('codevibe_github_repos_loaded'));
     } catch (err: any) {
       console.error('Fetch GitHub Repositories Error:', err);
       console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_RESULT', {

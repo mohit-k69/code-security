@@ -78,28 +78,52 @@ export function useAuth() {
     setProviderTokenSetupError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.provider_token) {
+      const accessToken = session?.access_token;
+
+      // 1. First test if a valid GitHub connection is ALREADY stored and working in the database
+      if (accessToken) {
+        try {
+          const { data: repos, error: testErr } = await supabase.functions.invoke('fetch-github-repositories', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          if (!testErr && Array.isArray(repos)) {
+            // Connection is already active and healthy! Clear error and trigger UI update
+            setProviderTokenSetupError(null);
+            window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+            return;
+          }
+        } catch {}
+      }
+
+      // 2. If session has provider_token, invoke store-provider-token with explicit Authorization header
+      if (session?.provider_token && accessToken) {
         const { error, data } = await supabase.functions.invoke('store-provider-token', {
+          headers: { Authorization: `Bearer ${accessToken}` },
           body: { 
             providerToken: session.provider_token,
             providerRefreshToken: session.provider_refresh_token
           }
         });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        // Success: clear error and reload page to refresh github state
-        window.location.reload();
-      } else {
-        // Token is lost from memory. We must unlink the identity so they can securely restart the flow without duplicate errors.
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const githubIdentity = user.identities?.find(id => id.provider === 'github');
-          if (githubIdentity) {
-            await supabase.auth.unlinkIdentity(githubIdentity);
+        if (error) {
+          let errorMsg = error.message;
+          if (error.context) {
+            try {
+              const body = await error.context.json();
+              if (body?.error) errorMsg = body.error;
+            } catch {}
           }
+          throw new Error(errorMsg);
         }
-        setProviderTokenSetupError('Session expired. Please click Reconnect GitHub to restart.');
+        if (data?.error) throw new Error(data.error);
+
+        // Success: clear error and reload/refresh github state
+        setProviderTokenSetupError(null);
+        window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+        return;
       }
+
+      // 3. If neither worked, prompt re-authorization without destructively unlinking the identity
+      setProviderTokenSetupError('Please click Reconnect GitHub to re-authorize your account.');
     } catch (err: any) {
       console.error('Failed to retry token storage:', err);
       setProviderTokenSetupError(err.message || 'Failed to complete GitHub setup.');
@@ -268,18 +292,41 @@ export function useAuth() {
         if (session.provider_token) {
           try {
             const { error, data } = await supabase.functions.invoke('store-provider-token', {
+              headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
               body: { 
                 providerToken: session.provider_token,
                 providerRefreshToken: session.provider_refresh_token
               }
             });
-            if (error) throw error;
+            if (error) {
+              let errorMsg = error.message;
+              if (error.context) {
+                try {
+                  const body = await error.context.json();
+                  if (body?.error) errorMsg = body.error;
+                } catch {}
+              }
+              throw new Error(errorMsg);
+            }
             if (data?.error) throw new Error(data.error);
             setProviderTokenSetupError(null);
             window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
           } catch (err: any) {
             console.error('Failed to trigger token storage:', err);
-            setProviderTokenSetupError('GitHub was connected, but token storage failed. Please try again.');
+            // Verify if a working connection is already present in oauth_connections before showing error
+            if (session.access_token) {
+              try {
+                const { data: testRepos, error: testErr } = await supabase.functions.invoke('fetch-github-repositories', {
+                  headers: { Authorization: `Bearer ${session.access_token}` }
+                });
+                if (!testErr && Array.isArray(testRepos)) {
+                  setProviderTokenSetupError(null);
+                  window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+                  return;
+                }
+              } catch {}
+            }
+            setProviderTokenSetupError(err.message || 'GitHub was connected, but token storage failed. Please try again.');
           }
         }
       } catch (err) {
@@ -314,6 +361,7 @@ export function useAuth() {
         if (session?.provider_token) {
           try {
             await supabase.functions.invoke('store-provider-token', {
+              headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
               body: { 
                 providerToken: session.provider_token,
                 providerRefreshToken: session.provider_refresh_token
@@ -344,9 +392,15 @@ export function useAuth() {
     };
     window.addEventListener('message', handleMessage);
 
+    const handleReposLoaded = () => {
+      setProviderTokenSetupError(null);
+    };
+    window.addEventListener('codevibe_github_repos_loaded', handleReposLoaded);
+
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('message', handleMessage);
+      window.removeEventListener('codevibe_github_repos_loaded', handleReposLoaded);
     };
   }, []);
 

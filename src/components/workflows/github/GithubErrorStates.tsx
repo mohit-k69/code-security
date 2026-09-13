@@ -4,9 +4,10 @@ import { AlertTriangle, Github, Loader2 } from 'lucide-react';
 interface SetupIncompleteErrorProps {
   providerTokenSetupError: string;
   retryProviderTokenSetup: () => void;
+  handleConnectGithub?: () => void;
 }
 
-export function SetupIncompleteError({ providerTokenSetupError, retryProviderTokenSetup }: SetupIncompleteErrorProps) {
+export function SetupIncompleteError({ providerTokenSetupError, retryProviderTokenSetup, handleConnectGithub }: SetupIncompleteErrorProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
       <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 border border-red-100 shadow-sm">
@@ -14,12 +15,22 @@ export function SetupIncompleteError({ providerTokenSetupError, retryProviderTok
       </div>
       <h3 className="text-[18px] font-semibold text-gray-900 mb-2">GitHub Setup Incomplete</h3>
       <p className="text-[14px] text-gray-500 max-w-md mb-6">{providerTokenSetupError}</p>
-      <button 
-        onClick={retryProviderTokenSetup}
-        className="px-6 py-2.5 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors shadow-sm"
-      >
-        Retry Setup
-      </button>
+      <div className="flex items-center gap-3 flex-wrap justify-center">
+        <button 
+          onClick={retryProviderTokenSetup}
+          className="px-6 py-2.5 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors shadow-sm"
+        >
+          Retry Setup
+        </button>
+        {handleConnectGithub && (
+          <button 
+            onClick={handleConnectGithub}
+            className="px-6 py-2.5 bg-white text-gray-800 border border-gray-300 rounded-full text-[14px] font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            Reconnect GitHub
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -265,10 +265,22 @@ export function GithubWorkflow({
             <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />
             <p className="text-[14px]">Fetching your repositories...</p>
           </div>
+        ) : githubRepos.length > 0 ? (
+          <div className="flex flex-col h-full">
+            <GithubRepoList 
+              githubRepos={githubRepos}
+              githubSearchQuery={githubSearchQuery}
+              selectedRepoId={selectedRepoId}
+              handleAnalyze={handleAnalyze}
+              viewStyle={viewStyle}
+              isLimitReached={isLimitReached}
+            />
+          </div>
         ) : providerTokenSetupError ? (
           <SetupIncompleteError 
             providerTokenSetupError={providerTokenSetupError} 
             retryProviderTokenSetup={retryProviderTokenSetup || (() => {})} 
+            handleConnectGithub={handleConnectGithub}
           />
         ) : githubReposError ? (
           <GenericError 

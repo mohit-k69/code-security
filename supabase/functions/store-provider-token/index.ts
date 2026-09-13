@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
@@ -90,10 +90,10 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     // Log detailed errors securely on the server
-    console.error('store-provider-token internal error:', error.message);
+    console.error('store-provider-token internal error:', error?.message || error, error?.stack);
     
-    // Return a generic, safe error message to the client
-    return new Response(JSON.stringify({ error: 'Unable to store GitHub connection.' }), {
+    // Return a descriptive error message to the client
+    return new Response(JSON.stringify({ error: error?.message || 'Unable to store GitHub connection.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });
