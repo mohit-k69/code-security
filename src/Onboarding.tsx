@@ -38,11 +38,23 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
   const [entranceCompleted, setEntranceCompleted] = useState(() => !shouldPlayEntrance);
 
+  const [motionCoords] = useState<{ startX: number; startY: number }>(() => {
+    if (typeof window === 'undefined') return { startX: 42, startY: -90 };
+    const h = window.innerHeight || 800;
+    const estHeaderY = Math.max(h * 0.26, 175);
+    const targetTopY = Math.max(h * 0.13, 90);
+    const calculatedY = targetTopY - estHeaderY;
+    return {
+      startX: 42,
+      startY: Math.min(Math.max(calculatedY, -120), -70),
+    };
+  });
+
   useEffect(() => {
     if (shouldPlayEntrance && !entranceCompleted) {
       const timer = setTimeout(() => {
         setEntranceCompleted(true);
-      }, 1450);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [shouldPlayEntrance, entranceCompleted]);
@@ -566,35 +578,54 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
       <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 sm:px-8 py-8 lg:py-0 overflow-y-auto lg:overflow-hidden min-h-[100dvh] lg:min-h-0">
         <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto lg:my-0">
-          <div className="lg:hidden flex items-center gap-3 mb-[40px]">
-            <motion.div
-              initial={shouldPlayEntrance && !entranceCompleted ? {
-                scale: 2.85,
-                y: -48,
-                x: 40,
-              } : false}
-              animate={{
-                scale: 1,
-                y: 0,
-                x: 0,
-              }}
-              transition={{
-                duration: 1.15,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              onAnimationComplete={() => {
-                setEntranceCompleted(true);
-              }}
-              className="shrink-0 origin-center"
-            >
-              <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
-            </motion.div>
+          <div className="lg:hidden flex items-center gap-3 mb-[40px] relative">
+            {/* The Logo Anchor */}
+            <div className="w-[34px] h-[34px] shrink-0 relative flex items-center justify-center">
+              {/* Resting static logo (revealed seamlessly once entrance completes) */}
+              <div
+                className={`shrink-0 transition-opacity duration-200 ${
+                  shouldPlayEntrance && !entranceCompleted ? 'opacity-0' : 'opacity-100'
+                }`}
+              >
+                <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
+              </div>
+
+              {/* Dedicated Animated Large C Layer (dominant 154px brand intro) */}
+              {shouldPlayEntrance && !entranceCompleted && (
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30">
+                  <motion.div
+                    initial={{
+                      scale: 1,
+                      x: motionCoords.startX,
+                      y: motionCoords.startY,
+                    }}
+                    animate={{
+                      scale: 34 / 154,
+                      x: 0,
+                      y: 0,
+                    }}
+                    transition={{
+                      duration: 1.3,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    onAnimationComplete={() => {
+                      setEntranceCompleted(true);
+                    }}
+                    className="w-[154px] h-[154px] flex items-center justify-center shrink-0 origin-center"
+                  >
+                    <CodeVibeIcon size={154} variant="dark" className="shrink-0" />
+                  </motion.div>
+                </div>
+              )}
+            </div>
+
+            {/* Wordmark */}
             <motion.span
               initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0 } : false}
               animate={{ opacity: 1 }}
               transition={{
                 delay: 0.75,
-                duration: 0.5,
+                duration: 0.55,
                 ease: [0.25, 1, 0.5, 1],
               }}
               className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none"
