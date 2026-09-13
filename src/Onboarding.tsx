@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
 import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
@@ -27,55 +27,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   // Duplicate email pre-check & existing user state
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
-
-  // Mobile-only entrance animation state (Apple-style smooth C scale & content reveal)
-  const [shouldPlayEntrance] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const isMobile = window.innerWidth < 768;
-    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    return isMobile && !prefersReduced;
-  });
-
-  const [entranceCompleted, setEntranceCompleted] = useState(() => !shouldPlayEntrance);
-
-  const logoAnchorRef = useRef<HTMLDivElement>(null);
-
-  const [startCoords, setStartCoords] = useState<{ x: number; y: number }>(() => {
-    if (typeof window === 'undefined') return { x: 42, y: 220 };
-    const vpCenterX = window.innerWidth / 2;
-    const vpCenterY = window.innerHeight / 2;
-    // On mobile, header logo is roughly 42px left of center and approx 180px from top
-    const estimatedLogoX = vpCenterX - 42;
-    const estimatedLogoY = Math.max(window.innerHeight * 0.24, 180);
-    return {
-      x: Math.round(vpCenterX - estimatedLogoX), // 42px
-      y: Math.round(vpCenterY - estimatedLogoY), // ~210-230px (positive = viewport center below header)
-    };
-  });
-
-  useLayoutEffect(() => {
-    if (!shouldPlayEntrance || entranceCompleted) return;
-    if (logoAnchorRef.current) {
-      const rect = logoAnchorRef.current.getBoundingClientRect();
-      const logoCenterX = rect.left + rect.width / 2;
-      const logoCenterY = rect.top + rect.height / 2;
-      const vpCenterX = window.innerWidth / 2;
-      const vpCenterY = window.innerHeight / 2;
-      setStartCoords({
-        x: Math.round(vpCenterX - logoCenterX),
-        y: Math.round(vpCenterY - logoCenterY),
-      });
-    }
-  }, [shouldPlayEntrance, entranceCompleted]);
-
-  useEffect(() => {
-    if (shouldPlayEntrance && !entranceCompleted) {
-      const timer = setTimeout(() => {
-        setEntranceCompleted(true);
-      }, 2300);
-      return () => clearTimeout(timer);
-    }
-  }, [shouldPlayEntrance, entranceCompleted]);
 
   const checkedEmailsCache = useRef<Record<string, boolean>>({});
   const checkDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -562,7 +513,6 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         isCheckingEmail={isCheckingEmail}
         isDuplicateEmail={isDuplicateEmail}
         onEmailBlur={handleEmailBlur}
-        isEntranceAnimating={shouldPlayEntrance && !entranceCompleted}
       />
     );
   };
@@ -597,57 +547,9 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
       <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 sm:px-8 py-8 lg:py-0 overflow-y-auto lg:overflow-hidden min-h-[100dvh] lg:min-h-0">
         <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto lg:my-0">
-          <div className="lg:hidden flex items-center gap-3 mb-[40px] relative">
-            {/* The Logo Anchor */}
-            <div ref={logoAnchorRef} className="w-[34px] h-[34px] shrink-0 relative flex items-center justify-center">
-              {/* Resting static logo (revealed seamlessly once entrance completes) */}
-              <div
-                className={`shrink-0 transition-opacity duration-200 ${
-                  shouldPlayEntrance && !entranceCompleted ? 'opacity-0' : 'opacity-100'
-                }`}
-              >
-                <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
-              </div>
-
-              {/* Dedicated Animated C Layer (starts in exact screen center, moves up + scales down) */}
-              {shouldPlayEntrance && !entranceCompleted && (
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30">
-                  <motion.div
-                    initial={{
-                      scale: 2.75, // ~2.75x moderately large in center
-                      x: startCoords.x,
-                      y: startCoords.y,
-                    }}
-                    animate={{
-                      scale: 1,
-                      x: 0,
-                      y: 0,
-                    }}
-                    transition={{
-                      duration: 1.2,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    className="w-[34px] h-[34px] flex items-center justify-center shrink-0 origin-center"
-                  >
-                    <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
-                  </motion.div>
-                </div>
-              )}
-            </div>
-
-            {/* Wordmark (fades in beside C at ~0.75s) */}
-            <motion.span
-              initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0, y: 6 } : false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                delay: 0.75,
-                duration: 0.45,
-                ease: [0.25, 1, 0.5, 1],
-              }}
-              className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none"
-            >
-              Cody
-            </motion.span>
+          <div className="lg:hidden flex items-center gap-3 mb-[40px]">
+            <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
+            <span className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none">Cody</span>
           </div>
 
           <div className="w-full relative min-h-0 lg:min-h-[520px] flex flex-col items-center justify-start pt-0 lg:pt-6">
