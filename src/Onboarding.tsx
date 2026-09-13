@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
@@ -38,23 +38,41 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
   const [entranceCompleted, setEntranceCompleted] = useState(() => !shouldPlayEntrance);
 
-  const [motionCoords] = useState<{ startX: number; startY: number }>(() => {
-    if (typeof window === 'undefined') return { startX: 42, startY: -90 };
-    const h = window.innerHeight || 800;
-    const estHeaderY = Math.max(h * 0.26, 175);
-    const targetTopY = Math.max(h * 0.13, 90);
-    const calculatedY = targetTopY - estHeaderY;
+  const logoAnchorRef = useRef<HTMLDivElement>(null);
+
+  const [startCoords, setStartCoords] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === 'undefined') return { x: 42, y: 220 };
+    const vpCenterX = window.innerWidth / 2;
+    const vpCenterY = window.innerHeight / 2;
+    // On mobile, header logo is roughly 42px left of center and approx 180px from top
+    const estimatedLogoX = vpCenterX - 42;
+    const estimatedLogoY = Math.max(window.innerHeight * 0.24, 180);
     return {
-      startX: 42,
-      startY: Math.min(Math.max(calculatedY, -120), -70),
+      x: Math.round(vpCenterX - estimatedLogoX), // 42px
+      y: Math.round(vpCenterY - estimatedLogoY), // ~210-230px (positive = viewport center below header)
     };
   });
+
+  useLayoutEffect(() => {
+    if (!shouldPlayEntrance || entranceCompleted) return;
+    if (logoAnchorRef.current) {
+      const rect = logoAnchorRef.current.getBoundingClientRect();
+      const logoCenterX = rect.left + rect.width / 2;
+      const logoCenterY = rect.top + rect.height / 2;
+      const vpCenterX = window.innerWidth / 2;
+      const vpCenterY = window.innerHeight / 2;
+      setStartCoords({
+        x: Math.round(vpCenterX - logoCenterX),
+        y: Math.round(vpCenterY - logoCenterY),
+      });
+    }
+  }, [shouldPlayEntrance, entranceCompleted]);
 
   useEffect(() => {
     if (shouldPlayEntrance && !entranceCompleted) {
       const timer = setTimeout(() => {
         setEntranceCompleted(true);
-      }, 1500);
+      }, 2300);
       return () => clearTimeout(timer);
     }
   }, [shouldPlayEntrance, entranceCompleted]);
@@ -544,6 +562,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         isCheckingEmail={isCheckingEmail}
         isDuplicateEmail={isDuplicateEmail}
         onEmailBlur={handleEmailBlur}
+        isEntranceAnimating={shouldPlayEntrance && !entranceCompleted}
       />
     );
   };
@@ -580,7 +599,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto lg:my-0">
           <div className="lg:hidden flex items-center gap-3 mb-[40px] relative">
             {/* The Logo Anchor */}
-            <div className="w-[34px] h-[34px] shrink-0 relative flex items-center justify-center">
+            <div ref={logoAnchorRef} className="w-[34px] h-[34px] shrink-0 relative flex items-center justify-center">
               {/* Resting static logo (revealed seamlessly once entrance completes) */}
               <div
                 className={`shrink-0 transition-opacity duration-200 ${
@@ -590,42 +609,39 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
                 <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
               </div>
 
-              {/* Dedicated Animated Large C Layer (dominant 154px brand intro) */}
+              {/* Dedicated Animated C Layer (starts in exact screen center, moves up + scales down) */}
               {shouldPlayEntrance && !entranceCompleted && (
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30">
                   <motion.div
                     initial={{
-                      scale: 1,
-                      x: motionCoords.startX,
-                      y: motionCoords.startY,
+                      scale: 2.75, // ~2.75x moderately large in center
+                      x: startCoords.x,
+                      y: startCoords.y,
                     }}
                     animate={{
-                      scale: 34 / 154,
+                      scale: 1,
                       x: 0,
                       y: 0,
                     }}
                     transition={{
-                      duration: 1.3,
+                      duration: 1.2,
                       ease: [0.16, 1, 0.3, 1],
                     }}
-                    onAnimationComplete={() => {
-                      setEntranceCompleted(true);
-                    }}
-                    className="w-[154px] h-[154px] flex items-center justify-center shrink-0 origin-center"
+                    className="w-[34px] h-[34px] flex items-center justify-center shrink-0 origin-center"
                   >
-                    <CodeVibeIcon size={154} variant="dark" className="shrink-0" />
+                    <CodeVibeIcon size={34} variant="dark" className="shrink-0" />
                   </motion.div>
                 </div>
               )}
             </div>
 
-            {/* Wordmark */}
+            {/* Wordmark (fades in beside C at ~0.75s) */}
             <motion.span
-              initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0 } : false}
-              animate={{ opacity: 1 }}
+              initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0, y: 6 } : false}
+              animate={{ opacity: 1, y: 0 }}
               transition={{
                 delay: 0.75,
-                duration: 0.55,
+                duration: 0.45,
                 ease: [0.25, 1, 0.5, 1],
               }}
               className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none"
@@ -634,20 +650,11 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
             </motion.span>
           </div>
 
-          <motion.div
-            initial={shouldPlayEntrance && !entranceCompleted ? { opacity: 0 } : false}
-            animate={{ opacity: 1 }}
-            transition={{
-              delay: 0.75,
-              duration: 0.55,
-              ease: [0.25, 1, 0.5, 1],
-            }}
-            className="w-full relative min-h-0 lg:min-h-[520px] flex flex-col items-center justify-start pt-0 lg:pt-6"
-          >
+          <div className="w-full relative min-h-0 lg:min-h-[520px] flex flex-col items-center justify-start pt-0 lg:pt-6">
             <AnimatePresence mode="wait">
               {renderRightContent()}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
