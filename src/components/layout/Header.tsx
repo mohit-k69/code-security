@@ -58,11 +58,11 @@ export function Header({
           aria-label="User profile menu"
         >
           <span className="hidden md:inline text-[14px] font-medium text-gray-700 group-hover:text-gray-900 transition-colors">{user.name}</span>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 border border-gray-200 group-hover:bg-gray-200 transition-colors text-gray-600 overflow-hidden shrink-0">
+          <div className="flex w-[35px] h-[35px] md:w-8 md:h-8 items-center justify-center rounded-full bg-gray-100 border border-gray-200 group-hover:bg-gray-200 transition-colors text-gray-600 overflow-hidden shrink-0">
             {user.avatar ? (
               <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <User className="h-4 w-4" />
+              <User className="w-[18px] h-[18px] md:w-4 md:h-4" />
             )}
           </div>
         </button>

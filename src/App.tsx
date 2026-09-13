@@ -215,7 +215,7 @@ export default function App() {
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
-          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'github' || activeWorkflow === 'upload')}
+          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload')}
           onBack={handleReturnHome}
         />
 
