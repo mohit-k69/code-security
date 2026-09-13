@@ -108,13 +108,16 @@
 .animate-blink-cursor { animation: blink-cursor 1s step-end infinite; }
 .animate-orbit { animation: orbit 6s linear infinite; }
 
-/* ─── Mobile Cody C Logo Subtle 360° Rotation ─── */
-@keyframes cody-mobile-rotate-360 {
+/* ─── Mobile Cody C Logo Smooth Back-and-Forth Turn (Turn & Return) ─── */
+@keyframes cody-mobile-turn-and-return {
   0% {
     transform: rotate(0deg);
   }
+  50% {
+    transform: rotate(180deg);
+  }
   100% {
-    transform: rotate(360deg);
+    transform: rotate(0deg);
   }
 }
 
@@ -123,7 +126,7 @@
     .cody-mobile-logo-rotate {
       transform-box: view-box;
       transform-origin: 50% 50%;
-      animation: cody-mobile-rotate-360 1.05s cubic-bezier(0.45, 0.05, 0.25, 1) 1 forwards;
+      animation: cody-mobile-turn-and-return 1.3s cubic-bezier(0.42, 0, 0.58, 1) 1 forwards;
     }
   }
 }
