@@ -114,6 +114,7 @@ export default function App() {
 
   const shouldReduceMotion = useReducedMotion();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Derived states
   const hasUploadedCode = uploadedFiles.length > 0;
@@ -160,20 +161,60 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-white font-sans overflow-hidden">
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        reviewedItems={reviewedItems} 
-      />
+    <div className="flex h-screen bg-white font-sans overflow-hidden relative">
+      {/* Desktop & Tablet Sidebar (hidden on mobile) */}
+      <div className="hidden md:flex h-full shrink-0">
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          reviewedItems={reviewedItems} 
+        />
+      </div>
 
-      <div className="flex flex-col flex-1 bg-gray-50">
+      {/* Mobile Off-Canvas Sidebar Drawer */}
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <>
+            <motion.div
+              key="mobile-sidebar-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-xs"
+              aria-hidden="true"
+            />
+            <motion.div
+              key="mobile-sidebar-drawer"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] h-full md:hidden shadow-2xl"
+            >
+              <Sidebar 
+                activeTab={activeTab} 
+                setActiveTab={(tab) => {
+                  setActiveTab(tab);
+                  setIsMobileSidebarOpen(false);
+                }} 
+                reviewedItems={reviewedItems}
+                onClose={() => setIsMobileSidebarOpen(false)}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col flex-1 bg-gray-50 min-w-0 w-full">
         <Header 
           user={user}
           isProfileOpen={isProfileOpen}
           setIsProfileOpen={setIsProfileOpen}
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
         />
 
         <div className="flex-1 flex overflow-hidden">
@@ -220,9 +261,9 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className={`min-h-full flex flex-col items-center ${isGithubAnalysisActive ? 'py-8 px-4' : 'py-12 px-6'}`}>
+                      <div className={`min-h-full flex flex-col items-center ${isGithubAnalysisActive ? 'py-8 px-4' : 'py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
                         <div 
-                          className={`w-full ${isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-8 pb-32`}
+                          className={`w-full ${isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-6 md:space-y-8 pb-20 md:pb-32`}
                           onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
                         >
                           {activeWorkflow === 'none' && (

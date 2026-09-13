@@ -1,5 +1,5 @@
 import React from 'react';
-import { CodeXml, CheckCircle2 } from 'lucide-react';
+import { CodeXml, CheckCircle2, X } from 'lucide-react';
 import { ReviewedItem } from '../../hooks/useAnalysis';
 import { CodeVibeIcon } from '../common/CodeVibeLogo';
 
@@ -7,16 +7,27 @@ interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   reviewedItems: ReviewedItem[];
+  onClose?: () => void;
 }
 
-export function Sidebar({ activeTab, setActiveTab, reviewedItems }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, reviewedItems, onClose }: SidebarProps) {
   return (
     <div className="w-[280px] bg-[#3f2a24] flex flex-col z-20 h-full">
-      <div className="p-6">
+      <div className="p-6 flex items-center justify-between">
         <h1 className="text-white font-bold text-[22px] tracking-tight flex items-center gap-2.5">
           <CodeVibeIcon size={24} variant="light" className="shrink-0" />
           Cody
         </h1>
+        {onClose && (
+          <button 
+            type="button"
+            onClick={onClose}
+            className="md:hidden p-1.5 -mr-1.5 rounded-lg text-[#b8a298] hover:text-white hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
       
       <div className="flex-1 px-4 mt-6">
