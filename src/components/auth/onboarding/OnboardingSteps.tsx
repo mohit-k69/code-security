@@ -158,6 +158,14 @@ export function OnboardingEmailStep({
                   <span>Continue with GitHub</span>
                 </button>
 
+                {/* OR divider */}
+                <div className="relative flex items-center justify-center my-1.5 lg:my-2">
+                  <div className="w-full border-t border-gray-200" />
+                  <span className="absolute bg-white px-3 text-[12px] lg:text-[11px] font-medium tracking-wider text-gray-400 uppercase">
+                    OR
+                  </span>
+                </div>
+
                 {/* 3. Continue with email */}
                 <button
                   id="email-signin-btn"
