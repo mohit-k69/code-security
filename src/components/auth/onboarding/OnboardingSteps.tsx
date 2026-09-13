@@ -86,10 +86,7 @@ export function OnboardingEmailStep({
               }}
               className="w-full flex flex-col items-center"
             >
-              <h2 className="text-[34px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-2.5 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
-                Welcome to Cody
-              </h2>
-              <p className="text-[17px] lg:text-[14px] text-gray-500 mb-8 lg:mb-6 text-center leading-relaxed">
+              <p className="text-[17px] lg:text-[15px] font-medium text-gray-600 lg:text-gray-500 mb-8 lg:mb-6 text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
@@ -227,10 +224,7 @@ export function OnboardingEmailStep({
                 <span>Back</span>
               </button>
 
-              {/* Desktop-only: Welcome to Cody and Subtitle (hidden on mobile as requested) */}
-              <h2 className="hidden lg:block text-[24px] font-semibold text-gray-900 mb-2 text-center">
-                Welcome to Cody
-              </h2>
+              {/* Desktop-only: Subtitle */}
               <p className="hidden lg:block text-[14px] text-gray-500 mb-6 text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
