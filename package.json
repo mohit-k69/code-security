@@ -10,10 +10,11 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/test-recovery-codes-phase1.ts && tsx scripts/test-recovery-verification-phase2.ts && tsx scripts/test-recovery-phase2-correction.ts",
+    "test": "tsx scripts/test-recovery-codes-phase1.ts && tsx scripts/test-recovery-verification-phase2.ts && tsx scripts/test-recovery-phase2-correction.ts && tsx scripts/test-recovery-password-reset-phase3.ts",
     "test:recovery-codes": "tsx scripts/test-recovery-codes-phase1.ts",
     "test:recovery-verification": "tsx scripts/test-recovery-verification-phase2.ts",
-    "test:recovery-correction": "tsx scripts/test-recovery-phase2-correction.ts"
+    "test:recovery-correction": "tsx scripts/test-recovery-phase2-correction.ts",
+    "test:recovery-reset": "tsx scripts/test-recovery-password-reset-phase3.ts"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

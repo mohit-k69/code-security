@@ -7,6 +7,7 @@ import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
 import {
   OnboardingEmailStep,
   OnboardingForgotPassword,
+  OnboardingRecoveryFlow,
 } from './components/auth/onboarding/OnboardingSteps';
 
 import { CodeVibeIcon } from './components/common/CodeVibeLogo';
@@ -203,8 +204,9 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     return () => window.removeEventListener('codevibe_auth_error', handleAuthError);
   }, []);
 
-  // Forgot password state
+  // Forgot password & recovery state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showRecoveryFlow, setShowRecoveryFlow] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotError, setForgotError] = useState('');
@@ -486,6 +488,18 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
   }, [forgotEmail]);
 
   const renderRightContent = () => {
+    if (showRecoveryFlow) {
+      return (
+        <OnboardingRecoveryFlow
+          initialEmail={email || forgotEmail}
+          onBackToSignIn={() => {
+            setShowRecoveryFlow(false);
+            setShowForgotPassword(false);
+          }}
+        />
+      );
+    }
+
     if (showForgotPassword) {
       return (
         <OnboardingForgotPassword
@@ -498,6 +512,10 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
           handleForgotPassword={handleForgotPassword}
           setShowForgotPassword={setShowForgotPassword}
           setForgotSuccess={setForgotSuccess}
+          onOpenRecoveryFlow={() => {
+            setShowForgotPassword(false);
+            setShowRecoveryFlow(true);
+          }}
         />
       );
     }

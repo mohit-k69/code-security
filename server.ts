@@ -4,7 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { checkAuthEmailExists, getSupabaseAdmin } from "./src/lib/authCheck";
 import { generateAndStoreRecoveryCodes } from "./src/lib/recoveryCodes";
-import { handleRecoveryVerification, resolveClientIp } from "./src/lib/recoveryVerification";
+import { handleRecoveryVerification, resolveClientIp, handlePasswordResetWithTicket } from "./src/lib/recoveryVerification";
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -180,6 +180,71 @@ async function startServer() {
     } catch (err: any) {
       console.error("[recovery-verification] endpoint error");
       return res.status(500).json({ error: "RECOVERY_VERIFICATION_FAILED" });
+    }
+  });
+
+  // Helper to extract cookie from request header
+  function getCookieValue(cookieHeader: string | undefined, name: string): string | undefined {
+    if (!cookieHeader) return undefined;
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+    return match ? decodeURIComponent(match[1]) : undefined;
+  }
+
+  // Password reset endpoint using restricted recovery ticket (Phase 3)
+  app.all("/api/auth/recovery/reset-password", async (req, res) => {
+    // 1. Mandatory POST: reject GET and other methods
+    if (req.method === "OPTIONS") {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+      return res.sendStatus(204);
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed. POST is required." });
+    }
+
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: "ADMIN_SERVICE_UNAVAILABLE" });
+    }
+
+    // 2. Recovery ticket MUST come exclusively from HttpOnly cookie
+    // The React application must NOT receive, read, store, or send plaintext recovery ticket
+    const ticketFromCookie = getCookieValue(req.headers.cookie, "recovery_ticket");
+
+    // Do NOT accept ticket as JSON field, query param, URL path, or Authorization header
+    const ip = req.ip || resolveClientIp(req.socket?.remoteAddress, req.headers["x-forwarded-for"], 1);
+
+    try {
+      const result = await handlePasswordResetWithTicket(admin, {
+        ticket: ticketFromCookie,
+        newPassword: req.body?.newPassword,
+        confirmPassword: req.body?.confirmPassword,
+        ip,
+        origin: req.headers["origin"] as string,
+        referer: req.headers["referer"] as string,
+        secFetchSite: req.headers["sec-fetch-site"] as string,
+        method: req.method,
+      });
+
+      if (result.success) {
+        // Clear recovery_ticket cookie immediately upon successful reset
+        const isProduction = process.env.NODE_ENV === "production";
+        const isSecure = isProduction || req.secure || req.headers["x-forwarded-proto"] === "https";
+
+        res.clearCookie("recovery_ticket", {
+          path: "/api/auth/recovery",
+          httpOnly: true,
+          secure: isSecure,
+          sameSite: "strict",
+        });
+      }
+
+      return res.status(result.status).json(result.body);
+    } catch (err: any) {
+      console.error("[recovery-reset-password] endpoint error");
+      return res.status(500).json({ error: "PASSWORD_RESET_FAILED" });
     }
   });
 

@@ -380,12 +380,13 @@ export interface OnboardingForgotPasswordProps {
   handleForgotPassword: () => void;
   setShowForgotPassword: (val: boolean) => void;
   setForgotSuccess: (val: boolean) => void;
+  onOpenRecoveryFlow?: () => void;
 }
 
 export function OnboardingForgotPassword({
   forgotSuccess, forgotEmail, setForgotEmail, forgotError,
   setForgotError, forgotLoading, handleForgotPassword,
-  setShowForgotPassword, setForgotSuccess
+  setShowForgotPassword, setForgotSuccess, onOpenRecoveryFlow
 }: OnboardingForgotPasswordProps) {
   if (forgotSuccess) {
     return (
@@ -468,6 +469,16 @@ export function OnboardingForgotPassword({
         {forgotLoading ? 'Sending...' : 'Send Reset Link'}
       </button>
 
+      {onOpenRecoveryFlow && (
+        <button
+          type="button"
+          onClick={onOpenRecoveryFlow}
+          className="text-[13px] font-medium text-[#3f2a24] hover:underline transition-colors mb-2 cursor-pointer"
+        >
+          Have a recovery code? Use recovery code
+        </button>
+      )}
+
       <button
         onClick={() => {
           setShowForgotPassword(false);
@@ -518,6 +529,257 @@ export function OnboardingSignupSuccess({
         className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20"
       >
         Go to Sign In
+      </button>
+    </motion.div>
+  );
+}
+
+// --- Account Recovery & Password Reset Flow (Phase 3) ---
+export interface OnboardingRecoveryFlowProps {
+  initialEmail?: string;
+  onBackToSignIn: () => void;
+}
+
+export function OnboardingRecoveryFlow({
+  initialEmail = '',
+  onBackToSignIn,
+}: OnboardingRecoveryFlowProps) {
+  const [step, setStep] = useState<'verify_code' | 'set_password' | 'success'>('verify_code');
+  const [email, setEmail] = useState(initialEmail);
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleVerifyCode = async () => {
+    if (!email.trim() || !code.trim() || isLoading) return;
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/recovery/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ identifier: email.trim(), code: code.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Invalid account identifier or recovery code. Please check and try again.');
+        return;
+      }
+
+      // Verified! Transition to password setting.
+      // Note: recovery ticket is held exclusively in the secure HttpOnly cookie.
+      // React state NEVER receives or stores the plaintext ticket!
+      setCode('');
+      setStep('set_password');
+    } catch {
+      setError('Network error. Unable to verify recovery code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword.trim() || !confirmPassword.trim() || isLoading) return;
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/recovery/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ newPassword, confirmPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Failed to reset password. The recovery session may have expired.');
+        return;
+      }
+
+      // Success! Clear password fields from state.
+      setNewPassword('');
+      setConfirmPassword('');
+      setStep('success');
+    } catch {
+      setError('Network error. Unable to reset password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (step === 'success') {
+    return (
+      <motion.div
+        key="recovery-success"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="w-full flex flex-col items-center text-center px-4"
+      >
+        <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h2 className="text-[24px] font-semibold text-gray-900 mb-3">
+          Password reset successfully.
+        </h2>
+        <p className="text-[15px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+          Your password has been updated and previous sessions have been revoked. Please sign in with your new password.
+        </p>
+        <button
+          onClick={onBackToSignIn}
+          className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20 cursor-pointer"
+        >
+          Sign In with New Password
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (step === 'set_password') {
+    return (
+      <motion.div
+        key="recovery-set-password"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        className="w-full flex flex-col items-center"
+      >
+        <h2 className="text-[24px] font-bold text-gray-900 mb-2 text-center">
+          Create New Password
+        </h2>
+        <p className="text-[14px] text-gray-500 mb-6 text-center">
+          Recovery verified. Enter and confirm your new password.
+        </p>
+
+        <div className="w-full mb-4">
+          <label className="text-[13px] text-gray-600 font-medium block mb-1.5">New Password</label>
+          <div className="relative">
+            <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+              placeholder="At least 6 characters"
+              className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] text-gray-900 outline-none transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="w-full mb-4">
+          <label className="text-[13px] text-gray-600 font-medium block mb-1.5">Confirm New Password</label>
+          <div className="relative">
+            <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleResetPassword()}
+              placeholder="Re-enter password"
+              className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] text-gray-900 outline-none transition-colors"
+            />
+          </div>
+          {error && <p className="text-red-500 text-[12px] mt-2 text-center">{error}</p>}
+        </div>
+
+        <button
+          onClick={handleResetPassword}
+          disabled={!newPassword || !confirmPassword || isLoading}
+          className={`w-full py-3 text-[14px] font-medium transition-colors mt-4 mb-4 rounded-full ${
+            newPassword && confirmPassword && !isLoading
+              ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          {isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Reset Password'}
+        </button>
+
+        <button
+          onClick={onBackToSignIn}
+          className="text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 cursor-pointer"
+        >
+          Cancel
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      key="recovery-verify-code"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      className="w-full flex flex-col items-center"
+    >
+      <h2 className="text-[24px] font-bold text-gray-900 mb-2 text-center">
+        Account Recovery
+      </h2>
+      <p className="text-[14px] text-gray-500 mb-6 text-center leading-relaxed">
+        Enter your account email and one of your 10 recovery codes to reset access.
+      </p>
+
+      <div className="w-full mb-4">
+        <label className="text-[13px] text-gray-600 font-medium block mb-1.5">Account Email</label>
+        <div className="relative">
+          <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(''); }}
+            placeholder="name@email.com"
+            className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] text-gray-900 outline-none transition-colors"
+          />
+        </div>
+      </div>
+
+      <div className="w-full mb-4">
+        <label className="text-[13px] text-gray-600 font-medium block mb-1.5">Recovery Code</label>
+        <div className="relative">
+          <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleVerifyCode()}
+            placeholder="ABCD-EFGH-JKMN-PQRT"
+            className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] font-mono tracking-wider text-gray-900 outline-none transition-colors"
+          />
+        </div>
+        {error && <p className="text-red-500 text-[12px] mt-2 text-center">{error}</p>}
+      </div>
+
+      <button
+        onClick={handleVerifyCode}
+        disabled={!email.trim() || !code.trim() || isLoading}
+        className={`w-full py-3 text-[14px] font-medium transition-colors mt-4 mb-4 rounded-full ${
+          email.trim() && code.trim() && !isLoading
+            ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+            : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+        }`}
+      >
+        {isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Verify Recovery Code'}
+      </button>
+
+      <button
+        onClick={onBackToSignIn}
+        className="text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 cursor-pointer flex items-center gap-1.5"
+      >
+        <ArrowLeft size={14} /> Back to Sign In
       </button>
     </motion.div>
   );

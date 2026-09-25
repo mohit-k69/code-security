@@ -538,3 +538,418 @@ export async function handleRecoveryVerification(
     },
   };
 }
+
+// -------------------------------------------------------------
+// PHASE 3: Password Reset, CSRF Defense, & Session Revocation
+// -------------------------------------------------------------
+
+export interface PasswordResetResult {
+  success: boolean;
+  status: number;
+  body: {
+    success?: boolean;
+    error?: string;
+    message?: string;
+  };
+}
+
+const PASSWORD_RESET_RATE_LIMIT_MAX = 5;
+
+/**
+ * Validates request Origin and CSRF defense-in-depth headers.
+ * 1. Requires POST method.
+ * 2. Inspects Sec-Fetch-Site (rejects cross-site).
+ * 3. Validates Origin against trusted origins (or Referer fallback).
+ * 4. Rejects wildcards, arbitrary origins, and never trusts Host header.
+ */
+export function validateOriginAndCSRF(params: {
+  method?: string;
+  origin?: string;
+  referer?: string;
+  secFetchSite?: string;
+}): { valid: boolean; reason?: string } {
+  // 1. Method MUST be POST
+  const method = (params.method || 'POST').toUpperCase();
+  if (method !== 'POST') {
+    return { valid: false, reason: 'METHOD_NOT_ALLOWED' };
+  }
+
+  // 2. Sec-Fetch-Site check: reject cross-site requests
+  const secFetchSite = (params.secFetchSite || '').toLowerCase();
+  if (secFetchSite === 'cross-site') {
+    return { valid: false, reason: 'CROSS_SITE_REQUEST_FORBIDDEN' };
+  }
+
+  // 3. Extract request origin: prefer Origin header, fallback to Referer origin
+  let requestOrigin = params.origin ? params.origin.trim().toLowerCase() : '';
+  if (!requestOrigin && params.referer) {
+    try {
+      const parsed = new URL(params.referer);
+      requestOrigin = parsed.origin.toLowerCase();
+    } catch {
+      return { valid: false, reason: 'INVALID_REFERER_HEADER' };
+    }
+  }
+
+  if (!requestOrigin) {
+    return { valid: false, reason: 'MISSING_ORIGIN_AND_REFERER' };
+  }
+
+  // 4. Validate against trusted origins (never derived from attacker request headers)
+  const trustedOrigins = new Set<string>();
+
+  if (process.env.APP_URL) trustedOrigins.add(process.env.APP_URL.toLowerCase().replace(/\/$/, ''));
+  if (process.env.VITE_APP_URL) trustedOrigins.add(process.env.VITE_APP_URL.toLowerCase().replace(/\/$/, ''));
+  if (process.env.SITE_URL) trustedOrigins.add(process.env.SITE_URL.toLowerCase().replace(/\/$/, ''));
+  if (process.env.PUBLIC_URL) trustedOrigins.add(process.env.PUBLIC_URL.toLowerCase().replace(/\/$/, ''));
+  if (process.env.ALLOWED_ORIGINS) {
+    process.env.ALLOWED_ORIGINS.split(',').forEach((o) => {
+      const trimmed = o.trim().toLowerCase().replace(/\/$/, '');
+      if (trimmed && trimmed !== '*') trustedOrigins.add(trimmed);
+    });
+  }
+
+  // Standard development origins
+  trustedOrigins.add('http://localhost:3000');
+  trustedOrigins.add('http://127.0.0.1:3000');
+  trustedOrigins.add('http://localhost:5173');
+  trustedOrigins.add('http://127.0.0.1:5173');
+
+  if (trustedOrigins.has(requestOrigin)) {
+    return { valid: true };
+  }
+
+  // Ephemeral test / local development ports
+  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestOrigin);
+  if (process.env.NODE_ENV !== 'production' && isLocalhost) {
+    return { valid: true };
+  }
+
+  // Cloud Run app preview environments
+  const isRunApp = /^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/.test(requestOrigin);
+  if (isRunApp) {
+    return { valid: true };
+  }
+
+  return { valid: false, reason: 'ORIGIN_MISMATCH' };
+}
+
+/**
+ * Atomically consumes a recovery ticket to prevent replay and race conditions.
+ * Two simultaneous requests with the same ticket can only succeed ONCE.
+ */
+export async function atomicallyConsumeRecoveryTicket(
+  supabaseAdmin: any,
+  ticketHash: string
+): Promise<{ success: boolean; userId?: string; ticketId?: string }> {
+  const nowIso = new Date().toISOString();
+
+  // 1. Try atomic database stored function if available
+  try {
+    const { data, error } = await supabaseAdmin.rpc('consume_recovery_ticket_atomic', {
+      p_ticket_hash: ticketHash,
+    });
+    if (!error && Array.isArray(data) && data.length > 0) {
+      return {
+        success: true,
+        userId: data[0].user_id,
+        ticketId: data[0].ticket_id || data[0].id,
+      };
+    }
+    if (!error && data && data.user_id) {
+      return {
+        success: true,
+        userId: data.user_id,
+        ticketId: data.ticket_id || data.id,
+      };
+    }
+  } catch {
+    // Fall back to direct atomic conditional UPDATE
+  }
+
+  // 2. Direct conditional UPDATE in PostgreSQL with row locking:
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_tickets')
+    .update({ consumed_at: nowIso })
+    .eq('ticket_hash', ticketHash)
+    .is('consumed_at', null)
+    .is('revoked_at', null)
+    .gt('expires_at', nowIso)
+    .select('id, user_id');
+
+  if (error || !data || data.length === 0) {
+    return { success: false };
+  }
+
+  return {
+    success: true,
+    userId: data[0].user_id,
+    ticketId: data[0].id,
+  };
+}
+
+/**
+ * Revokes all existing user sessions and remaining recovery tickets after a password reset.
+ */
+export async function revokeUserSessions(
+  supabaseAdmin: any,
+  userId: string
+): Promise<void> {
+  const nowIso = new Date().toISOString();
+
+  // 1. Invalidate any other unconsumed recovery tickets for this user
+  try {
+    await supabaseAdmin
+      .from('user_recovery_tickets')
+      .update({ revoked_at: nowIso })
+      .eq('user_id', userId)
+      .is('consumed_at', null)
+      .is('revoked_at', null);
+  } catch {
+    // Non-fatal
+  }
+
+  // 2. Invalidate sessions in database via stored procedure if available
+  try {
+    await supabaseAdmin.rpc('revoke_user_sessions_after_recovery', {
+      p_user_id: userId,
+    });
+  } catch {
+    // Non-fatal
+  }
+}
+
+/**
+ * Records a security audit event without logging passwords, tokens, or credentials.
+ */
+export async function logRecoveryAuditEvent(
+  supabaseAdmin: any,
+  event: {
+    eventType: string;
+    userId?: string;
+    ticketId?: string;
+    ip: string;
+  }
+): Promise<void> {
+  const sanitizedEvent = `[audit] event=${event.eventType}${event.userId ? ` user_id=${event.userId}` : ''}${event.ticketId ? ` ticket_id=${event.ticketId}` : ''} ip=${event.ip}`;
+  console.info(sanitizedEvent);
+
+  if (supabaseAdmin) {
+    try {
+      await supabaseAdmin.from('recovery_audit_logs').insert({
+        event_type: event.eventType,
+        user_id: event.userId || null,
+        ticket_id: event.ticketId || null,
+        ip: event.ip,
+      });
+    } catch {
+      // Non-fatal audit log persistence
+    }
+  }
+}
+
+/**
+ * Main password reset handler (Phase 3).
+ * Validates CSRF/origin, rate limits, verifies and atomically consumes recovery ticket,
+ * updates Supabase Auth password, revokes existing sessions, and returns generic status.
+ */
+export async function handlePasswordResetWithTicket(
+  supabaseAdmin: any,
+  params: {
+    ticket?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+    ip?: string;
+    origin?: string;
+    referer?: string;
+    secFetchSite?: string;
+    method?: string;
+  }
+): Promise<PasswordResetResult> {
+  const ip = params.ip || 'unknown-ip';
+  const ipKey = `reset_ip:${ip}`;
+
+  // 1. Audit start
+  await logRecoveryAuditEvent(supabaseAdmin, {
+    eventType: 'recovery_password_reset_started',
+    ip,
+  });
+
+  // 2. CSRF & Origin validation
+  const csrfCheck = validateOriginAndCSRF({
+    method: params.method,
+    origin: params.origin,
+    referer: params.referer,
+    secFetchSite: params.secFetchSite,
+  });
+
+  if (!csrfCheck.valid) {
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'recovery_password_reset_failed',
+      ip,
+    });
+    return {
+      success: false,
+      status: 403,
+      body: {
+        error: 'CSRF_VALIDATION_FAILED',
+        message: 'Cross-origin request forbidden.',
+      },
+    };
+  }
+
+  // 3. Strict rate limiting check on IP
+  const isBlocked = await isRateLimited(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
+  if (isBlocked) {
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'recovery_password_reset_failed',
+      ip,
+    });
+    return {
+      success: false,
+      status: 429,
+      body: GENERIC_RATE_LIMIT_ERROR,
+    };
+  }
+
+  // 4. Validate recovery ticket presence (from cookie only)
+  const ticket = (params.ticket || '').trim();
+  if (!ticket || ticket.length !== 64) {
+    await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'recovery_password_reset_failed',
+      ip,
+    });
+    return {
+      success: false,
+      status: 400,
+      body: {
+        error: 'INVALID_RECOVERY_TICKET',
+        message: 'Invalid or missing recovery ticket.',
+      },
+    };
+  }
+
+  // 5. Validate new password and confirmation BEFORE consuming ticket
+  // If the user makes a typo in password confirmation, we do NOT consume their single-use recovery ticket!
+  const newPassword = params.newPassword || '';
+  const confirmPassword = params.confirmPassword || '';
+
+  if (!newPassword || newPassword.length < 6) {
+    await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
+    return {
+      success: false,
+      status: 400,
+      body: {
+        error: 'INVALID_PASSWORD',
+        message: 'Password must be at least 6 characters.',
+      },
+    };
+  }
+
+  if (newPassword !== confirmPassword) {
+    await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
+    return {
+      success: false,
+      status: 400,
+      body: {
+        error: 'PASSWORD_CONFIRMATION_MISMATCH',
+        message: 'Password confirmation does not match.',
+      },
+    };
+  }
+
+  // 6. Compute ticket hash & atomically consume ticket
+  const ticketHash = await hashTicketSecret(ticket);
+  const consumption = await atomicallyConsumeRecoveryTicket(supabaseAdmin, ticketHash);
+
+  if (!consumption.success || !consumption.userId) {
+    await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'recovery_password_reset_failed',
+      ip,
+    });
+    return {
+      success: false,
+      status: 400,
+      body: {
+        error: 'INVALID_RECOVERY_TICKET',
+        message: 'Invalid or expired recovery session.',
+      },
+    };
+  }
+
+  const userId = consumption.userId;
+  await logRecoveryAuditEvent(supabaseAdmin, {
+    eventType: 'recovery_ticket_consumed',
+    userId,
+    ticketId: consumption.ticketId,
+    ip,
+  });
+
+  // 7. Update user's password in Supabase Auth (preserving Google/GitHub identities)
+  try {
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
+    );
+
+    if (updateError) {
+      console.error('[recovery] Supabase auth password update error');
+      await logRecoveryAuditEvent(supabaseAdmin, {
+        eventType: 'recovery_password_reset_failed',
+        userId,
+        ip,
+      });
+      return {
+        success: false,
+        status: 500,
+        body: {
+          error: 'PASSWORD_RESET_FAILED',
+          message: 'Unable to update password. Please try again.',
+        },
+      };
+    }
+  } catch (err: any) {
+    console.error('[recovery] Unexpected error during password update');
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'recovery_password_reset_failed',
+      userId,
+      ip,
+    });
+    return {
+      success: false,
+      status: 500,
+      body: {
+        error: 'PASSWORD_RESET_FAILED',
+        message: 'Unable to update password. Please try again.',
+      },
+    };
+  }
+
+  // 8. Revoke all previous sessions and remaining recovery tickets
+  await revokeUserSessions(supabaseAdmin, userId);
+  await logRecoveryAuditEvent(supabaseAdmin, {
+    eventType: 'sessions_revoked_after_recovery',
+    userId,
+    ip,
+  });
+
+  // 9. Reset rate limit for IP on success
+  await resetRateLimit(supabaseAdmin, ipKey);
+
+  await logRecoveryAuditEvent(supabaseAdmin, {
+    eventType: 'recovery_password_reset_succeeded',
+    userId,
+    ip,
+  });
+
+  return {
+    success: true,
+    status: 200,
+    body: {
+      success: true,
+      message: 'Password reset successfully.',
+    },
+  };
+}
