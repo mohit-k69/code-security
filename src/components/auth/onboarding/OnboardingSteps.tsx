@@ -19,6 +19,7 @@ export interface OnboardingEmailStepProps {
   handleGoogleSignIn: () => void;
   isGoogleLoading?: boolean;
   setShowForgotPassword: (val: boolean) => void;
+  setShowRecoveryFlow: (val: boolean) => void;
   setForgotEmail: (val: string) => void;
   setForgotError: (val: string) => void;
   setForgotSuccess: (val: boolean) => void;
@@ -32,7 +33,7 @@ export function OnboardingEmailStep({
   email, setEmail, password, setPassword,
   emailError, setEmailError, isLoading, handleEmailContinue,
   handleGithubSignIn, handleGoogleSignIn, isGoogleLoading = false,
-  setShowForgotPassword, setForgotEmail,
+  setShowForgotPassword, setShowRecoveryFlow, setForgotEmail,
   setForgotError, setForgotSuccess,
   isCheckingEmail = false, isDuplicateEmail = false, onEmailBlur
 }: OnboardingEmailStepProps) {
@@ -329,11 +330,12 @@ export function OnboardingEmailStep({
                 id="forgot-password-link"
                 type="button"
                 onClick={() => {
-                  setShowForgotPassword(true);
+                  setShowForgotPassword(false);
                   setForgotEmail(email);
                   setForgotError('');
                   setForgotSuccess(false);
                   setEmailError('');
+                  setShowRecoveryFlow(true);
                 }}
                 className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-3 self-center cursor-pointer"
               >

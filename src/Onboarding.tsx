@@ -534,6 +534,7 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         handleGoogleSignIn={handleGoogleSignIn}
         isGoogleLoading={isGoogleLoading}
         setShowForgotPassword={setShowForgotPassword}
+        setShowRecoveryFlow={setShowRecoveryFlow}
         setForgotEmail={setForgotEmail}
         setForgotError={setForgotError}
         setForgotSuccess={setForgotSuccess}
