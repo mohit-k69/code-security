@@ -10,8 +10,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/test-recovery-codes-phase1.ts",
-    "test:recovery-codes": "tsx scripts/test-recovery-codes-phase1.ts"
+    "test": "tsx scripts/test-recovery-codes-phase1.ts && tsx scripts/test-recovery-verification-phase2.ts",
+    "test:recovery-codes": "tsx scripts/test-recovery-codes-phase1.ts",
+    "test:recovery-verification": "tsx scripts/test-recovery-verification-phase2.ts"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

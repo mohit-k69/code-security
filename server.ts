@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { checkAuthEmailExists, getSupabaseAdmin } from "./src/lib/authCheck";
 import { generateAndStoreRecoveryCodes } from "./src/lib/recoveryCodes";
+import { handleRecoveryVerification } from "./src/lib/recoveryVerification";
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -120,6 +121,55 @@ async function startServer() {
     } catch (err: any) {
       console.error("[recovery-codes] generation endpoint error");
       return res.status(500).json({ error: "RECOVERY_CODES_GENERATION_FAILED" });
+    }
+  });
+
+  // Verify recovery code endpoint (trusted server backend)
+  app.all("/api/auth/recovery/verify", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: "ADMIN_SERVICE_UNAVAILABLE" });
+    }
+
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown-ip";
+
+    const email = req.body?.email || req.body?.identifier;
+    const code = req.body?.code;
+
+    try {
+      const result = await handleRecoveryVerification(admin, {
+        identifier: email,
+        code,
+        ip,
+      });
+
+      if (result.success && result.body.recovery_ticket) {
+        res.cookie("recovery_ticket", result.body.recovery_ticket, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/api/auth/recovery",
+          maxAge: (result.body.expires_in || 900) * 1000,
+        });
+      }
+
+      return res.status(result.status).json(result.body);
+    } catch (err: any) {
+      console.error("[recovery-verification] endpoint error");
+      return res.status(500).json({ error: "RECOVERY_VERIFICATION_FAILED" });
     }
   });
 
