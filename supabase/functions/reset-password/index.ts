@@ -192,6 +192,7 @@ Deno.serve(async (req) => {
 
       // Ambiguous outcome: attempt reconciliation probe
       let reconciled = false;
+      let tempAccessToken: string | null = null;
       try {
         const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
         if (userData?.user?.email) {
@@ -201,10 +202,19 @@ Deno.serve(async (req) => {
           });
           if (!probe.error && probe.data?.session) {
             reconciled = true;
+            tempAccessToken = probe.data.session.access_token || null;
           }
         }
       } catch {
         // Probe inconclusive
+      } finally {
+        if (tempAccessToken) {
+          try {
+            await supabaseAdmin.auth.admin.signOut(tempAccessToken, 'local');
+          } catch {
+            // Ignore non-fatal immediate local sign-out
+          }
+        }
       }
 
       if (!reconciled) {

@@ -10,12 +10,13 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/test-recovery-codes-phase1.ts && tsx scripts/test-recovery-verification-phase2.ts && tsx scripts/test-recovery-phase2-correction.ts && tsx scripts/test-recovery-password-reset-phase3.ts && tsx scripts/test-recovery-ambiguous-phase3-2.ts",
+    "test": "tsx scripts/test-recovery-codes-phase1.ts && tsx scripts/test-recovery-verification-phase2.ts && tsx scripts/test-recovery-phase2-correction.ts && tsx scripts/test-recovery-password-reset-phase3.ts && tsx scripts/test-recovery-ambiguous-phase3-2.ts && tsx scripts/test-recovery-reconciliation-audit-phase3-3.ts",
     "test:recovery-codes": "tsx scripts/test-recovery-codes-phase1.ts",
     "test:recovery-verification": "tsx scripts/test-recovery-verification-phase2.ts",
     "test:recovery-correction": "tsx scripts/test-recovery-phase2-correction.ts",
     "test:recovery-reset": "tsx scripts/test-recovery-password-reset-phase3.ts",
-    "test:recovery-ambiguous": "tsx scripts/test-recovery-ambiguous-phase3-2.ts"
+    "test:recovery-ambiguous": "tsx scripts/test-recovery-ambiguous-phase3-2.ts",
+    "test:recovery-audit": "tsx scripts/test-recovery-reconciliation-audit-phase3-3.ts"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

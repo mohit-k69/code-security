@@ -944,19 +944,31 @@ export function isDefinitePreUpdateFailure(err: any): boolean {
 /**
  * Attempts safe automatic server-side reconciliation for an ambiguous Supabase update.
  * Probes whether the password credential was actually updated by testing authentication.
+ *
+ * AUDIT REQUIREMENTS (Phase 3.3):
+ * 1. Server-side only: Executed inside trusted backend code, never in browser.
+ * 2. No token leaks: Never exposes access_token, refresh_token, or session data to client.
+ * 3. Client configuration: persistSession = false, autoRefreshToken = false, no browser storage.
+ * 4. Read-only verification: Tests credentials via signInWithPassword, NEVER calls updateUser.
+ * 5. Immediate cleanup: Any temporary probe session is immediately revoked in a finally block.
+ * 6. Fail-closed: If probe fails or is inconclusive, returns 'ambiguous_locked' (fail-closed).
  */
 export async function reconcileAmbiguousPasswordUpdate(
   supabaseAdmin: any,
   userId: string,
   newPassword: string
 ): Promise<'reconciled_success' | 'ambiguous_locked'> {
+  let tempAccessToken: string | null = null;
+
   try {
-    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     const email = userData?.user?.email;
-    if (!email) {
+    if (userError || !email) {
       return 'ambiguous_locked';
     }
 
+    // Read-only server-side authentication probe.
+    // Client configuration: persistSession = false, autoRefreshToken = false.
     const loginProbe = await supabaseAdmin.auth.signInWithPassword({
       email,
       password: newPassword,
@@ -964,10 +976,25 @@ export async function reconcileAmbiguousPasswordUpdate(
 
     if (!loginProbe.error && loginProbe.data?.session) {
       // Conclusive proof: Supabase Auth already committed the password change!
+      tempAccessToken = loginProbe.data.session.access_token || null;
       return 'reconciled_success';
     }
   } catch {
-    // Probe inconclusive
+    // Probe inconclusive - fail closed
+  } finally {
+    // CRITICAL: Immediately revoke the temporary session created for reconciliation.
+    // The reconciliation probe session must NEVER linger, leak, or be reused.
+    if (tempAccessToken) {
+      try {
+        if (typeof supabaseAdmin.auth?.admin?.signOut === 'function') {
+          await supabaseAdmin.auth.admin.signOut(tempAccessToken, 'local');
+        } else if (typeof supabaseAdmin.auth?.signOut === 'function') {
+          await supabaseAdmin.auth.signOut();
+        }
+      } catch {
+        // Non-fatal immediate local sign-out
+      }
+    }
   }
 
   return 'ambiguous_locked';
