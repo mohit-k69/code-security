@@ -228,8 +228,8 @@ async function startServer() {
         method: req.method,
       });
 
-      if (result.success) {
-        // Clear recovery_ticket cookie immediately upon successful reset
+      if (result.success || (result.status === 400 && result.body?.error === "INVALID_RECOVERY_TICKET")) {
+        // Clear recovery_ticket cookie immediately upon reset or when invalid/consumed
         const isProduction = process.env.NODE_ENV === "production";
         const isSecure = isProduction || req.secure || req.headers["x-forwarded-proto"] === "https";
 

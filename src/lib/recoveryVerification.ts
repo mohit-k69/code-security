@@ -635,6 +635,190 @@ export function validateOriginAndCSRF(params: {
 }
 
 /**
+ * Atomically claims a recovery ticket with a short-lived server lease (default 30s).
+ * Prevents concurrent requests from processing the same ticket simultaneously.
+ */
+export async function atomicallyClaimRecoveryTicket(
+  supabaseAdmin: any,
+  ticketHash: string,
+  leaseSeconds: number = 30
+): Promise<{
+  success: boolean;
+  userId?: string;
+  ticketId?: string;
+  claimId?: string;
+  alreadyUpdated?: boolean;
+}> {
+  // 1. Try atomic database stored procedure with FOR UPDATE SKIP LOCKED
+  try {
+    const { data, error } = await supabaseAdmin.rpc('claim_recovery_ticket_atomic', {
+      p_ticket_hash: ticketHash,
+      p_lease_seconds: leaseSeconds,
+    });
+    if (!error && Array.isArray(data) && data.length > 0) {
+      return {
+        success: true,
+        userId: data[0].user_id,
+        ticketId: data[0].ticket_id || data[0].id,
+        claimId: data[0].claim_id,
+        alreadyUpdated: Boolean(data[0].already_updated),
+      };
+    }
+    if (!error && data && data.user_id) {
+      return {
+        success: true,
+        userId: data.user_id,
+        ticketId: data.ticket_id || data.id,
+        claimId: data.claim_id,
+        alreadyUpdated: Boolean(data.already_updated),
+      };
+    }
+    if (!error && Array.isArray(data) && data.length === 0) {
+      return { success: false };
+    }
+  } catch {
+    // Fall back to direct conditional update
+  }
+
+  // 2. Direct conditional UPDATE in PostgreSQL with lease condition:
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const claimExpiresIso = new Date(now.getTime() + leaseSeconds * 1000).toISOString();
+  const claimId = crypto.randomUUID();
+
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_tickets')
+    .update({
+      claimed_at: nowIso,
+      claim_expires_at: claimExpiresIso,
+      claim_id: claimId,
+    })
+    .eq('ticket_hash', ticketHash)
+    .is('consumed_at', null)
+    .is('revoked_at', null)
+    .gt('expires_at', nowIso)
+    .select('id, user_id, password_updated_at');
+
+  if (error || !data || data.length === 0) {
+    return { success: false };
+  }
+
+  return {
+    success: true,
+    userId: data[0].user_id,
+    ticketId: data[0].id,
+    claimId,
+    alreadyUpdated: Boolean(data[0].password_updated_at),
+  };
+}
+
+/**
+ * Safely releases an active ticket claim if a transient failure occurred
+ * before password update took effect. Preserves recovery ticket availability.
+ */
+export async function releaseRecoveryTicketClaim(
+  supabaseAdmin: any,
+  ticketId: string,
+  claimId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('release_recovery_ticket_claim', {
+      p_ticket_id: ticketId,
+      p_claim_id: claimId,
+    });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+  } catch {
+    // Fall back
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_tickets')
+    .update({
+      claimed_at: null,
+      claim_expires_at: null,
+      claim_id: null,
+    })
+    .eq('id', ticketId)
+    .eq('claim_id', claimId)
+    .is('consumed_at', null)
+    .is('password_updated_at', null)
+    .select('id');
+
+  return !error && Array.isArray(data) && data.length > 0;
+}
+
+/**
+ * Records that the password update in Supabase Auth succeeded,
+ * entering the point of no return for this recovery ticket.
+ */
+export async function recordRecoveryPasswordUpdated(
+  supabaseAdmin: any,
+  ticketId: string,
+  claimId: string
+): Promise<boolean> {
+  const nowIso = new Date().toISOString();
+  try {
+    const { data, error } = await supabaseAdmin.rpc('record_recovery_password_updated', {
+      p_ticket_id: ticketId,
+      p_claim_id: claimId,
+    });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+  } catch {
+    // Fall back
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_tickets')
+    .update({
+      password_updated_at: nowIso,
+    })
+    .eq('id', ticketId)
+    .eq('claim_id', claimId)
+    .is('consumed_at', null)
+    .select('id');
+
+  return !error && Array.isArray(data) && data.length > 0;
+}
+
+/**
+ * Atomically finalizes recovery ticket consumption after successful password reset.
+ */
+export async function finalizeRecoveryTicket(
+  supabaseAdmin: any,
+  ticketId: string,
+  claimId: string
+): Promise<boolean> {
+  const nowIso = new Date().toISOString();
+  try {
+    const { data, error } = await supabaseAdmin.rpc('finalize_recovery_ticket_atomic', {
+      p_ticket_id: ticketId,
+      p_claim_id: claimId,
+    });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+  } catch {
+    // Fall back
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_tickets')
+    .update({
+      consumed_at: nowIso,
+      claim_expires_at: null,
+    })
+    .eq('id', ticketId)
+    .is('consumed_at', null)
+    .select('id');
+
+  return !error && Array.isArray(data) && data.length > 0;
+}
+
+/**
  * Atomically consumes a recovery ticket to prevent replay and race conditions.
  * Two simultaneous requests with the same ticket can only succeed ONCE.
  */
@@ -859,11 +1043,11 @@ export async function handlePasswordResetWithTicket(
     };
   }
 
-  // 6. Compute ticket hash & atomically consume ticket
+  // 6. Compute ticket hash & atomically claim ticket (short-lived lease, e.g. 30 seconds)
   const ticketHash = await hashTicketSecret(ticket);
-  const consumption = await atomicallyConsumeRecoveryTicket(supabaseAdmin, ticketHash);
+  const claim = await atomicallyClaimRecoveryTicket(supabaseAdmin, ticketHash, 30);
 
-  if (!consumption.success || !consumption.userId) {
+  if (!claim.success || !claim.userId || !claim.ticketId || !claim.claimId) {
     await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
     await logRecoveryAuditEvent(supabaseAdmin, {
       eventType: 'recovery_password_reset_failed',
@@ -874,20 +1058,41 @@ export async function handlePasswordResetWithTicket(
       status: 400,
       body: {
         error: 'INVALID_RECOVERY_TICKET',
-        message: 'Invalid or expired recovery session.',
+        message: 'Invalid, expired, or actively claimed recovery session.',
       },
     };
   }
 
-  const userId = consumption.userId;
-  await logRecoveryAuditEvent(supabaseAdmin, {
-    eventType: 'recovery_ticket_consumed',
-    userId,
-    ticketId: consumption.ticketId,
-    ip,
-  });
+  const { userId, ticketId, claimId, alreadyUpdated } = claim;
 
-  // 7. Update user's password in Supabase Auth (preserving Google/GitHub identities)
+  // 7. Check for idempotent retry: password was ALREADY updated in Supabase Auth
+  // (e.g. failure window B where Supabase succeeded but network failed right before finalization)
+  if (alreadyUpdated) {
+    await finalizeRecoveryTicket(supabaseAdmin, ticketId, claimId);
+    try {
+      await revokeUserSessions(supabaseAdmin, userId);
+    } catch {
+      // Non-fatal
+    }
+    await resetRateLimit(supabaseAdmin, ipKey);
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'recovery_password_reset_succeeded_idempotent',
+      userId,
+      ticketId,
+      ip,
+    });
+    return {
+      success: true,
+      status: 200,
+      body: {
+        success: true,
+        message: 'Password reset successfully.',
+      },
+    };
+  }
+
+  // 8. Update user's password in Supabase Auth (preserving Google/GitHub identities)
+  let passwordUpdateSucceeded = false;
   try {
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
@@ -896,9 +1101,15 @@ export async function handlePasswordResetWithTicket(
 
     if (updateError) {
       console.error('[recovery] Supabase auth password update error');
+      // Failure Window A: Database claim succeeded, Supabase password update failed.
+      // Transient backend failure must NOT destroy user's recovery capability!
+      // Safely release the ticket claim so the user can retry.
+      await releaseRecoveryTicketClaim(supabaseAdmin, ticketId, claimId);
+      await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
       await logRecoveryAuditEvent(supabaseAdmin, {
         eventType: 'recovery_password_reset_failed',
         userId,
+        ticketId,
         ip,
       });
       return {
@@ -910,11 +1121,19 @@ export async function handlePasswordResetWithTicket(
         },
       };
     }
+
+    passwordUpdateSucceeded = true;
   } catch (err: any) {
     console.error('[recovery] Unexpected error during password update');
+    // If password was NOT updated, safely release the claim
+    if (!passwordUpdateSucceeded) {
+      await releaseRecoveryTicketClaim(supabaseAdmin, ticketId, claimId);
+    }
+    await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
     await logRecoveryAuditEvent(supabaseAdmin, {
       eventType: 'recovery_password_reset_failed',
       userId,
+      ticketId,
       ip,
     });
     return {
@@ -927,20 +1146,38 @@ export async function handlePasswordResetWithTicket(
     };
   }
 
-  // 8. Revoke all previous sessions and remaining recovery tickets
-  await revokeUserSessions(supabaseAdmin, userId);
+  // 9. Point of no return: Supabase password update succeeded!
+  // Persist that password update succeeded and atomically finalize consumption
+  await recordRecoveryPasswordUpdated(supabaseAdmin, ticketId, claimId);
+  await finalizeRecoveryTicket(supabaseAdmin, ticketId, claimId);
+
   await logRecoveryAuditEvent(supabaseAdmin, {
-    eventType: 'sessions_revoked_after_recovery',
+    eventType: 'recovery_ticket_consumed',
     userId,
+    ticketId,
     ip,
   });
 
-  // 9. Reset rate limit for IP on success
+  // 10. Revoke all previous sessions and remaining recovery tickets
+  try {
+    await revokeUserSessions(supabaseAdmin, userId);
+    await logRecoveryAuditEvent(supabaseAdmin, {
+      eventType: 'sessions_revoked_after_recovery',
+      userId,
+      ticketId,
+      ip,
+    });
+  } catch (revokeErr) {
+    console.error('[recovery] Warning: session revocation error after successful reset');
+  }
+
+  // 11. Reset rate limit for IP on success
   await resetRateLimit(supabaseAdmin, ipKey);
 
   await logRecoveryAuditEvent(supabaseAdmin, {
     eventType: 'recovery_password_reset_succeeded',
     userId,
+    ticketId,
     ip,
   });
 

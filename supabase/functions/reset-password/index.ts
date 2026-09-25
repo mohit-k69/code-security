@@ -85,45 +85,80 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 5. Atomic ticket consumption
+    // 5. Atomic ticket claim (short-lived lease, e.g. 30s)
     const ticketHash = await hashTicketSecret(ticket);
     const nowIso = new Date().toISOString();
 
     let userId: string | null = null;
     let ticketId: string | null = null;
+    let claimId: string | null = null;
+    let alreadyUpdated = false;
 
     try {
-      const { data: rpcData } = await supabaseAdmin.rpc('consume_recovery_ticket_atomic', {
+      const { data: rpcData } = await supabaseAdmin.rpc('claim_recovery_ticket_atomic', {
         p_ticket_hash: ticketHash,
+        p_lease_seconds: 30,
       });
       if (Array.isArray(rpcData) && rpcData.length > 0) {
         userId = rpcData[0].user_id;
         ticketId = rpcData[0].ticket_id;
+        claimId = rpcData[0].claim_id;
+        alreadyUpdated = Boolean(rpcData[0].already_updated);
       }
     } catch {
       // Fallback
     }
 
     if (!userId) {
+      const leaseExpiresIso = new Date(Date.now() + 30 * 1000).toISOString();
+      const generatedClaimId = crypto.randomUUID();
+
       const { data: updated } = await supabaseAdmin
         .from('user_recovery_tickets')
-        .update({ consumed_at: nowIso })
+        .update({
+          claimed_at: nowIso,
+          claim_expires_at: leaseExpiresIso,
+          claim_id: generatedClaimId,
+        })
         .eq('ticket_hash', ticketHash)
         .is('consumed_at', null)
         .is('revoked_at', null)
         .gt('expires_at', nowIso)
-        .select('id, user_id');
+        .select('id, user_id, password_updated_at');
 
       if (updated && updated.length > 0) {
         userId = updated[0].user_id;
         ticketId = updated[0].id;
+        claimId = generatedClaimId;
+        alreadyUpdated = Boolean(updated[0].password_updated_at);
       }
     }
 
-    if (!userId) {
+    if (!userId || !ticketId || !claimId) {
       return new Response(
-        JSON.stringify({ error: 'INVALID_RECOVERY_TICKET', message: 'Invalid or expired recovery session.' }),
+        JSON.stringify({ error: 'INVALID_RECOVERY_TICKET', message: 'Invalid, expired, or actively claimed recovery session.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Idempotent recovery if password was already updated
+    if (alreadyUpdated) {
+      await supabaseAdmin.rpc('finalize_recovery_ticket_atomic', {
+        p_ticket_id: ticketId,
+        p_claim_id: claimId,
+      }).catch(() => {});
+      await supabaseAdmin.rpc('revoke_user_sessions_after_recovery', { p_user_id: userId }).catch(() => {});
+      const clearCookieHeader = 'recovery_ticket=; Path=/api/auth/recovery; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      return new Response(
+        JSON.stringify({ success: true, message: 'Password reset successfully.' }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Set-Cookie': clearCookieHeader,
+          },
+          status: 200,
+        }
       );
     }
 
@@ -134,13 +169,41 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error('[reset-password] Error updating password in Supabase Auth');
+      // Release claim so user's recovery capability is NOT destroyed by transient failure
+      await supabaseAdmin.rpc('release_recovery_ticket_claim', {
+        p_ticket_id: ticketId,
+        p_claim_id: claimId,
+      }).catch(() => {
+        return supabaseAdmin
+          .from('user_recovery_tickets')
+          .update({ claimed_at: null, claim_expires_at: null, claim_id: null })
+          .eq('id', ticketId)
+          .eq('claim_id', claimId);
+      });
+
       return new Response(
         JSON.stringify({ error: 'PASSWORD_RESET_FAILED', message: 'Unable to update password. Please try again.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    // 7. Revoke sessions & remaining tickets
+    // 7. Finalize ticket consumption permanently
+    await supabaseAdmin.rpc('record_recovery_password_updated', {
+      p_ticket_id: ticketId,
+      p_claim_id: claimId,
+    }).catch(() => {});
+
+    await supabaseAdmin.rpc('finalize_recovery_ticket_atomic', {
+      p_ticket_id: ticketId,
+      p_claim_id: claimId,
+    }).catch(() => {
+      return supabaseAdmin
+        .from('user_recovery_tickets')
+        .update({ consumed_at: nowIso, claim_expires_at: null })
+        .eq('id', ticketId);
+    });
+
+    // 8. Revoke sessions & remaining tickets
     try {
       await supabaseAdmin.rpc('revoke_user_sessions_after_recovery', { p_user_id: userId });
     } catch {

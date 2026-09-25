@@ -1,8 +1,175 @@
 -- Migration: Password reset and session revocation via restricted recovery tickets
--- Phase 3: Secure password reset, atomic ticket consumption, and session invalidation
+-- Phase 3: Secure password reset, atomic ticket lease/claim, and session invalidation
 
--- 1. Atomic recovery-ticket consumption function
--- Ensures two concurrent requests cannot both consume the same recovery ticket
+-- 1. Extend user_recovery_tickets schema for resilient ticket leasing
+ALTER TABLE public.user_recovery_tickets
+    ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ NULL,
+    ADD COLUMN IF NOT EXISTS claim_expires_at TIMESTAMPTZ NULL,
+    ADD COLUMN IF NOT EXISTS claim_id UUID NULL,
+    ADD COLUMN IF NOT EXISTS password_updated_at TIMESTAMPTZ NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_recovery_tickets_claim
+    ON public.user_recovery_tickets(ticket_hash, claim_expires_at)
+    WHERE consumed_at IS NULL AND revoked_at IS NULL;
+
+-- 2. Atomic recovery-ticket claim/lease function
+-- Ensures two concurrent requests cannot claim the same ticket simultaneously.
+-- Acquires a short-lived server-controlled lease (e.g. 30 seconds).
+CREATE OR REPLACE FUNCTION public.claim_recovery_ticket_atomic(
+    p_ticket_hash TEXT,
+    p_lease_seconds INT DEFAULT 30
+)
+RETURNS TABLE (
+    ticket_id UUID,
+    user_id UUID,
+    claim_id UUID,
+    already_updated BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_claim_id UUID := gen_random_uuid();
+    v_lease_seconds INT := COALESCE(p_lease_seconds, 30);
+    v_ticket_id UUID;
+    v_user_id UUID;
+    v_already_updated BOOLEAN := FALSE;
+BEGIN
+    -- Clamp lease seconds between 5 and 60 seconds (server-controlled)
+    IF v_lease_seconds < 5 THEN
+        v_lease_seconds := 5;
+    ELSIF v_lease_seconds > 60 THEN
+        v_lease_seconds := 60;
+    END IF;
+
+    -- Select and lock eligible ticket row
+    SELECT id, user_recovery_tickets.user_id, (password_updated_at IS NOT NULL)
+    INTO v_ticket_id, v_user_id, v_already_updated
+    FROM public.user_recovery_tickets
+    WHERE ticket_hash = p_ticket_hash
+      AND consumed_at IS NULL
+      AND revoked_at IS NULL
+      AND expires_at > now()
+      AND (claim_expires_at IS NULL OR claim_expires_at < now() OR password_updated_at IS NOT NULL)
+    FOR UPDATE SKIP LOCKED
+    LIMIT 1;
+
+    IF v_ticket_id IS NOT NULL THEN
+        UPDATE public.user_recovery_tickets
+        SET claimed_at = now(),
+            claim_expires_at = now() + (v_lease_seconds || ' seconds')::interval,
+            claim_id = v_claim_id
+        WHERE id = v_ticket_id;
+
+        RETURN QUERY SELECT v_ticket_id, v_user_id, v_claim_id, v_already_updated;
+    END IF;
+END;
+$$;
+
+-- Secure the ticket claim function
+REVOKE ALL ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) FROM anon;
+REVOKE ALL ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) TO postgres;
+
+-- 3. Safely release a claim if password update fails before completion
+CREATE OR REPLACE FUNCTION public.release_recovery_ticket_claim(
+    p_ticket_id UUID,
+    p_claim_id UUID
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_updated INT;
+BEGIN
+    -- Only release if password was NOT updated yet and ticket is unconsumed
+    UPDATE public.user_recovery_tickets
+    SET claimed_at = NULL,
+        claim_expires_at = NULL,
+        claim_id = NULL
+    WHERE id = p_ticket_id
+      AND claim_id = p_claim_id
+      AND consumed_at IS NULL
+      AND password_updated_at IS NULL;
+
+    GET DIAGNOSTICS v_updated = ROW_COUNT;
+    RETURN (v_updated > 0);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) TO postgres;
+
+-- 4. Record password update succeeded before final ticket consumption
+CREATE OR REPLACE FUNCTION public.record_recovery_password_updated(
+    p_ticket_id UUID,
+    p_claim_id UUID
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_updated INT;
+BEGIN
+    UPDATE public.user_recovery_tickets
+    SET password_updated_at = now()
+    WHERE id = p_ticket_id
+      AND claim_id = p_claim_id
+      AND consumed_at IS NULL;
+
+    GET DIAGNOSTICS v_updated = ROW_COUNT;
+    RETURN (v_updated > 0);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.record_recovery_password_updated(UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.record_recovery_password_updated(UUID, UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.record_recovery_password_updated(UUID, UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.record_recovery_password_updated(UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.record_recovery_password_updated(UUID, UUID) TO postgres;
+
+-- 5. Finalize ticket consumption permanently
+CREATE OR REPLACE FUNCTION public.finalize_recovery_ticket_atomic(
+    p_ticket_id UUID,
+    p_claim_id UUID
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_updated INT;
+BEGIN
+    UPDATE public.user_recovery_tickets
+    SET consumed_at = now(),
+        claim_expires_at = NULL
+    WHERE id = p_ticket_id
+      AND (claim_id = p_claim_id OR password_updated_at IS NOT NULL)
+      AND consumed_at IS NULL;
+
+    GET DIAGNOSTICS v_updated = ROW_COUNT;
+    RETURN (v_updated > 0);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.finalize_recovery_ticket_atomic(UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.finalize_recovery_ticket_atomic(UUID, UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.finalize_recovery_ticket_atomic(UUID, UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.finalize_recovery_ticket_atomic(UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.finalize_recovery_ticket_atomic(UUID, UUID) TO postgres;
+
+-- 6. Atomic recovery-ticket consumption function (backward compatibility)
 CREATE OR REPLACE FUNCTION public.consume_recovery_ticket_atomic(
     p_ticket_hash TEXT
 )
@@ -25,6 +192,7 @@ BEGIN
           AND consumed_at IS NULL
           AND revoked_at IS NULL
           AND expires_at > now()
+          AND (claim_expires_at IS NULL OR claim_expires_at < now())
         FOR UPDATE SKIP LOCKED
         LIMIT 1
     )
