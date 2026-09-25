@@ -2,7 +2,8 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { checkAuthEmailExists } from "./src/lib/authCheck";
+import { checkAuthEmailExists, getSupabaseAdmin } from "./src/lib/authCheck";
+import { generateAndStoreRecoveryCodes } from "./src/lib/recoveryCodes";
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -80,6 +81,45 @@ async function startServer() {
       }
       console.error(`[check-email] error in /api/auth/check-email (${errorDuration}ms):`, err);
       return res.status(500).json({ error: "EMAIL_CHECK_FAILED" });
+    }
+  });
+
+  // Generate secure one-time recovery codes endpoint (trusted server backend)
+  app.all("/api/auth/recovery-codes/generate", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Missing authorization header" });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: "ADMIN_SERVICE_UNAVAILABLE" });
+    }
+
+    try {
+      const { data: { user }, error: userError } = await admin.auth.getUser(token);
+      if (userError || !user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const codes = await generateAndStoreRecoveryCodes(admin, user.id);
+      return res.json({ success: true, count: codes.length, codes });
+    } catch (err: any) {
+      console.error("[recovery-codes] generation endpoint error");
+      return res.status(500).json({ error: "RECOVERY_CODES_GENERATION_FAILED" });
     }
   });
 
