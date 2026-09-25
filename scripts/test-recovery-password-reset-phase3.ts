@@ -149,6 +149,7 @@ function createPhase3MockAdmin() {
     claim_expires_at: string | null;
     claim_id: string | null;
     password_updated_at: string | null;
+    ambiguous_at: string | null;
   }[] = [];
 
   const auditLogs: { event_type: string; user_id?: string; ticket_id?: string; ip: string }[] = [];
@@ -170,6 +171,7 @@ function createPhase3MockAdmin() {
             t.ticket_hash === ticketHash &&
             t.consumed_at === null &&
             t.revoked_at === null &&
+            t.ambiguous_at === null &&
             new Date(t.expires_at).getTime() > now &&
             (t.claim_expires_at === null ||
               new Date(t.claim_expires_at).getTime() < now ||
@@ -199,10 +201,22 @@ function createPhase3MockAdmin() {
         const ticket = recoveryTickets.find(
           (t) => t.id === params.p_ticket_id && t.claim_id === params.p_claim_id
         );
-        if (ticket && !ticket.consumed_at && !ticket.password_updated_at) {
+        if (ticket && !ticket.consumed_at && !ticket.password_updated_at && !ticket.ambiguous_at) {
           ticket.claimed_at = null;
           ticket.claim_expires_at = null;
           ticket.claim_id = null;
+          return { data: true, error: null };
+        }
+        return { data: false, error: null };
+      }
+
+      if (func === 'mark_recovery_ticket_ambiguous') {
+        const ticket = recoveryTickets.find(
+          (t) => t.id === params.p_ticket_id && t.claim_id === params.p_claim_id
+        );
+        if (ticket && !ticket.consumed_at) {
+          ticket.ambiguous_at = new Date(now).toISOString();
+          ticket.claim_expires_at = null;
           return { data: true, error: null };
         }
         return { data: false, error: null };
@@ -240,6 +254,7 @@ function createPhase3MockAdmin() {
             t.ticket_hash === ticketHash &&
             t.consumed_at === null &&
             t.revoked_at === null &&
+            t.ambiguous_at === null &&
             new Date(t.expires_at).getTime() > now &&
             (t.claim_expires_at === null || new Date(t.claim_expires_at).getTime() < now)
         );
@@ -340,6 +355,7 @@ function createPhase3MockAdmin() {
               password_updated_at: null,
               consumed_at: null,
               revoked_at: null,
+              ambiguous_at: null,
               ...r,
             });
           }
@@ -1409,18 +1425,18 @@ async function runAllPhase3Tests() {
     });
     const ticket = verifyRes.ticket!;
 
-    // Simulate transient Supabase failure on 1st reset attempt
+    // Simulate definite GoTrue validation error on 1st reset attempt (pre-update failure)
     const originalUpdateUserById = admin.auth.admin.updateUserById;
     let attempts = 0;
     admin.auth.admin.updateUserById = async (id: string, updates: any) => {
       attempts++;
       if (attempts === 1) {
-        return { data: null, error: { message: 'Database connection timeout in Supabase GoTrue' } };
+        return { data: null, error: { status: 422, message: 'Password is too weak for policy' } };
       }
       return originalUpdateUserById(id, updates);
     };
 
-    // Attempt 1: Should fail due to Supabase error
+    // Attempt 1: Should fail due to definite validation rejection
     const firstAttempt = await handlePasswordResetWithTicket(admin, {
       ticket,
       newPassword: 'transient-failure-pwd-1',
@@ -1429,10 +1445,10 @@ async function runAllPhase3Tests() {
       ip: '192.168.1.32',
     });
 
-    assert(firstAttempt.success === false, 'First attempt must fail due to transient Supabase error');
-    assert(firstAttempt.status === 500, 'Expected 500');
+    assert(firstAttempt.success === false, 'First attempt must fail due to definite GoTrue error');
+    assert(firstAttempt.status === 400, 'Expected 400 for validation rejection');
 
-    // CRITICAL: The recovery ticket MUST NOT be permanently consumed!
+    // CRITICAL: The recovery ticket MUST NOT be permanently consumed, and claim is safely released
     const ticketRecord = admin._recoveryTickets[0];
     assert(ticketRecord.consumed_at === null, 'Ticket must NOT be consumed when password update failed');
     assert(ticketRecord.claim_id === null, 'Claim must be safely released so user can retry immediately');

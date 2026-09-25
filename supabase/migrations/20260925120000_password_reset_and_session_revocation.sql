@@ -1,16 +1,17 @@
 -- Migration: Password reset and session revocation via restricted recovery tickets
 -- Phase 3: Secure password reset, atomic ticket lease/claim, and session invalidation
 
--- 1. Extend user_recovery_tickets schema for resilient ticket leasing
+-- 1. Extend user_recovery_tickets schema for resilient ticket leasing and ambiguous outcome containment
 ALTER TABLE public.user_recovery_tickets
     ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ NULL,
     ADD COLUMN IF NOT EXISTS claim_expires_at TIMESTAMPTZ NULL,
     ADD COLUMN IF NOT EXISTS claim_id UUID NULL,
-    ADD COLUMN IF NOT EXISTS password_updated_at TIMESTAMPTZ NULL;
+    ADD COLUMN IF NOT EXISTS password_updated_at TIMESTAMPTZ NULL,
+    ADD COLUMN IF NOT EXISTS ambiguous_at TIMESTAMPTZ NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_recovery_tickets_claim
     ON public.user_recovery_tickets(ticket_hash, claim_expires_at)
-    WHERE consumed_at IS NULL AND revoked_at IS NULL;
+    WHERE consumed_at IS NULL AND revoked_at IS NULL AND ambiguous_at IS NULL;
 
 -- 2. Atomic recovery-ticket claim/lease function
 -- Ensures two concurrent requests cannot claim the same ticket simultaneously.
@@ -44,12 +45,14 @@ BEGIN
     END IF;
 
     -- Select and lock eligible ticket row
+    -- CRITICAL: ambiguous_at MUST be NULL (an ambiguous ticket can NEVER be re-claimed)
     SELECT id, user_recovery_tickets.user_id, (password_updated_at IS NOT NULL)
     INTO v_ticket_id, v_user_id, v_already_updated
     FROM public.user_recovery_tickets
     WHERE ticket_hash = p_ticket_hash
       AND consumed_at IS NULL
       AND revoked_at IS NULL
+      AND ambiguous_at IS NULL
       AND expires_at > now()
       AND (claim_expires_at IS NULL OR claim_expires_at < now() OR password_updated_at IS NOT NULL)
     FOR UPDATE SKIP LOCKED
@@ -74,7 +77,7 @@ REVOKE ALL ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) FROM authe
 GRANT EXECUTE ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_recovery_ticket_atomic(TEXT, INT) TO postgres;
 
--- 3. Safely release a claim if password update fails before completion
+-- 3. Safely release a claim ONLY if password update definitely failed before completion
 CREATE OR REPLACE FUNCTION public.release_recovery_ticket_claim(
     p_ticket_id UUID,
     p_claim_id UUID
@@ -87,7 +90,7 @@ AS $$
 DECLARE
     v_updated INT;
 BEGIN
-    -- Only release if password was NOT updated yet and ticket is unconsumed
+    -- Only release if password was NOT updated yet, ticket is unconsumed, AND NOT ambiguous
     UPDATE public.user_recovery_tickets
     SET claimed_at = NULL,
         claim_expires_at = NULL,
@@ -95,9 +98,50 @@ BEGIN
     WHERE id = p_ticket_id
       AND claim_id = p_claim_id
       AND consumed_at IS NULL
-      AND password_updated_at IS NULL;
+      AND password_updated_at IS NULL
+      AND ambiguous_at IS NULL;
 
     GET DIAGNOSTICS v_updated = ROW_COUNT;
+    RETURN (v_updated > 0);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) TO postgres;
+
+-- 4. Mark ticket as permanently ambiguous/locked when external outcome cannot be proven
+CREATE OR REPLACE FUNCTION public.mark_recovery_ticket_ambiguous(
+    p_ticket_id UUID,
+    p_claim_id UUID
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_updated INT;
+BEGIN
+    UPDATE public.user_recovery_tickets
+    SET ambiguous_at = now(),
+        claim_expires_at = NULL -- Permanently prevent lease expiration resurrection
+    WHERE id = p_ticket_id
+      AND claim_id = p_claim_id
+      AND consumed_at IS NULL;
+
+    GET DIAGNOSTICS v_updated = ROW_COUNT;
+    RETURN (v_updated > 0);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) TO postgres;
     RETURN (v_updated > 0);
 END;
 $$;
@@ -191,6 +235,7 @@ BEGIN
         WHERE ticket_hash = p_ticket_hash
           AND consumed_at IS NULL
           AND revoked_at IS NULL
+          AND ambiguous_at IS NULL
           AND expires_at > now()
           AND (claim_expires_at IS NULL OR claim_expires_at < now())
         FOR UPDATE SKIP LOCKED

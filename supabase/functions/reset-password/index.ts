@@ -169,22 +169,65 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error('[reset-password] Error updating password in Supabase Auth');
-      // Release claim so user's recovery capability is NOT destroyed by transient failure
-      await supabaseAdmin.rpc('release_recovery_ticket_claim', {
-        p_ticket_id: ticketId,
-        p_claim_id: claimId,
-      }).catch(() => {
-        return supabaseAdmin
-          .from('user_recovery_tickets')
-          .update({ claimed_at: null, claim_expires_at: null, claim_id: null })
-          .eq('id', ticketId)
-          .eq('claim_id', claimId);
-      });
+      const isDefinite = updateError.status === 400 || updateError.status === 422;
 
-      return new Response(
-        JSON.stringify({ error: 'PASSWORD_RESET_FAILED', message: 'Unable to update password. Please try again.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      if (isDefinite) {
+        // Definite validation failure: safely release claim
+        await supabaseAdmin.rpc('release_recovery_ticket_claim', {
+          p_ticket_id: ticketId,
+          p_claim_id: claimId,
+        }).catch(() => {
+          return supabaseAdmin
+            .from('user_recovery_tickets')
+            .update({ claimed_at: null, claim_expires_at: null, claim_id: null })
+            .eq('id', ticketId)
+            .eq('claim_id', claimId);
+        });
+
+        return new Response(
+          JSON.stringify({ error: 'INVALID_PASSWORD', message: updateError.message || 'Password validation failed.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      // Ambiguous outcome: attempt reconciliation probe
+      let reconciled = false;
+      try {
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (userData?.user?.email) {
+          const probe = await supabaseAdmin.auth.signInWithPassword({
+            email: userData.user.email,
+            password: newPassword,
+          });
+          if (!probe.error && probe.data?.session) {
+            reconciled = true;
+          }
+        }
+      } catch {
+        // Probe inconclusive
+      }
+
+      if (!reconciled) {
+        // Fail closed: lock ticket into ambiguous state permanently
+        await supabaseAdmin.rpc('mark_recovery_ticket_ambiguous', {
+          p_ticket_id: ticketId,
+          p_claim_id: claimId,
+        }).catch(() => {
+          return supabaseAdmin
+            .from('user_recovery_tickets')
+            .update({ ambiguous_at: nowIso, claim_expires_at: null })
+            .eq('id', ticketId)
+            .eq('claim_id', claimId);
+        });
+
+        return new Response(
+          JSON.stringify({
+            error: 'RECOVERY_TRANSACTION_UNCERTAIN',
+            message: 'Unable to verify password update status due to network uncertainty. For security, this recovery session has been locked. If your password was updated, please log in with your new password. Otherwise, please start a new recovery session using one of your remaining backup recovery codes.',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
     }
 
     // 7. Finalize ticket consumption permanently

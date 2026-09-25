@@ -696,6 +696,7 @@ export async function atomicallyClaimRecoveryTicket(
     .eq('ticket_hash', ticketHash)
     .is('consumed_at', null)
     .is('revoked_at', null)
+    .is('ambiguous_at', null)
     .gt('expires_at', nowIso)
     .select('id, user_id, password_updated_at');
 
@@ -713,7 +714,7 @@ export async function atomicallyClaimRecoveryTicket(
 }
 
 /**
- * Safely releases an active ticket claim if a transient failure occurred
+ * Safely releases an active ticket claim ONLY if a definite pre-update failure occurred
  * before password update took effect. Preserves recovery ticket availability.
  */
 export async function releaseRecoveryTicketClaim(
@@ -744,6 +745,45 @@ export async function releaseRecoveryTicketClaim(
     .eq('claim_id', claimId)
     .is('consumed_at', null)
     .is('password_updated_at', null)
+    .is('ambiguous_at', null)
+    .select('id');
+
+  return !error && Array.isArray(data) && data.length > 0;
+}
+
+/**
+ * Permanently locks a recovery ticket into the AMBIGUOUS_LOCKED state.
+ * Used when an external Supabase update request times out, drops connection,
+ * or returns an indeterminate error where we cannot guarantee whether the password changed.
+ * An ambiguous ticket is NEVER returned to available.
+ */
+export async function markRecoveryTicketAmbiguous(
+  supabaseAdmin: any,
+  ticketId: string,
+  claimId: string
+): Promise<boolean> {
+  const nowIso = new Date().toISOString();
+  try {
+    const { data, error } = await supabaseAdmin.rpc('mark_recovery_ticket_ambiguous', {
+      p_ticket_id: ticketId,
+      p_claim_id: claimId,
+    });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+  } catch {
+    // Fall back
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_tickets')
+    .update({
+      ambiguous_at: nowIso,
+      claim_expires_at: null, // Lock permanently - never auto-expire back to available
+    })
+    .eq('id', ticketId)
+    .eq('claim_id', claimId)
+    .is('consumed_at', null)
     .select('id');
 
   return !error && Array.isArray(data) && data.length > 0;
@@ -858,6 +898,7 @@ export async function atomicallyConsumeRecoveryTicket(
     .eq('ticket_hash', ticketHash)
     .is('consumed_at', null)
     .is('revoked_at', null)
+    .is('ambiguous_at', null)
     .gt('expires_at', nowIso)
     .select('id, user_id');
 
@@ -870,6 +911,66 @@ export async function atomicallyConsumeRecoveryTicket(
     userId: data[0].user_id,
     ticketId: data[0].id,
   };
+}
+
+/**
+ * Distinguishes definite pre-update validation failures from ambiguous outcomes.
+ * Only HTTP 400 / 422 client validation errors from GoTrue represent proven
+ * pre-update rejections where the password was definitely NOT updated.
+ * Network errors, timeouts, 5xx server errors, or indeterminate responses are AMBIGUOUS.
+ */
+export function isDefinitePreUpdateFailure(err: any): boolean {
+  if (!err) return false;
+  // HTTP status 400 or 422 represents pre-update validation rejection
+  if (err.status === 400 || err.status === 422) {
+    return true;
+  }
+  if (typeof err.message === 'string') {
+    const msg = err.message.toLowerCase();
+    if (
+      msg.includes('password should be') ||
+      msg.includes('password is too') ||
+      msg.includes('weak password') ||
+      msg.includes('user not found') ||
+      msg.includes('validation')
+    ) {
+      return true;
+    }
+  }
+  // Any network error, timeout, socket abort, or 5xx server error is NOT a definite failure
+  return false;
+}
+
+/**
+ * Attempts safe automatic server-side reconciliation for an ambiguous Supabase update.
+ * Probes whether the password credential was actually updated by testing authentication.
+ */
+export async function reconcileAmbiguousPasswordUpdate(
+  supabaseAdmin: any,
+  userId: string,
+  newPassword: string
+): Promise<'reconciled_success' | 'ambiguous_locked'> {
+  try {
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const email = userData?.user?.email;
+    if (!email) {
+      return 'ambiguous_locked';
+    }
+
+    const loginProbe = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password: newPassword,
+    });
+
+    if (!loginProbe.error && loginProbe.data?.session) {
+      // Conclusive proof: Supabase Auth already committed the password change!
+      return 'reconciled_success';
+    }
+  } catch {
+    // Probe inconclusive
+  }
+
+  return 'ambiguous_locked';
 }
 
 /**
@@ -1093,21 +1194,69 @@ export async function handlePasswordResetWithTicket(
 
   // 8. Update user's password in Supabase Auth (preserving Google/GitHub identities)
   let passwordUpdateSucceeded = false;
+  let rawUpdateError: any = null;
+
   try {
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       { password: newPassword }
     );
+    rawUpdateError = updateError;
+    if (!updateError) {
+      passwordUpdateSucceeded = true;
+    }
+  } catch (err: any) {
+    rawUpdateError = err;
+  }
 
-    if (updateError) {
-      console.error('[recovery] Supabase auth password update error');
-      // Failure Window A: Database claim succeeded, Supabase password update failed.
-      // Transient backend failure must NOT destroy user's recovery capability!
-      // Safely release the ticket claim so the user can retry.
+  if (!passwordUpdateSucceeded && rawUpdateError) {
+    console.error('[recovery] Supabase auth password update error occurred');
+
+    if (isDefinitePreUpdateFailure(rawUpdateError)) {
+      // DEFINITE PRE-UPDATE FAILURE:
+      // GoTrue rejected client validation (e.g. HTTP 400/422). Password was definitely NOT updated.
+      // Safely release the ticket claim so the user can correct the input and retry.
       await releaseRecoveryTicketClaim(supabaseAdmin, ticketId, claimId);
       await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
       await logRecoveryAuditEvent(supabaseAdmin, {
-        eventType: 'recovery_password_reset_failed',
+        eventType: 'recovery_password_update_rejected',
+        userId,
+        ticketId,
+        ip,
+      });
+      return {
+        success: false,
+        status: 400,
+        body: {
+          error: 'INVALID_PASSWORD',
+          message: rawUpdateError.message || 'Password validation failed.',
+        },
+      };
+    }
+
+    // AMBIGUOUS OUTCOME:
+    // Network timeout, connection drop, 5xx server error, or indeterminate response.
+    // The password update MAY have already committed in Supabase Auth before failure!
+    // Priority: AT-MOST-ONCE password change. UNKNOWN OUTCOME != AVAILABLE TICKET.
+    // We MUST NOT release the claim back to available.
+
+    // Attempt safe server-side reconciliation:
+    const recon = await reconcileAmbiguousPasswordUpdate(supabaseAdmin, userId, newPassword);
+    if (recon === 'reconciled_success') {
+      // Conclusive proof: Password update succeeded in Supabase Auth!
+      passwordUpdateSucceeded = true;
+      await logRecoveryAuditEvent(supabaseAdmin, {
+        eventType: 'recovery_password_reset_reconciled_succeeded',
+        userId,
+        ticketId,
+        ip,
+      });
+    } else {
+      // Indeterminate: Fail closed. Lock ticket into AMBIGUOUS_LOCKED state.
+      await markRecoveryTicketAmbiguous(supabaseAdmin, ticketId, claimId);
+      await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
+      await logRecoveryAuditEvent(supabaseAdmin, {
+        eventType: 'recovery_password_update_ambiguous_locked',
         userId,
         ticketId,
         ip,
@@ -1116,34 +1265,11 @@ export async function handlePasswordResetWithTicket(
         success: false,
         status: 500,
         body: {
-          error: 'PASSWORD_RESET_FAILED',
-          message: 'Unable to update password. Please try again.',
+          error: 'RECOVERY_TRANSACTION_UNCERTAIN',
+          message: 'Unable to verify password update status due to network uncertainty. For security, this recovery session has been locked. If your password was updated, please log in with your new password. Otherwise, please start a new recovery session using one of your remaining backup recovery codes.',
         },
       };
     }
-
-    passwordUpdateSucceeded = true;
-  } catch (err: any) {
-    console.error('[recovery] Unexpected error during password update');
-    // If password was NOT updated, safely release the claim
-    if (!passwordUpdateSucceeded) {
-      await releaseRecoveryTicketClaim(supabaseAdmin, ticketId, claimId);
-    }
-    await recordRateLimitAttempt(supabaseAdmin, ipKey, PASSWORD_RESET_RATE_LIMIT_MAX);
-    await logRecoveryAuditEvent(supabaseAdmin, {
-      eventType: 'recovery_password_reset_failed',
-      userId,
-      ticketId,
-      ip,
-    });
-    return {
-      success: false,
-      status: 500,
-      body: {
-        error: 'PASSWORD_RESET_FAILED',
-        message: 'Unable to update password. Please try again.',
-      },
-    };
   }
 
   // 9. Point of no return: Supabase password update succeeded!
