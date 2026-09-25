@@ -32,6 +32,39 @@ export interface SaveReviewInput {
   report: AnalysisResult | any;
 }
 
+const userReviewsCache = new Map<string, ReviewedItem[]>();
+const inFlightUserReviews = new Map<string, Promise<ReviewedItem[]>>();
+
+export function getCachedUserReviews(userId: string): ReviewedItem[] | null {
+  if (!userId) return null;
+  if (userReviewsCache.has(userId)) {
+    return userReviewsCache.get(userId)!;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = window.sessionStorage.getItem(`cody_reviews_${userId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const items = parsed.map((item: any) => ({ ...item, date: new Date(item.date) }));
+          userReviewsCache.set(userId, items);
+          return items;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function persistReviewsCache(userId: string, items: ReviewedItem[]) {
+  userReviewsCache.set(userId, items);
+  if (typeof window !== 'undefined') {
+    try {
+      window.sessionStorage.setItem(`cody_reviews_${userId}`, JSON.stringify(items));
+    } catch {}
+  }
+}
+
 /**
  * Fetches persisted reviews for the authenticated user from the Supabase public.reviews table.
  */
@@ -39,36 +72,52 @@ export async function fetchUserReviews(userId: string): Promise<ReviewedItem[]> 
   try {
     if (!userId) return [];
 
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Supabase query error on public.reviews:', error);
-      return [];
+    // Deduplicate concurrent requests
+    if (inFlightUserReviews.has(userId)) {
+      return inFlightUserReviews.get(userId)!;
     }
 
-    if (!data || !Array.isArray(data)) {
-      return [];
-    }
+    const fetchPromise = (async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    return data.map((row: any) => ({
-      id: row.id,
-      name: row.name || 'Code Review',
-      verdict: row.verdict || 'NOT_VERIFIED',
-      pr: row.pr_number || null,
-      date: new Date(row.created_at || Date.now()),
-      result: row.report || {},
-      reviewType: row.review_type,
-      repoOwner: row.repository_owner,
-      repoName: row.repository_name,
-      commitSha: row.commit_sha
-    }));
+      if (error) {
+        console.error('Supabase query error on public.reviews:', error);
+        return userReviewsCache.get(userId) || [];
+      }
+
+      if (!data || !Array.isArray(data)) {
+        return [];
+      }
+
+      const items: ReviewedItem[] = data.map((row: any) => ({
+        id: row.id,
+        name: row.name || 'Code Review',
+        verdict: row.verdict || 'NOT_VERIFIED',
+        pr: row.pr_number || null,
+        date: new Date(row.created_at || Date.now()),
+        result: row.report || {},
+        reviewType: row.review_type,
+        repoOwner: row.repository_owner,
+        repoName: row.repository_name,
+        commitSha: row.commit_sha
+      }));
+
+      persistReviewsCache(userId, items);
+      return items;
+    })();
+
+    inFlightUserReviews.set(userId, fetchPromise);
+    const result = await fetchPromise;
+    inFlightUserReviews.delete(userId);
+    return result;
   } catch (err: any) {
+    inFlightUserReviews.delete(userId);
     console.error('Unexpected error loading review history from public.reviews:', err);
-    return [];
+    return userReviewsCache.get(userId) || [];
   }
 }
 

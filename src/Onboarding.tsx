@@ -241,30 +241,34 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
     setIsLoading(true);
 
     try {
-      // 1. Authoritative check if user exists (check state, cache, or call /api/auth/check-email)
+      // 1. Authoritative check if user exists (check state, cache, or call /api/auth/check-email once)
       let isExisting = isDuplicateEmail;
 
-      if (!isExisting && checkedEmailsCache.current[normalizedEmail] === undefined) {
-        try {
-          const res = await fetch('/api/auth/check-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ email: normalizedEmail }),
-          });
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const result = await res.json();
-            if (result.exists) {
-              isExisting = true;
-              setIsDuplicateEmail(true);
-              checkedEmailsCache.current[normalizedEmail] = true;
-            } else if (result.exists === false) {
-              checkedEmailsCache.current[normalizedEmail] = false;
+      if (!isExisting) {
+        if (checkedEmailsCache.current[normalizedEmail] !== undefined) {
+          isExisting = checkedEmailsCache.current[normalizedEmail];
+        } else {
+          try {
+            const res = await fetch('/api/auth/check-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const contentType = res.headers.get('content-type') || '';
+            if (res.ok && contentType.includes('application/json')) {
+              const result = await res.json();
+              if (result.exists) {
+                isExisting = true;
+                setIsDuplicateEmail(true);
+                checkedEmailsCache.current[normalizedEmail] = true;
+              } else if (result.exists === false) {
+                checkedEmailsCache.current[normalizedEmail] = false;
+              }
             }
+          } catch (fetchErr) {
+            console.warn('Backend check-email error:', fetchErr);
           }
-        } catch (fetchErr) {
-          console.warn('Backend check-email error:', fetchErr);
         }
       }
 
@@ -298,24 +302,29 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         }
       } else {
         // New user: SIGN UP
-        // Authoritative Submit-time check against /api/auth/check-email to prevent race conditions
+        // If not already verified above, do a final check; otherwise reuse authoritative result
         let isDuplicate = false;
-        try {
-          const res = await fetch('/api/auth/check-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ email: normalizedEmail }),
-          });
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const result = await res.json();
-            if (result.exists) {
-              isDuplicate = true;
+        if (checkedEmailsCache.current[normalizedEmail] === undefined) {
+          try {
+            const res = await fetch('/api/auth/check-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ email: normalizedEmail }),
+            });
+            const contentType = res.headers.get('content-type') || '';
+            if (res.ok && contentType.includes('application/json')) {
+              const result = await res.json();
+              if (result.exists) {
+                isDuplicate = true;
+                checkedEmailsCache.current[normalizedEmail] = true;
+              }
             }
+          } catch (fetchErr) {
+            console.warn('Backend duplicate check unavailable, falling back to Auth signUp validation:', fetchErr);
           }
-        } catch (fetchErr) {
-          console.warn('Backend duplicate check unavailable, falling back to Auth signUp validation:', fetchErr);
+        } else {
+          isDuplicate = Boolean(checkedEmailsCache.current[normalizedEmail]);
         }
 
         if (isDuplicate) {

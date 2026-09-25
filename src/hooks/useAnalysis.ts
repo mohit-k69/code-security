@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { analyzeCode, type AnalysisResult, type Category, type Finding } from '../analyzer';
 import { supabase } from '../lib/supabase';
-import { type ReviewedItem, fetchUserReviews, saveUserReview, FREE_REVIEW_LIMIT, isFreeLimitReached } from '../lib/reviewsService';
+import { type ReviewedItem, fetchUserReviews, saveUserReview, getCachedUserReviews, FREE_REVIEW_LIMIT, isFreeLimitReached } from '../lib/reviewsService';
 import { type User } from './useAuth';
 import { trackEvent } from '../lib/posthog';
 
@@ -19,17 +19,32 @@ export function useAnalysis(user?: User | null) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [fileContents, setFileContents] = useState<Map<string, string>>(new Map());
 
-  const [reviewedItems, setReviewedItems] = useState<ReviewedItem[]>([]);
+  // Initialize with cached reviews immediately for instant render without waiting for network
+  const [reviewedItems, setReviewedItems] = useState<ReviewedItem[]>(() => {
+    if (user?.id) {
+      return getCachedUserReviews(user.id) || [];
+    }
+    return [];
+  });
+
+  const lastLoadedUserIdRef = useRef<string | null>(null);
 
   // Fetch reviews from Supabase when user logs in, session initializes, or user changes
   useEffect(() => {
     if (!user?.id) {
       setReviewedItems([]);
+      lastLoadedUserIdRef.current = null;
       return;
     }
 
     let isMounted = true;
     const currentUserId = user.id;
+
+    // Check if we have cached reviews to show immediately
+    const cached = getCachedUserReviews(currentUserId);
+    if (cached && cached.length > 0) {
+      setReviewedItems(cached);
+    }
 
     const loadReviews = async (targetUserId: string) => {
       try {
@@ -42,7 +57,10 @@ export function useAnalysis(user?: User | null) {
       }
     };
 
-    loadReviews(currentUserId);
+    if (lastLoadedUserIdRef.current !== currentUserId) {
+      lastLoadedUserIdRef.current = currentUserId;
+      loadReviews(currentUserId);
+    }
 
     // Subscribe to auth state changes to reload reviews on sign-in / session restore
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -50,7 +68,9 @@ export function useAnalysis(user?: User | null) {
 
       if (event === 'SIGNED_OUT' || !session?.user) {
         setReviewedItems([]);
-      } else if (session?.user?.id === currentUserId) {
+        lastLoadedUserIdRef.current = null;
+      } else if (session?.user?.id && session.user.id !== lastLoadedUserIdRef.current) {
+        lastLoadedUserIdRef.current = session.user.id;
         loadReviews(session.user.id);
       }
     });

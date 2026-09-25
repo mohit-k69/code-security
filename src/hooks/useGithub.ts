@@ -97,13 +97,15 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       setSelectedRepoId(null);
       setGithubSearchQuery('');
       setGithubReposError('');
-      fetchGithubRepositories();
+      if (activeWorkflow === 'github') {
+        fetchGithubRepositories();
+      }
     };
     window.addEventListener('codevibe_github_connected', handleConnected);
     return () => {
       window.removeEventListener('codevibe_github_connected', handleConnected);
     };
-  }, [fetchGithubRepositories]);
+  }, [activeWorkflow, fetchGithubRepositories]);
 
   const clearGithubSelection = useCallback(() => {
     setGithubSearchQuery('');

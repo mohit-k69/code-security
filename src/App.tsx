@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { Search, ChevronDown, FileText, ChevronRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
-import Onboarding from './Onboarding';
 import { identifyUser, resetUser, trackPageView, trackEvent } from './lib/posthog';
 
 // Hooks
@@ -11,16 +9,25 @@ import { useWorkflow } from './hooks/useWorkflow';
 import { useAnalysis } from './hooks/useAnalysis';
 import { useGithub } from './hooks/useGithub';
 
-// Components
+// Core Layout & Home Components (Direct Imports)
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { WorkflowSelector } from './components/workflows/WorkflowSelector';
-import { UploadWorkflow } from './components/workflows/UploadWorkflow';
-import { PasteWorkflow } from './components/workflows/PasteWorkflow';
-import { SecurityReportPanel } from './components/workflows/SecurityReportPanel';
-import { GithubWorkflow } from './components/workflows/GithubWorkflow';
-import { HistoryView } from './components/analysis/HistoryView';
-import { ProfileModal } from './components/auth/ProfileModal';
+
+// Lazily Loaded Feature Workflows & Modals for Fast Initial Render
+const Onboarding = React.lazy(() => import('./Onboarding'));
+const UploadWorkflow = React.lazy(() => import('./components/workflows/UploadWorkflow').then(m => ({ default: m.UploadWorkflow })));
+const PasteWorkflow = React.lazy(() => import('./components/workflows/PasteWorkflow').then(m => ({ default: m.PasteWorkflow })));
+const SecurityReportPanel = React.lazy(() => import('./components/workflows/SecurityReportPanel').then(m => ({ default: m.SecurityReportPanel })));
+const GithubWorkflow = React.lazy(() => import('./components/workflows/GithubWorkflow').then(m => ({ default: m.GithubWorkflow })));
+const HistoryView = React.lazy(() => import('./components/analysis/HistoryView').then(m => ({ default: m.HistoryView })));
+const ProfileModal = React.lazy(() => import('./components/auth/ProfileModal').then(m => ({ default: m.ProfileModal })));
+
+const FallbackSpinner = () => (
+  <div className="w-full h-full min-h-[300px] flex items-center justify-center">
+    <div className="w-7 h-7 border-3 border-[#3f2a24] border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export default function App() {
   const { user, setUser, isInitializing, providerTokenSetupError, retryProviderTokenSetup } = useAuth();
@@ -157,7 +164,15 @@ export default function App() {
   }
 
   if (!user) {
-    return <Onboarding onLogin={setUser} />;
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-[#3f2a24] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
+        <Onboarding onLogin={setUser} />
+      </Suspense>
+    );
   }
 
   return (
@@ -221,17 +236,19 @@ export default function App() {
 
         <div className="flex-1 flex overflow-hidden">
           {activeTab === 'reviewed' ? (
-            <HistoryView
-              reviewedItems={reviewedItems}
-              isSearchExpanded={isSearchExpanded}
-              setIsSearchExpanded={setIsSearchExpanded}
-              isFilterOpen={isFilterOpen}
-              setIsFilterOpen={setIsFilterOpen}
-              filterOption={filterOption}
-              setFilterOption={setFilterOption}
-              setActiveTab={setActiveTab}
-              setAnalysisResult={setAnalysisResult}
-            />
+            <Suspense fallback={<FallbackSpinner />}>
+              <HistoryView
+                reviewedItems={reviewedItems}
+                isSearchExpanded={isSearchExpanded}
+                setIsSearchExpanded={setIsSearchExpanded}
+                isFilterOpen={isFilterOpen}
+                setIsFilterOpen={setIsFilterOpen}
+                filterOption={filterOption}
+                setFilterOption={setFilterOption}
+                setActiveTab={setActiveTab}
+                setAnalysisResult={setAnalysisResult}
+              />
+            </Suspense>
           ) : (
             <div className="flex-1 flex min-h-0 bg-white w-full">
               {(() => {
@@ -279,86 +296,94 @@ export default function App() {
                             />
                           )}
 
-                          {activeWorkflow === 'upload' && (
-                            <UploadWorkflow 
-                              setActiveWorkflow={handleReturnHome}
-                              uploadedFiles={uploadedFiles}
-                              setUploadedFiles={setUploadedFiles}
-                              setFileContents={setFileContents}
-                              handleFileUpload={handleFileUpload}
-                            />
-                          )}
+                          <Suspense fallback={<FallbackSpinner />}>
+                            {activeWorkflow === 'upload' && (
+                              <UploadWorkflow 
+                                setActiveWorkflow={handleReturnHome}
+                                uploadedFiles={uploadedFiles}
+                                setUploadedFiles={setUploadedFiles}
+                                setFileContents={setFileContents}
+                                handleFileUpload={handleFileUpload}
+                              />
+                            )}
 
-                          {activeWorkflow === 'paste' && (
-                            <PasteWorkflow 
-                              setActiveWorkflow={handleReturnHome}
-                              pastedCode={pastedCode}
-                              setPastedCode={setPastedCode}
-                              handleCheckVibe={handleCheckVibe}
-                              isAnalyzing={isAnalyzing}
-                              isLimitReached={isLimitReached}
-                            />
-                          )}
+                            {activeWorkflow === 'paste' && (
+                              <PasteWorkflow 
+                                setActiveWorkflow={handleReturnHome}
+                                pastedCode={pastedCode}
+                                setPastedCode={setPastedCode}
+                                handleCheckVibe={handleCheckVibe}
+                                isAnalyzing={isAnalyzing}
+                                isLimitReached={isLimitReached}
+                              />
+                            )}
 
-                          {activeWorkflow === 'github' && (
-                            <GithubWorkflow 
-                              user={user}
-                              setActiveWorkflow={handleReturnHome}
-                              isFetchingRepos={isFetchingRepos}
-                              githubReposError={githubReposError}
-                              githubConnectionStatus={githubConnectionStatus}
-                              isGithubConnected={isGithubConnected}
-                              fetchGithubRepositories={fetchGithubRepositories}
-                              githubSearchQuery={githubSearchQuery}
-                              setGithubSearchQuery={setGithubSearchQuery}
-                              githubRepos={githubRepos}
-                              selectedRepoId={selectedRepoId}
-                              setSelectedRepoId={setSelectedRepoId}
-                              providerTokenSetupError={providerTokenSetupError}
-                              retryProviderTokenSetup={retryProviderTokenSetup}
-                              reviewedItems={reviewedItems}
-                              setReviewedItems={setReviewedItems}
-                              analysisResult={analysisResult}
-                              setAnalysisResult={setAnalysisResult}
-                              isAnalyzing={isAnalyzing}
-                              setIsAnalyzing={setIsAnalyzing}
-                            />
-                          )}
+                            {activeWorkflow === 'github' && (
+                              <GithubWorkflow 
+                                user={user}
+                                setActiveWorkflow={handleReturnHome}
+                                isFetchingRepos={isFetchingRepos}
+                                githubReposError={githubReposError}
+                                githubConnectionStatus={githubConnectionStatus}
+                                isGithubConnected={isGithubConnected}
+                                fetchGithubRepositories={fetchGithubRepositories}
+                                githubSearchQuery={githubSearchQuery}
+                                setGithubSearchQuery={setGithubSearchQuery}
+                                githubRepos={githubRepos}
+                                selectedRepoId={selectedRepoId}
+                                setSelectedRepoId={setSelectedRepoId}
+                                providerTokenSetupError={providerTokenSetupError}
+                                retryProviderTokenSetup={retryProviderTokenSetup}
+                                reviewedItems={reviewedItems}
+                                setReviewedItems={setReviewedItems}
+                                analysisResult={analysisResult}
+                                setAnalysisResult={setAnalysisResult}
+                                isAnalyzing={isAnalyzing}
+                                setIsAnalyzing={setIsAnalyzing}
+                              />
+                            )}
+                          </Suspense>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Analysis Results Panel */}
-                  {shouldShowResultsPanel && (
-                    <motion.div
-                      key={isGithubAnalysisActive ? 'github-results' : 'standard-results'}
-                      initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[70%]' : 'w-[420px] lg:w-[460px]'}`}
-                    >
-                      <SecurityReportPanel 
-                        report={analysisResult?.verdict ? analysisResult : null}
-                        isAnalyzing={isAnalyzing}
-                        workflow={activeWorkflow}
-                        analysisError={analysisError}
-                      />
-                    </motion.div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
+                    
+                    {/* Analysis Results Panel */}
+                    {shouldShowResultsPanel && (
+                      <motion.div
+                        key={isGithubAnalysisActive ? 'github-results' : 'standard-results'}
+                        initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[70%]' : 'w-[420px] lg:w-[460px]'}`}
+                      >
+                        <Suspense fallback={<FallbackSpinner />}>
+                          <SecurityReportPanel 
+                            report={analysisResult?.verdict ? analysisResult : null}
+                            isAnalyzing={isAnalyzing}
+                            workflow={activeWorkflow}
+                            analysisError={analysisError}
+                          />
+                        </Suspense>
+                      </motion.div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           )}
         </div>
       </div>
 
-      <ProfileModal 
-        user={user}
-        setUser={setUser}
-        isOpen={isProfileModalOpen}
-        setIsOpen={setIsProfileModalOpen}
-      />
+      <Suspense fallback={null}>
+        {isProfileModalOpen && (
+          <ProfileModal 
+            user={user}
+            setUser={setUser}
+            isOpen={isProfileModalOpen}
+            setIsOpen={setIsProfileModalOpen}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

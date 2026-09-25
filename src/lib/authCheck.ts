@@ -6,6 +6,11 @@ dotenv.config();
 
 let supabaseAdminClient: ReturnType<typeof createClient> | null = null;
 
+// Fast in-memory cache and in-flight deduplication to avoid redundant Supabase admin lookups
+const emailCheckCache = new Map<string, { exists: boolean; timestamp: number }>();
+const inFlightEmailChecks = new Map<string, Promise<boolean>>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export class AuthCheckError extends Error {
   code: 'ADMIN_CLIENT_UNAVAILABLE' | 'LOOKUP_TIMEOUT' | 'LOOKUP_FAILED';
   constructor(code: 'ADMIN_CLIENT_UNAVAILABLE' | 'LOOKUP_TIMEOUT' | 'LOOKUP_FAILED', message: string) {
@@ -34,6 +39,18 @@ export function getSupabaseAdmin() {
 
 export async function checkAuthEmailExists(rawEmail: string, timeoutMs = 4500): Promise<boolean> {
   const normalized = rawEmail.trim().toLowerCase();
+
+  // Return cached result if fresh
+  const cached = emailCheckCache.get(normalized);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.exists;
+  }
+
+  // Deduplicate concurrent in-flight requests for the same email
+  if (inFlightEmailChecks.has(normalized)) {
+    return inFlightEmailChecks.get(normalized)!;
+  }
+
   const admin = getSupabaseAdmin();
 
   if (!admin) {
@@ -57,28 +74,33 @@ export async function checkAuthEmailExists(rawEmail: string, timeoutMs = 4500): 
         const users = result.data.users;
         for (const u of users) {
           if (u.email && u.email.trim().toLowerCase() === normalized) {
+            emailCheckCache.set(normalized, { exists: true, timestamp: Date.now() });
             return true;
           }
           const identities = u.identities || [];
           for (const ident of identities) {
             const identEmail = ident.identity_data?.email;
             if (identEmail && String(identEmail).trim().toLowerCase() === normalized) {
+              emailCheckCache.set(normalized, { exists: true, timestamp: Date.now() });
               return true;
             }
           }
           const metaEmail = u.user_metadata?.email;
           if (metaEmail && String(metaEmail).trim().toLowerCase() === normalized) {
+            emailCheckCache.set(normalized, { exists: true, timestamp: Date.now() });
             return true;
           }
         }
 
         if (users.length < perPage) {
+          emailCheckCache.set(normalized, { exists: false, timestamp: Date.now() });
           return false;
         }
 
         page++;
       }
 
+      emailCheckCache.set(normalized, { exists: false, timestamp: Date.now() });
       return false;
     } catch (err: any) {
       console.error('[check-email] listUsers check error:', err?.message || err);
@@ -94,6 +116,11 @@ export async function checkAuthEmailExists(rawEmail: string, timeoutMs = 4500): 
     if (typeof timer.unref === 'function') timer.unref();
   });
 
-  return Promise.race([lookupPromise, timeoutPromise]);
+  const raced = Promise.race([lookupPromise, timeoutPromise]).finally(() => {
+    inFlightEmailChecks.delete(normalized);
+  });
+
+  inFlightEmailChecks.set(normalized, raced);
+  return raced;
 }
 
