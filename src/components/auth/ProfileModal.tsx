@@ -250,9 +250,9 @@ export function ProfileModal({ user, setUser, isOpen, setIsOpen }: ProfileModalP
           <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative z-10 w-full max-w-[440px] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="relative z-10 w-full max-w-[460px] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           >
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
               <h3 className="text-[16px] font-semibold text-gray-900">My Profile</h3>
               <button
                 onClick={() => setIsOpen(false)}
@@ -262,7 +262,7 @@ export function ProfileModal({ user, setUser, isOpen, setIsOpen }: ProfileModalP
               </button>
             </div>
 
-            <div className="px-6 py-5 flex flex-col gap-4">
+            <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto flex-1">
               {profileSuccess && (
                 <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 text-[13px] font-medium flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
@@ -319,7 +319,7 @@ export function ProfileModal({ user, setUser, isOpen, setIsOpen }: ProfileModalP
               </AnimatePresence>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 relative z-10 flex flex-col gap-3">
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 relative z-10 flex flex-col gap-3 shrink-0">
               <div className="flex items-center justify-end gap-3">
                 <button
                   onClick={() => setIsOpen(false)}

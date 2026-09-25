@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, CheckCircle2 } from 'lucide-react';
+import { ProfileRecoveryCodes } from './ProfileRecoveryCodes';
 
 interface ProfileSecuritySettingsProps {
   isPasswordRestricted: boolean;
@@ -109,6 +110,8 @@ export function ProfileSecuritySettings({
           )}
         </AnimatePresence>
       )}
+
+      <ProfileRecoveryCodes />
     </>
   );
 }

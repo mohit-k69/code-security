@@ -275,3 +275,42 @@ export async function generateAndStoreRecoveryCodes(
   // 4. Return plaintext codes strictly once for client retrieval
   return codes;
 }
+
+export interface RecoveryCodesStatus {
+  hasCodes: boolean;
+  activeCount: number;
+  createdAt: string | null;
+}
+
+/**
+ * Retrieves the non-sensitive recovery codes status for a user.
+ * Returns only counts and timestamps; never returns hashes or plaintext codes.
+ */
+export async function getRecoveryCodesStatus(
+  supabaseAdmin: any,
+  userId: string
+): Promise<RecoveryCodesStatus> {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_recovery_codes')
+    .select('created_at')
+    .eq('user_id', userId)
+    .is('consumed_at', null)
+    .is('revoked_at', null)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[recovery-codes] Database error fetching status');
+    throw new Error('Failed to fetch recovery codes status');
+  }
+
+  const count = data?.length ?? 0;
+  return {
+    hasCodes: count > 0,
+    activeCount: count,
+    createdAt: count > 0 && data[0]?.created_at ? data[0].created_at : null,
+  };
+}

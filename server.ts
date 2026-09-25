@@ -3,7 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { checkAuthEmailExists, getSupabaseAdmin } from "./src/lib/authCheck";
-import { generateAndStoreRecoveryCodes } from "./src/lib/recoveryCodes";
+import { generateAndStoreRecoveryCodes, getRecoveryCodesStatus } from "./src/lib/recoveryCodes";
 import { handleRecoveryVerification, resolveClientIp, handlePasswordResetWithTicket } from "./src/lib/recoveryVerification";
 
 dotenv.config({ path: '.env.local' });
@@ -124,6 +124,45 @@ async function startServer() {
     } catch (err: any) {
       console.error("[recovery-codes] generation endpoint error");
       return res.status(500).json({ error: "RECOVERY_CODES_GENERATION_FAILED" });
+    }
+  });
+
+  // Get recovery codes status (active count, creation date) for authenticated user
+  app.all("/api/auth/recovery-codes/status", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method not allowed. GET is required." });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Missing authorization header" });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: "ADMIN_SERVICE_UNAVAILABLE" });
+    }
+
+    try {
+      const { data: { user }, error: userError } = await admin.auth.getUser(token);
+      if (userError || !user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const status = await getRecoveryCodesStatus(admin, user.id);
+      return res.json({ success: true, ...status });
+    } catch (err: any) {
+      console.error("[recovery-codes] status endpoint error");
+      return res.status(500).json({ error: "RECOVERY_CODES_STATUS_FAILED" });
     }
   });
 
