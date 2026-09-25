@@ -94,6 +94,35 @@ function createMockAdmin() {
   const admin: any = {
     _users: users,
     _recoveryCodes: recoveryCodes,
+    rpc: async (funcName: string, args: any) => {
+      if (funcName === 'replace_user_recovery_codes_atomic') {
+        const { p_user_id, p_code_hashes } = args;
+        if (!p_user_id) return { data: null, error: { message: 'p_user_id cannot be null' } };
+        if (!p_code_hashes || p_code_hashes.length !== 10) {
+          return { data: null, error: { message: 'p_code_hashes must contain exactly 10 hashes' } };
+        }
+        let revokedCount = 0;
+        const nowIso = new Date().toISOString();
+        for (const r of recoveryCodes) {
+          if (r.user_id === p_user_id && r.consumed_at === null && r.revoked_at === null) {
+            r.revoked_at = nowIso;
+            revokedCount++;
+          }
+        }
+        for (const hash of p_code_hashes) {
+          recoveryCodes.push({
+            id: `rc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            user_id: p_user_id,
+            code_hash: hash,
+            created_at: nowIso,
+            consumed_at: null,
+            revoked_at: null,
+          });
+        }
+        return { data: [{ revoked_count: revokedCount, inserted_count: p_code_hashes.length }], error: null };
+      }
+      return { data: null, error: { message: `Unknown RPC function: ${funcName}` } };
+    },
     from: (table: string) => {
       let targetArray = recoveryCodes;
       return {

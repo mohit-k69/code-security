@@ -67,6 +67,35 @@ function createMockSupabaseAdmin() {
 
   return {
     _db: db,
+    rpc(funcName: string, args: any) {
+      if (funcName === 'replace_user_recovery_codes_atomic') {
+        const { p_user_id, p_code_hashes } = args;
+        if (!p_user_id) return Promise.resolve({ data: null, error: { message: 'p_user_id cannot be null' } });
+        if (!p_code_hashes || p_code_hashes.length !== 10) {
+          return Promise.resolve({ data: null, error: { message: 'p_code_hashes must contain exactly 10 hashes' } });
+        }
+        let revokedCount = 0;
+        const nowIso = new Date().toISOString();
+        for (const r of db) {
+          if (r.user_id === p_user_id && r.consumed_at === null && r.revoked_at === null) {
+            r.revoked_at = nowIso;
+            revokedCount++;
+          }
+        }
+        for (const hash of p_code_hashes) {
+          db.push({
+            id: 'mock-id-' + Math.random().toString(36).substring(2),
+            user_id: p_user_id,
+            code_hash: hash,
+            created_at: nowIso,
+            consumed_at: null,
+            revoked_at: null,
+          });
+        }
+        return Promise.resolve({ data: [{ revoked_count: revokedCount, inserted_count: p_code_hashes.length }], error: null });
+      }
+      return Promise.resolve({ data: null, error: { message: `Unknown RPC function: ${funcName}` } });
+    },
     from(table: string) {
       if (table !== 'user_recovery_codes') {
         throw new Error(`Unexpected table: ${table}`);

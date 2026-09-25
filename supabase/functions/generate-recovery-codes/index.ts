@@ -111,24 +111,7 @@ Deno.serve(async (req) => {
     // 2. Initialize privileged admin client using Service Role Key
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Invalidate prior active codes (regeneration foundation)
-    const nowIso = new Date().toISOString();
-    const { error: revokeError } = await supabaseAdmin
-      .from('user_recovery_codes')
-      .update({ revoked_at: nowIso })
-      .eq('user_id', user.id)
-      .is('consumed_at', null)
-      .is('revoked_at', null);
-
-    if (revokeError) {
-      console.error('[generate-recovery-codes] Error invalidating existing codes');
-      return new Response(JSON.stringify({ error: 'Failed to prepare recovery codes' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-
-    // 4. Generate exactly 10 independent codes and compute hashes
+    // 3. Generate exactly 10 independent codes and compute hashes
     const codes: string[] = [];
     const hashes: string[] = [];
     const seen = new Set<string>();
@@ -143,28 +126,64 @@ Deno.serve(async (req) => {
       hashes.push(await hashRecoveryCode(code));
     }
 
-    // 5. Store hashes in database
-    const records = hashes.map((h) => ({
-      user_id: user.id,
-      code_hash: h,
-      created_at: nowIso,
-      consumed_at: null,
-      revoked_at: null,
-    }));
+    // 4. Atomically serialize and replace recovery codes via PostgreSQL transaction
+    const { error: rpcError } = await supabaseAdmin.rpc('replace_user_recovery_codes_atomic', {
+      p_user_id: user.id,
+      p_code_hashes: hashes,
+    });
 
-    const { error: insertError } = await supabaseAdmin
-      .from('user_recovery_codes')
-      .insert(records);
+    if (rpcError) {
+      const errMsg = rpcError.message || '';
+      if (
+        errMsg.includes('RECOVERY_CODES_REGENERATION_IN_PROGRESS') ||
+        (rpcError.code === 'P0001' && errMsg.includes('IN_PROGRESS'))
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: 'RECOVERY_CODES_REGENERATION_IN_PROGRESS',
+            message: 'Recovery code generation is already in progress for this account. Please wait a moment.',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409,
+          }
+        );
+      }
 
-    if (insertError) {
-      console.error('[generate-recovery-codes] Error storing recovery code verifiers');
-      return new Response(JSON.stringify({ error: 'Failed to persist recovery codes' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
+      if (
+        errMsg.includes('does not exist') ||
+        errMsg.includes('not found') ||
+        errMsg === 'Unknown RPC function' ||
+        rpcError.code === '42883' ||
+        rpcError.code === 'PGRST202'
+      ) {
+        console.error('[generate-recovery-codes] replace_user_recovery_codes_atomic RPC is not available in database');
+        return new Response(
+          JSON.stringify({
+            error: 'RECOVERY_CODES_TEMPORARILY_UNAVAILABLE',
+            message: 'Recovery code service is temporarily unavailable.',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 503,
+          }
+        );
+      }
+
+      console.error('[generate-recovery-codes] Database error during atomic replacement:', errMsg);
+      return new Response(
+        JSON.stringify({
+          error: 'RECOVERY_CODES_DATABASE_ERROR',
+          message: 'Failed to update recovery codes.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
     }
 
-    // 6. Return plaintext codes strictly ONCE to client
+    // 5. Return plaintext codes strictly ONCE to client
     // Plaintext codes are NEVER logged in console or persisted
     return new Response(JSON.stringify({ success: true, count: codes.length, codes }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

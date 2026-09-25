@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   generateAndStoreRecoveryCodes,
   getRecoveryCodesStatus,
+  RecoveryCodesError,
 } from "./recoveryCodes";
 
 /**
@@ -39,30 +40,15 @@ setInterval(() => {
   }
 }, 60 * 1000).unref();
 
-// Per-user async mutex to prevent concurrent regeneration race conditions
-const userRegenerationLocks = new Map<string, Promise<void>>();
+// Process-local lock map is removed in favor of authoritative PostgreSQL distributed advisory locking.
 
 /**
- * Serializes operations for a given userId to guarantee atomicity.
+ * Helper function for executing recovery code operations.
+ * PostgreSQL's non-blocking transaction advisory lock (pg_try_advisory_xact_lock)
+ * is the authoritative distributed concurrency control.
  */
-export async function withUserRegenerationLock<T>(userId: string, fn: () => Promise<T>): Promise<T> {
-  const prevLock = userRegenerationLocks.get(userId) || Promise.resolve();
-  let release: () => void = () => {};
-  const currentLock = new Promise<void>((res) => {
-    release = res;
-  });
-
-  userRegenerationLocks.set(userId, prevLock.then(() => currentLock));
-
-  try {
-    await prevLock;
-    return await fn();
-  } finally {
-    release();
-    if (userRegenerationLocks.get(userId) === currentLock) {
-      userRegenerationLocks.delete(userId);
-    }
-  }
+export async function withUserRegenerationLock<T>(_userId: string, fn: () => Promise<T>): Promise<T> {
+  return await fn();
 }
 
 /**
@@ -206,7 +192,7 @@ export async function handleRecoveryCodesGenerationRequest(
 
   // Case 1: Initial generation (user has 0 active codes) -> Normal session is sufficient
   if (!isRegeneration) {
-    return await withUserRegenerationLock(userId, async () => {
+    try {
       const codes = await generateAndStoreRecoveryCodes(admin, userId);
       return {
         status: 200,
@@ -217,7 +203,25 @@ export async function handleRecoveryCodesGenerationRequest(
           codes,
         },
       };
-    });
+    } catch (err: any) {
+      if (err instanceof RecoveryCodesError) {
+        return {
+          status: err.statusCode,
+          body: {
+            error: err.code,
+            message: err.message,
+          },
+        };
+      }
+      console.error('[recovery-codes] Error in initial generation flow:', err?.message);
+      return {
+        status: 500,
+        body: {
+          error: 'RECOVERY_CODES_GENERATION_FAILED',
+          message: 'Failed to generate recovery codes.',
+        },
+      };
+    }
   }
 
   // Case 2: Regeneration (active codes exist) -> Step-up reauthentication is STRICTLY MANDATORY!
@@ -273,9 +277,8 @@ export async function handleRecoveryCodesGenerationRequest(
     };
   }
 
-  // 2C: Authorized regeneration - Execute atomically within per-user lock
-  return await withUserRegenerationLock(userId, async () => {
-    // Re-verify that old active codes are revoked and new codes generated
+  // 2C: Authorized regeneration - Execute atomically within PostgreSQL distributed lock
+  try {
     const codes = await generateAndStoreRecoveryCodes(admin, userId);
     return {
       status: 200,
@@ -286,5 +289,23 @@ export async function handleRecoveryCodesGenerationRequest(
         codes,
       },
     };
-  });
+  } catch (err: any) {
+    if (err instanceof RecoveryCodesError) {
+      return {
+        status: err.statusCode,
+        body: {
+          error: err.code,
+          message: err.message,
+        },
+      };
+    }
+    console.error('[recovery-codes] Error in regeneration flow:', err?.message);
+    return {
+      status: 500,
+      body: {
+        error: 'RECOVERY_CODES_GENERATION_FAILED',
+        message: 'Failed to regenerate recovery codes.',
+      },
+    };
+  }
 }

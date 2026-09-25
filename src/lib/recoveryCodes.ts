@@ -245,12 +245,104 @@ export async function storeRecoveryCodeHashes(
   }
 }
 
+export class RecoveryCodesError extends Error {
+  code: string;
+  statusCode: number;
+
+  constructor(message: string, code: string, statusCode: number = 500) {
+    super(message);
+    this.name = 'RecoveryCodesError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+/**
+ * Database operation (Phase 4A.2): Atomically revokes old active recovery codes
+ * and inserts new code hashes within a single serialized PostgreSQL transaction.
+ *
+ * Guarantees:
+ * - Distributed concurrency synchronization via non-blocking 64-bit advisory transaction locks.
+ * - Non-queueing behavior: concurrent requests for the same user immediately fail with 409 Conflict.
+ * - Atomicity: revocation and insertion commit together inside a single database transaction.
+ * - Rollback safety: failures never leave zero recoverable state or overlapping generations.
+ * - Fail-closed: absolutely no silent downgrade fallback to non-atomic multi-query operations.
+ */
+export async function replaceUserRecoveryCodesAtomic(
+  supabaseAdmin: any,
+  userId: string,
+  hashes: string[]
+): Promise<{ revokedCount: number; insertedCount: number }> {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  if (!Array.isArray(hashes) || hashes.length !== RECOVERY_CODES_COUNT) {
+    throw new Error(`Must store exactly ${RECOVERY_CODES_COUNT} recovery code hashes`);
+  }
+
+  if (!supabaseAdmin || typeof supabaseAdmin.rpc !== 'function') {
+    console.error('[recovery-codes] Supabase admin client or RPC method is not available');
+    throw new RecoveryCodesError(
+      'Recovery code service is temporarily unavailable',
+      'RECOVERY_CODES_TEMPORARILY_UNAVAILABLE',
+      503
+    );
+  }
+
+  const { data, error } = await supabaseAdmin.rpc('replace_user_recovery_codes_atomic', {
+    p_user_id: userId,
+    p_code_hashes: hashes,
+  });
+
+  if (error) {
+    const errMsg = error.message || '';
+    if (
+      errMsg.includes('RECOVERY_CODES_REGENERATION_IN_PROGRESS') ||
+      (error.code === 'P0001' && errMsg.includes('IN_PROGRESS'))
+    ) {
+      throw new RecoveryCodesError(
+        'Recovery code generation is already in progress for this account. Please wait a moment.',
+        'RECOVERY_CODES_REGENERATION_IN_PROGRESS',
+        409
+      );
+    }
+
+    if (
+      errMsg.includes('does not exist') ||
+      errMsg.includes('not found') ||
+      errMsg === 'Unknown RPC function' ||
+      error.code === '42883' ||
+      error.code === 'PGRST202'
+    ) {
+      console.error('[recovery-codes] replace_user_recovery_codes_atomic RPC is not available in database');
+      throw new RecoveryCodesError(
+        'Recovery code service is temporarily unavailable',
+        'RECOVERY_CODES_TEMPORARILY_UNAVAILABLE',
+        503
+      );
+    }
+
+    console.error('[recovery-codes] Database error during atomic replacement:', errMsg);
+    throw new RecoveryCodesError(
+      `Failed to replace recovery codes atomically: ${errMsg}`,
+      'RECOVERY_CODES_DATABASE_ERROR',
+      500
+    );
+  }
+
+  const record = Array.isArray(data) ? data[0] : data;
+  return {
+    revokedCount: record?.revoked_count ?? 0,
+    insertedCount: record?.inserted_count ?? hashes.length,
+  };
+}
+
 /**
  * Complete server-side generation flow:
- * 1. Revokes all prior active codes for the user.
- * 2. Generates exactly 10 fresh, cryptographically secure recovery codes.
- * 3. Stores only their SHA-256 hashes in `user_recovery_codes`.
- * 4. Returns the 10 plaintext codes once to be presented to the user.
+ * 1. Generates exactly 10 fresh, cryptographically secure recovery codes.
+ * 2. In a single atomic PostgreSQL transaction, serializes per-user access,
+ *    revokes all prior active codes, and persists the new SHA-256 verifier hashes.
+ * 3. Returns the 10 plaintext codes strictly once to be presented to the user.
  *
  * Plaintext codes are never logged to console or persisted to disk.
  */
@@ -263,16 +355,13 @@ export async function generateAndStoreRecoveryCodes(
     throw new Error('User ID is required');
   }
 
-  // 1. Invalidate any existing active codes (regeneration capability)
-  await revokeActiveRecoveryCodes(supabaseAdmin, userId);
-
-  // 2. Generate exactly 10 independent codes
+  // 1. Generate exactly 10 independent codes and compute cryptographic verifier hashes
   const { codes, hashes } = await generateRecoveryCodeSet(RECOVERY_CODES_COUNT, entropyBytes);
 
-  // 3. Store only cryptographic hashes in database
-  await storeRecoveryCodeHashes(supabaseAdmin, userId, hashes);
+  // 2. Atomically revoke prior codes and store new hashes in PostgreSQL transaction
+  await replaceUserRecoveryCodesAtomic(supabaseAdmin, userId, hashes);
 
-  // 4. Return plaintext codes strictly once for client retrieval
+  // 3. Return plaintext codes strictly once for client retrieval
   return codes;
 }
 
