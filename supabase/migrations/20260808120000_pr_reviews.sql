@@ -1,7 +1,7 @@
 -- Migration: Create pr_reviews table to track which commits have been reviewed
 CREATE TABLE IF NOT EXISTS pr_reviews (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   repository_owner text NOT NULL,
   repository_name text NOT NULL,
   pr_number integer NOT NULL,
