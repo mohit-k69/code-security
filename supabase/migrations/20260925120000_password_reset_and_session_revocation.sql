@@ -28,11 +28,11 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
-    v_claim_id UUID := gen_random_uuid();
-    v_lease_seconds INT := COALESCE(p_lease_seconds, 30);
+    v_claim_id UUID := pg_catalog.gen_random_uuid();
+    v_lease_seconds INT := pg_catalog.coalesce(p_lease_seconds, 30);
     v_ticket_id UUID;
     v_user_id UUID;
     v_already_updated BOOLEAN := FALSE;
@@ -53,15 +53,15 @@ BEGIN
       AND consumed_at IS NULL
       AND revoked_at IS NULL
       AND ambiguous_at IS NULL
-      AND expires_at > now()
-      AND (claim_expires_at IS NULL OR claim_expires_at < now() OR password_updated_at IS NOT NULL)
+      AND expires_at > pg_catalog.now()
+      AND (claim_expires_at IS NULL OR claim_expires_at < pg_catalog.now() OR password_updated_at IS NOT NULL)
     FOR UPDATE SKIP LOCKED
     LIMIT 1;
 
     IF v_ticket_id IS NOT NULL THEN
         UPDATE public.user_recovery_tickets
-        SET claimed_at = now(),
-            claim_expires_at = now() + (v_lease_seconds || ' seconds')::interval,
+        SET claimed_at = pg_catalog.now(),
+            claim_expires_at = pg_catalog.now() + (v_lease_seconds || ' seconds')::interval,
             claim_id = v_claim_id
         WHERE id = v_ticket_id;
 
@@ -85,7 +85,7 @@ CREATE OR REPLACE FUNCTION public.release_recovery_ticket_claim(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_updated INT;
@@ -120,13 +120,13 @@ CREATE OR REPLACE FUNCTION public.mark_recovery_ticket_ambiguous(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_updated INT;
 BEGIN
     UPDATE public.user_recovery_tickets
-    SET ambiguous_at = now(),
+    SET ambiguous_at = pg_catalog.now(),
         claim_expires_at = NULL -- Permanently prevent lease expiration resurrection
     WHERE id = p_ticket_id
       AND claim_id = p_claim_id
@@ -142,15 +142,6 @@ REVOKE ALL ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) FROM an
 REVOKE ALL ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.mark_recovery_ticket_ambiguous(UUID, UUID) TO postgres;
-    RETURN (v_updated > 0);
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM anon;
-REVOKE ALL ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) FROM authenticated;
-GRANT EXECUTE ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) TO service_role;
-GRANT EXECUTE ON FUNCTION public.release_recovery_ticket_claim(UUID, UUID) TO postgres;
 
 -- 4. Record password update succeeded before final ticket consumption
 CREATE OR REPLACE FUNCTION public.record_recovery_password_updated(
@@ -160,13 +151,13 @@ CREATE OR REPLACE FUNCTION public.record_recovery_password_updated(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_updated INT;
 BEGIN
     UPDATE public.user_recovery_tickets
-    SET password_updated_at = now()
+    SET password_updated_at = pg_catalog.now()
     WHERE id = p_ticket_id
       AND claim_id = p_claim_id
       AND consumed_at IS NULL;
@@ -190,13 +181,13 @@ CREATE OR REPLACE FUNCTION public.finalize_recovery_ticket_atomic(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_updated INT;
 BEGIN
     UPDATE public.user_recovery_tickets
-    SET consumed_at = now(),
+    SET consumed_at = pg_catalog.now(),
         claim_expires_at = NULL
     WHERE id = p_ticket_id
       AND (claim_id = p_claim_id OR password_updated_at IS NOT NULL)
@@ -223,12 +214,12 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 BEGIN
     RETURN QUERY
     UPDATE public.user_recovery_tickets
-    SET consumed_at = now()
+    SET consumed_at = pg_catalog.now()
     WHERE id = (
         SELECT id
         FROM public.user_recovery_tickets
@@ -236,8 +227,8 @@ BEGIN
           AND consumed_at IS NULL
           AND revoked_at IS NULL
           AND ambiguous_at IS NULL
-          AND expires_at > now()
-          AND (claim_expires_at IS NULL OR claim_expires_at < now())
+          AND expires_at > pg_catalog.now()
+          AND (claim_expires_at IS NULL OR claim_expires_at < pg_catalog.now())
         FOR UPDATE SKIP LOCKED
         LIMIT 1
     )
@@ -260,7 +251,7 @@ CREATE OR REPLACE FUNCTION public.revoke_user_sessions_after_recovery(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth, pg_temp
+SET search_path = ''
 AS $$
 BEGIN
     -- Delete refresh tokens for the user in Supabase auth schema if table exists
@@ -286,7 +277,7 @@ BEGIN
 
     -- Invalidate any remaining unconsumed recovery tickets for this user
     UPDATE public.user_recovery_tickets
-    SET revoked_at = now()
+    SET revoked_at = pg_catalog.now()
     WHERE user_id = p_user_id
       AND consumed_at IS NULL
       AND revoked_at IS NULL;
