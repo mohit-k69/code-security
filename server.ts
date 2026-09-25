@@ -5,6 +5,12 @@ import dotenv from "dotenv";
 import { checkAuthEmailExists, getSupabaseAdmin } from "./src/lib/authCheck";
 import { generateAndStoreRecoveryCodes, getRecoveryCodesStatus } from "./src/lib/recoveryCodes";
 import { handleRecoveryVerification, resolveClientIp, handlePasswordResetWithTicket } from "./src/lib/recoveryVerification";
+import {
+  handleRecoveryCodesGenerationRequest,
+  isOAuthOnlyUser,
+  createStepUpReauthToken,
+  verifyCurrentPassword,
+} from "./src/lib/recoveryReauth";
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -88,8 +94,9 @@ async function startServer() {
     }
   });
 
-  // Generate secure one-time recovery codes endpoint (trusted server backend)
-  app.all("/api/auth/recovery-codes/generate", async (req, res) => {
+  // Generate or regenerate secure recovery codes endpoint (trusted server backend)
+  // Strictly requires step-up reauthentication if active codes already exist
+  app.all(["/api/auth/recovery-codes/generate", "/api/auth/recovery-codes/regenerate"], async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -99,7 +106,7 @@ async function startServer() {
     }
 
     if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
+      return res.status(405).json({ error: "Method not allowed. POST is required." });
     }
 
     const authHeader = req.headers.authorization;
@@ -119,15 +126,84 @@ async function startServer() {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const codes = await generateAndStoreRecoveryCodes(admin, user.id);
-      return res.json({ success: true, count: codes.length, codes });
+      // Delegate to secure handler enforcing step-up, user lock, and zero credential logging
+      const result = await handleRecoveryCodesGenerationRequest(admin, {
+        userId: user.id,
+        user,
+        currentPassword: req.body?.currentPassword,
+        reauthToken: req.body?.reauthToken,
+      });
+
+      return res.status(result.status).json(result.body);
     } catch (err: any) {
       console.error("[recovery-codes] generation endpoint error");
       return res.status(500).json({ error: "RECOVERY_CODES_GENERATION_FAILED" });
     }
   });
 
-  // Get recovery codes status (active count, creation date) for authenticated user
+  // Step-up reauthentication endpoint: exchanges current password for an ephemeral (2 min) single-use token
+  app.all("/api/auth/recovery-codes/reauthenticate", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed. POST is required." });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Missing authorization header" });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: "ADMIN_SERVICE_UNAVAILABLE" });
+    }
+
+    try {
+      const { data: { user }, error: userError } = await admin.auth.getUser(token);
+      if (userError || !user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Block OAuth-only accounts from fake password reauthentication
+      if (isOAuthOnlyUser(user)) {
+        return res.status(403).json({
+          error: "OAUTH_REAUTHENTICATION_UNSUPPORTED",
+          message: "Step-up reauthentication is currently unavailable for OAuth-only accounts.",
+        });
+      }
+
+      const password = req.body?.password;
+      if (!password || typeof password !== "string") {
+        return res.status(400).json({ error: "PASSWORD_REQUIRED", message: "Current password is required." });
+      }
+
+      const isValid = await verifyCurrentPassword(user.email, password);
+      if (!isValid) {
+        return res.status(401).json({ error: "INVALID_CREDENTIALS", message: "Incorrect current password." });
+      }
+
+      // Issue short-lived, single-use reauth token strictly bound to user.id
+      const stepUp = createStepUpReauthToken(user.id);
+      return res.json({
+        success: true,
+        reauthToken: stepUp.token,
+        expiresInSeconds: stepUp.expiresInSeconds,
+      });
+    } catch (err: any) {
+      console.error("[recovery-codes] reauthentication endpoint error");
+      return res.status(500).json({ error: "REAUTHENTICATION_FAILED" });
+    }
+  });
+
+  // Get recovery codes status (active count, creation date, OAuth status) for authenticated user
   app.all("/api/auth/recovery-codes/status", async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -159,7 +235,14 @@ async function startServer() {
       }
 
       const status = await getRecoveryCodesStatus(admin, user.id);
-      return res.json({ success: true, ...status });
+      const isOAuthOnly = isOAuthOnlyUser(user);
+
+      return res.json({
+        success: true,
+        ...status,
+        isOAuthOnly,
+        canRegenerate: !isOAuthOnly,
+      });
     } catch (err: any) {
       console.error("[recovery-codes] status endpoint error");
       return res.status(500).json({ error: "RECOVERY_CODES_STATUS_FAILED" });

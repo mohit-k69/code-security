@@ -11,6 +11,7 @@ import {
   Loader2,
   RefreshCw,
   Info,
+  Lock,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -18,6 +19,8 @@ interface RecoveryStatusData {
   hasCodes: boolean;
   activeCount: number;
   createdAt: string | null;
+  isOAuthOnly: boolean;
+  canRegenerate: boolean;
 }
 
 export function ProfileRecoveryCodes() {
@@ -27,6 +30,8 @@ export function ProfileRecoveryCodes() {
     hasCodes: false,
     activeCount: 0,
     createdAt: null,
+    isOAuthOnly: false,
+    canRegenerate: true,
   });
 
   // Flow views: 'status' | 'confirm_regenerate' | 'display_codes'
@@ -35,6 +40,10 @@ export function ProfileRecoveryCodes() {
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+
+  // Step-up reauthentication password state for regeneration
+  // Stored strictly in React memory; never stored in localStorage, sessionStorage, or logs
+  const [reauthPassword, setReauthPassword] = useState('');
 
   // Plaintext codes are held strictly in React memory while on 'display_codes' view.
   // Never stored in localStorage, sessionStorage, cookies, or sent to telemetry.
@@ -71,6 +80,8 @@ export function ProfileRecoveryCodes() {
           hasCodes: Boolean(data.hasCodes),
           activeCount: Number(data.activeCount || 0),
           createdAt: data.createdAt || null,
+          isOAuthOnly: Boolean(data.isOAuthOnly),
+          canRegenerate: Boolean(data.canRegenerate),
         });
       }
     } catch (err: any) {
@@ -84,11 +95,12 @@ export function ProfileRecoveryCodes() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Cleanup on unmount: guarantee memory drop of plaintext codes
+  // Cleanup on unmount: guarantee memory drop of plaintext codes and temporary reauth password
   useEffect(() => {
     return () => {
       setPlaintextCodes(null);
       setAcknowledged(false);
+      setReauthPassword('');
     };
   }, []);
 
@@ -106,8 +118,8 @@ export function ProfileRecoveryCodes() {
     }
   };
 
-  // Trigger secure generation via backend
-  const handleGenerate = async () => {
+  // Trigger secure generation or step-up regeneration via backend
+  const handleGenerate = async (passwordToVerify?: string) => {
     setIsGenerating(true);
     setGenerateError(null);
     try {
@@ -119,25 +131,39 @@ export function ProfileRecoveryCodes() {
         return;
       }
 
+      const bodyPayload: any = {};
+      // If user already has active codes, this is a regeneration requiring step-up
+      if (status.hasCodes) {
+        const pwd = passwordToVerify || reauthPassword;
+        if (!pwd || !pwd.trim()) {
+          setGenerateError('Please enter your current password to authorize regeneration.');
+          setIsGenerating(false);
+          return;
+        }
+        bodyPayload.currentPassword = pwd;
+      }
+
       const res = await fetch('/api/auth/recovery-codes/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        body: JSON.stringify(bodyPayload),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to generate recovery codes');
+        throw new Error(data.message || data.error || 'Failed to generate recovery codes');
       }
 
-      const data = await res.json();
       if (data.success && Array.isArray(data.codes) && data.codes.length > 0) {
         // Plaintext codes received: held ONLY in React state during display
         setPlaintextCodes(data.codes);
         setAcknowledged(false);
         setCopied(false);
+        setReauthPassword('');
         setView('display_codes');
       } else {
         throw new Error('Invalid response from generation service');
@@ -262,17 +288,43 @@ export function ProfileRecoveryCodes() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-1">
-                <button
-                  type="button"
-                  id="regenerate-recovery-codes-btn"
-                  onClick={() => setView('confirm_regenerate')}
-                  className="px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-gray-500" />
-                  <span>Regenerate recovery codes</span>
-                </button>
-              </div>
+              {status.isOAuthOnly ? (
+                <div className="flex flex-col gap-2 pt-2 border-t border-emerald-100">
+                  <div className="flex items-start gap-2 p-2.5 bg-amber-50/90 border border-amber-200/80 rounded-lg text-[12px] text-amber-900 leading-relaxed">
+                    <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold">OAuth Account Notice:</span> Recovery-code regeneration is currently unavailable for accounts signed in exclusively with Google or GitHub because strong step-up reauthentication is not supported. Your existing recovery codes remain active.
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-0.5">
+                    <button
+                      type="button"
+                      disabled
+                      title="Regeneration requires password reauthentication (unsupported for OAuth-only accounts)"
+                      className="px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed flex items-center gap-1.5 opacity-70"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-gray-400" />
+                      <span>Regenerate recovery codes</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    id="regenerate-recovery-codes-btn"
+                    onClick={() => {
+                      setGenerateError(null);
+                      setReauthPassword('');
+                      setView('confirm_regenerate');
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-[12px] font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-gray-500" />
+                    <span>Regenerate recovery codes</span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-3 p-3.5 bg-gray-50 border border-gray-100 rounded-xl">
@@ -298,7 +350,7 @@ export function ProfileRecoveryCodes() {
                 <button
                   type="button"
                   id="generate-initial-recovery-codes-btn"
-                  onClick={handleGenerate}
+                  onClick={() => handleGenerate()}
                   disabled={isGenerating}
                   className="px-4 py-2 rounded-xl text-[12px] font-semibold text-white bg-[#3f2a24] hover:bg-[#2c1d19] transition-colors flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-60"
                 >
@@ -320,7 +372,7 @@ export function ProfileRecoveryCodes() {
         </div>
       )}
 
-      {/* View 2: Confirmation Warning for Regeneration */}
+      {/* View 2: Confirmation Warning for Regeneration with Mandatory Step-Up Reauthentication */}
       {view === 'confirm_regenerate' && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
@@ -339,6 +391,38 @@ export function ProfileRecoveryCodes() {
             </div>
           </div>
 
+          {/* Current password reauthentication field */}
+          <div className="flex flex-col gap-1.5 pt-1">
+            <label
+              htmlFor="reauth-current-password"
+              className="text-[12px] font-semibold text-amber-950 flex items-center gap-1.5"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-800" />
+              <span>Current password required</span>
+            </label>
+            <input
+              id="reauth-current-password"
+              type="password"
+              value={reauthPassword}
+              onChange={(e) => {
+                setReauthPassword(e.target.value);
+                setGenerateError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && reauthPassword.trim() && !isGenerating) {
+                  e.preventDefault();
+                  handleGenerate(reauthPassword);
+                }
+              }}
+              placeholder="Enter your current password"
+              className="w-full bg-white border border-amber-300 focus:border-[#3f2a24] rounded-xl px-3.5 py-2 text-[13px] text-gray-900 outline-none transition-colors"
+              autoComplete="current-password"
+            />
+            <p className="text-[11px] text-amber-800/80">
+              Re-enter your password to authorize invalidating your existing codes and generating a fresh set.
+            </p>
+          </div>
+
           {generateError && (
             <div className="p-2.5 bg-red-50 text-red-600 text-[12px] rounded-lg">
               {generateError}
@@ -351,6 +435,7 @@ export function ProfileRecoveryCodes() {
               id="cancel-regenerate-btn"
               onClick={() => {
                 setGenerateError(null);
+                setReauthPassword('');
                 setView('status');
               }}
               disabled={isGenerating}
@@ -361,17 +446,17 @@ export function ProfileRecoveryCodes() {
             <button
               type="button"
               id="confirm-regenerate-btn"
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="px-4 py-1.5 rounded-lg text-[12px] font-semibold text-white bg-amber-700 hover:bg-amber-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-60"
+              onClick={() => handleGenerate(reauthPassword)}
+              disabled={isGenerating || !reauthPassword.trim()}
+              className="px-4 py-1.5 rounded-lg text-[12px] font-semibold text-white bg-amber-700 hover:bg-amber-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Regenerating...</span>
+                  <span>Verifying & Regenerating...</span>
                 </>
               ) : (
-                <span>Yes, regenerate codes</span>
+                <span>Confirm & Regenerate</span>
               )}
             </button>
           </div>
