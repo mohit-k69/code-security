@@ -67,14 +67,14 @@ CREATE OR REPLACE FUNCTION public.consume_recovery_code(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_updated_id UUID;
 BEGIN
     -- Atomically lock and consume the active matching code
     UPDATE public.user_recovery_codes
-    SET consumed_at = now()
+    SET consumed_at = pg_catalog.now()
     WHERE id = (
         SELECT id
         FROM public.user_recovery_codes
