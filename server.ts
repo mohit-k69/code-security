@@ -4,7 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { checkAuthEmailExists, getSupabaseAdmin } from "./src/lib/authCheck";
 import { generateAndStoreRecoveryCodes } from "./src/lib/recoveryCodes";
-import { handleRecoveryVerification } from "./src/lib/recoveryVerification";
+import { handleRecoveryVerification, resolveClientIp } from "./src/lib/recoveryVerification";
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -14,6 +14,9 @@ export { checkAuthEmailExists };
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Securely evaluate trusted proxy hops (Cloud Run / reverse proxy)
+  app.set("trust proxy", 1);
 
   app.use(express.json());
 
@@ -143,8 +146,9 @@ async function startServer() {
       return res.status(503).json({ error: "ADMIN_SERVICE_UNAVAILABLE" });
     }
 
-    const forwarded = req.headers["x-forwarded-for"];
-    const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown-ip";
+    // Secure client IP extraction: Express evaluates trust proxy correctly from the right,
+    // preventing attackers from spoofing X-Forwarded-For headers to bypass rate limits.
+    const ip = req.ip || resolveClientIp(req.socket?.remoteAddress, req.headers["x-forwarded-for"], 1);
 
     const email = req.body?.email || req.body?.identifier;
     const code = req.body?.code;
@@ -156,16 +160,22 @@ async function startServer() {
         ip,
       });
 
-      if (result.success && result.body.recovery_ticket) {
-        res.cookie("recovery_ticket", result.body.recovery_ticket, {
+      // CRITICAL: Deliver the recovery ticket ONLY via secure HttpOnly cookie.
+      // Plaintext recovery ticket is NEVER included in the response body.
+      if (result.success && result.ticket) {
+        const isProduction = process.env.NODE_ENV === "production";
+        const isSecure = isProduction || req.secure || req.headers["x-forwarded-proto"] === "https";
+
+        res.cookie("recovery_ticket", result.ticket, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: isSecure,
           sameSite: "strict",
           path: "/api/auth/recovery",
-          maxAge: (result.body.expires_in || 900) * 1000,
+          maxAge: 15 * 60 * 1000, // 15 minutes
         });
       }
 
+      // Response body contains ONLY non-secret fields: { success: true, expires_at: "..." }
       return res.status(result.status).json(result.body);
     } catch (err: any) {
       console.error("[recovery-verification] endpoint error");

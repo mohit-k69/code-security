@@ -34,12 +34,12 @@ export const GENERIC_RATE_LIMIT_ERROR = {
 export interface VerificationResult {
   success: boolean;
   status: number;
+  ticket?: string; // Private to server runtime for HttpOnly cookie issuance. NEVER serialized into JSON response body.
   body: {
     success?: boolean;
+    expires_at?: string;
     error?: string;
     message?: string;
-    recovery_ticket?: string;
-    expires_in?: number;
   };
 }
 
@@ -316,7 +316,7 @@ export async function issueRecoveryTicket(
   supabaseAdmin: any,
   userId: string,
   expiryMs: number = RECOVERY_TICKET_EXPIRY_MS
-): Promise<{ ticket: string; expiresInSeconds: number }> {
+): Promise<{ ticket: string; expiresInSeconds: number; expiresAt: string }> {
   const ticketSecret = generateRecoveryTicketSecret();
   const ticketHash = await hashTicketSecret(ticketSecret);
 
@@ -341,7 +341,45 @@ export async function issueRecoveryTicket(
   return {
     ticket: ticketSecret,
     expiresInSeconds: Math.floor(expiryMs / 1000),
+    expiresAt: expiresIso,
   };
+}
+
+/**
+ * Safely resolves the client IP under reverse-proxy configurations.
+ * Prevents attackers from spoofing IP rate-limiting via arbitrary X-Forwarded-For headers.
+ * Under 1 trusted proxy hop (e.g. Cloud Run / ALB / Nginx), the authoritative IP is the last entry.
+ */
+export function resolveClientIp(
+  socketRemoteAddress: string | undefined,
+  forwardedForHeader: string | string[] | undefined,
+  trustProxyHopCount: number = 1
+): string {
+  if (!forwardedForHeader || trustProxyHopCount <= 0) {
+    let cleanIp = socketRemoteAddress || '127.0.0.1';
+    if (cleanIp.startsWith('::ffff:')) cleanIp = cleanIp.substring(7);
+    return cleanIp;
+  }
+
+  const rawHeader = Array.isArray(forwardedForHeader)
+    ? forwardedForHeader.join(',')
+    : forwardedForHeader;
+
+  const hops = rawHeader.split(',').map((h) => h.trim()).filter(Boolean);
+  if (hops.length === 0) {
+    let cleanIp = socketRemoteAddress || '127.0.0.1';
+    if (cleanIp.startsWith('::ffff:')) cleanIp = cleanIp.substring(7);
+    return cleanIp;
+  }
+
+  // Under a reverse proxy deployment (like Cloud Run / GCP LB), exactly trustProxyHopCount proxies are in front.
+  // The client IP appended by the trusted edge proxy is at index (length - trustProxyHopCount).
+  const targetIndex = Math.max(0, hops.length - trustProxyHopCount);
+  let resolvedIp = hops[targetIndex];
+  if (resolvedIp.startsWith('::ffff:')) {
+    resolvedIp = resolvedIp.substring(7);
+  }
+  return resolvedIp;
 }
 
 /**
@@ -484,7 +522,7 @@ export async function handleRecoveryVerification(
   await resetRateLimit(supabaseAdmin, accountKey);
 
   // 6. Issue restricted recovery ticket
-  const { ticket, expiresInSeconds } = await issueRecoveryTicket(
+  const { ticket, expiresAt } = await issueRecoveryTicket(
     supabaseAdmin,
     userId,
     RECOVERY_TICKET_EXPIRY_MS
@@ -493,10 +531,10 @@ export async function handleRecoveryVerification(
   return {
     success: true,
     status: 200,
+    ticket, // Private to server runtime for cookie issuance; NEVER returned in JSON body
     body: {
       success: true,
-      recovery_ticket: ticket,
-      expires_in: expiresInSeconds,
+      expires_at: expiresAt,
     },
   };
 }

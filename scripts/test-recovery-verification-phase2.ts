@@ -265,15 +265,16 @@ async function runAllPhase2Tests() {
 
     assert(result.success === true, 'Verification should succeed for valid code');
     assert(result.status === 200, `Expected status 200, got ${result.status}`);
-    assert(Boolean(result.body.recovery_ticket), 'Must return a recovery_ticket secret');
-    assert(typeof result.body.recovery_ticket === 'string', 'Ticket must be a string');
-    assert(result.body.recovery_ticket!.length === 64, 'Ticket must be a 256-bit hex string');
-    assert(result.body.expires_in === 900, 'Ticket expiration should be 900 seconds (15m)');
+    assert(result.ticket !== undefined && typeof result.ticket === 'string', 'Server must obtain internal ticket for cookie issuance');
+    assert(result.ticket!.length === 64, 'Ticket must be a 256-bit hex string');
+    assert((result.body as any).recovery_ticket === undefined, 'Plaintext recovery_ticket must NOT be returned in JSON body');
+    assert(typeof result.body.expires_at === 'string', 'Response body must contain non-secret expires_at ISO string');
+    assert(result.body.success === true, 'Response body success must be true');
 
     // Verify database row for ticket: only hash is stored
     assert(admin._recoveryTickets.length === 1, 'Recovery ticket must be persisted in database');
     const ticketRow = admin._recoveryTickets[0];
-    assert(ticketRow.ticket_hash !== result.body.recovery_ticket, 'Plaintext ticket must NEVER be stored');
+    assert(ticketRow.ticket_hash !== result.ticket, 'Plaintext ticket must NEVER be stored');
     assert(ticketRow.user_id === 'alice-uuid-1111', 'Ticket must be tied to Alice');
     assert(ticketRow.consumed_at === null, 'Ticket must be initially unconsumed');
   });
@@ -491,7 +492,8 @@ async function runAllPhase2Tests() {
       ip: '192.168.1.40',
     });
 
-    const ticket = result.body.recovery_ticket!;
+    const ticket = result.ticket!;
+    assert((result.body as any).recovery_ticket === undefined, 'Ticket must NOT be returned in body');
 
     // 1. Immediately valid
     const validCheck = await validateRecoveryTicket(admin, ticket);
@@ -518,7 +520,8 @@ async function runAllPhase2Tests() {
       ip: '192.168.1.45',
     });
 
-    const ticket = result.body.recovery_ticket!;
+    const ticket = result.ticket!;
+    assert((result.body as any).recovery_ticket === undefined, 'Ticket must NOT be returned in body');
 
     // Passing the recovery ticket as a Bearer token to admin.auth.getUser() must fail
     const authCheck = await admin.auth.getUser(ticket);
@@ -542,7 +545,8 @@ async function runAllPhase2Tests() {
       ip: '192.168.1.50',
     });
 
-    const ticket = result.body.recovery_ticket!;
+    const ticket = result.ticket!;
+    assert((result.body as any).recovery_ticket === undefined, 'Ticket must NOT be returned in body');
 
     // Check validity before consumption
     const check1 = await validateRecoveryTicket(admin, ticket);
@@ -626,7 +630,7 @@ async function runAllPhase2Tests() {
         code: batch.codes[0],
         ip: '192.168.1.70',
       });
-      ticketSecret = res.body.recovery_ticket!;
+      ticketSecret = res.ticket!;
     } finally {
       console.log = originalLog;
       console.info = originalInfo;

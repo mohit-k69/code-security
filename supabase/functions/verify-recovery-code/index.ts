@@ -147,9 +147,15 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract client IP and body
+    // Extract client IP securely:
+    // In Edge Functions, trusted reverse proxy sets cf-connecting-ip or x-real-ip.
+    // If evaluating x-forwarded-for, take the rightmost IP added by the trusted proxy,
+    // preventing attackers from bypassing IP throttling by prepending fake IPs.
+    const cfIp = req.headers.get('cf-connecting-ip');
+    const xRealIp = req.headers.get('x-real-ip');
     const forwarded = req.headers.get('x-forwarded-for') || '';
-    const clientIp = forwarded.split(',')[0].trim() || 'unknown-ip';
+    const forwardedHops = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
+    const clientIp = cfIp || xRealIp || (forwardedHops.length > 0 ? forwardedHops[forwardedHops.length - 1] : 'unknown-ip');
 
     const body = await req.json().catch(() => ({}));
     const rawIdentifier = body.email || body.identifier;
@@ -277,11 +283,12 @@ Deno.serve(async (req) => {
 
     const cookieHeader = `recovery_ticket=${ticketSecret}; HttpOnly; Secure; SameSite=Strict; Path=/api/auth/recovery; Max-Age=900`;
 
+    // CRITICAL: Deliver recovery ticket ONLY via secure HttpOnly cookie.
+    // Plaintext recovery ticket is NEVER included in JSON response body.
     return new Response(
       JSON.stringify({
         success: true,
-        recovery_ticket: ticketSecret,
-        expires_in: 900,
+        expires_at: expiresIso,
       }),
       {
         headers: {
