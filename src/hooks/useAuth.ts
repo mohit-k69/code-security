@@ -12,6 +12,7 @@ export interface User {
   isGithubLinked?: boolean;
   githubUsername?: string;
   authProvider?: 'email' | 'github' | 'google';
+  recoveryPromptSeenAt?: string;
 }
 
 export function isOAuthUser(user: any, identities: any[] = []): boolean {
@@ -308,6 +309,7 @@ export function useAuth() {
           isGithubLinked,
           githubUsername,
           authProvider,
+          recoveryPromptSeenAt: meta?.recovery_prompt_seen_at,
         });
 
         // Unblock UI immediately so the user doesn't wait

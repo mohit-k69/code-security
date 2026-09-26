@@ -120,6 +120,56 @@ export default function App() {
   }, [activeTab, activeWorkflow, user]);
 
   const shouldReduceMotion = useReducedMotion();
+
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id || user.recoveryPromptSeenAt) return;
+
+    const checkRecoverySetup = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        if (!token) return;
+
+        const res = await fetch('/api/auth/recovery-codes/status', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.success && !data.hasCodes) {
+          setShowRecoveryPrompt(true);
+
+          const seenAt = new Date().toISOString();
+          const { data: updatedUser, error } = await supabase.auth.updateUser({
+            data: { recovery_prompt_seen_at: seenAt },
+          });
+
+          if (!error) {
+            setUser((prev) => prev
+              ? {
+                  ...prev,
+                  recoveryPromptSeenAt:
+                    updatedUser.user?.user_metadata?.recovery_prompt_seen_at || seenAt,
+                }
+              : prev
+            );
+          }
+        }
+      } catch (err) {
+        console.warn('[RECOVERY_PROMPT] Failed to check setup status:', err);
+      }
+    };
+
+    checkRecoverySetup();
+  }, [user?.id, user?.recoveryPromptSeenAt, setUser]);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -229,6 +279,8 @@ export default function App() {
           setIsProfileOpen={setIsProfileOpen}
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
+          showRecoveryPrompt={showRecoveryPrompt}
+          onDismissRecoveryPrompt={() => setShowRecoveryPrompt(false)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
           showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload')}
           onBack={handleReturnHome}

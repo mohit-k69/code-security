@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Menu, ArrowLeft } from 'lucide-react';
+import { User, Menu, ArrowLeft, Key, X } from 'lucide-react';
 import { User as UserType } from '../../hooks/useAuth';
 
 interface HeaderProps {
@@ -8,6 +8,8 @@ interface HeaderProps {
   setIsProfileOpen: (isOpen: boolean) => void;
   openProfileModal: () => void;
   onSignOut: () => void;
+  showRecoveryPrompt?: boolean;
+  onDismissRecoveryPrompt?: () => void;
   onToggleMobileSidebar?: () => void;
   showBackButton?: boolean;
   onBack?: () => void;
@@ -19,6 +21,8 @@ export function Header({
   setIsProfileOpen, 
   openProfileModal, 
   onSignOut,
+  showRecoveryPrompt = false,
+  onDismissRecoveryPrompt,
   onToggleMobileSidebar,
   showBackButton = false,
   onBack
@@ -51,9 +55,57 @@ export function Header({
 
       {/* Top-Right Account / Avatar Button */}
       <div className="relative">
+        {showRecoveryPrompt && !isProfileOpen && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute right-0 top-[46px] w-[280px] bg-white border border-gray-200 rounded-2xl shadow-xl z-40 p-4"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                <Key className="w-4 h-4 text-amber-600" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-gray-900">
+                  Protect your account
+                </div>
+                <p className="text-[12px] text-gray-500 leading-relaxed mt-1">
+                  Set up recovery codes so you can regain access if you forget your password.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDismissRecoveryPrompt?.();
+                    openProfileModal();
+                  }}
+                  className="mt-3 text-[12px] font-semibold text-[#3f2a24] hover:text-[#2c1d19] transition-colors cursor-pointer"
+                >
+                  Set up recovery codes →
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onDismissRecoveryPrompt?.()}
+                aria-label="Dismiss recovery code reminder"
+                className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <button 
           id="profile-dropdown-btn"
-          onClick={() => setIsProfileOpen(!isProfileOpen)}
+          onClick={() => {
+            if (showRecoveryPrompt) {
+              onDismissRecoveryPrompt?.();
+            }
+            setIsProfileOpen(!isProfileOpen);
+          }}
           className="flex items-center gap-3 cursor-pointer group focus:outline-none"
           aria-label="User profile menu"
         >

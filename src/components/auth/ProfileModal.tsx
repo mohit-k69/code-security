@@ -191,6 +191,7 @@ export function ProfileModal({ user, setUser, isOpen, setIsOpen }: ProfileModalP
           created_at: data.user.created_at,
           last_name_updated_at: meta?.last_name_updated_at,
           last_password_updated_at: meta?.last_password_updated_at,
+          recoveryPromptSeenAt: meta?.recovery_prompt_seen_at,
         });
       }
 
