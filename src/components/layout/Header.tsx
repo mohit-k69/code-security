@@ -56,11 +56,17 @@ export function Header({
       {/* Top-Right Account / Avatar Button */}
       <div className="relative">
         {showRecoveryPrompt && !isProfileOpen && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="absolute right-0 top-[46px] w-[280px] bg-white border border-gray-200 rounded-2xl shadow-xl z-40 p-4"
-          >
+          <>
+            <div
+              aria-hidden="true"
+              className="fixed inset-0 z-20 bg-black/10 backdrop-blur-sm"
+            />
+
+            <div
+              role="status"
+              aria-live="polite"
+              className="absolute right-0 top-[46px] w-[280px] bg-white border border-gray-200 rounded-2xl shadow-xl z-40 p-4"
+            >
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
                 <Key className="w-4 h-4 text-amber-600" />
@@ -95,7 +101,8 @@ export function Header({
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
+            </div>
+          </>
         )}
 
         <button 
