@@ -10,6 +10,7 @@ import {
   OnboardingEmailStep,
   OnboardingForgotPassword,
   OnboardingRecoveryFlow,
+  OnboardingEmailConfirmation,
 } from './components/auth/onboarding/OnboardingSteps';
 
 import { CodeVibeIcon } from './components/common/CodeVibeLogo';
@@ -29,164 +30,16 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // Duplicate email pre-check & existing user state
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
-
-  const checkedEmailsCache = useRef<Record<string, boolean>>({});
-  const checkDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const checkAbortControllerRef = useRef<AbortController | null>(null);
-  const checkReqIdRef = useRef<number>(0);
-  const lastCheckedEmailRef = useRef<string>('');
-  const inFlightEmailRef = useRef<string | null>(null);
-
-  const checkEmailDuplicate = useCallback(async (rawEmail: string, immediate = false) => {
-    const normalized = normalizeEmail(rawEmail);
-
-    // If incomplete or invalid format/domain, do not issue an API request
-    if (!normalized || !isValidEmailFormat(normalized) || !isValidEmailDomain(normalized)) {
-      if (checkDebounceTimerRef.current) {
-        clearTimeout(checkDebounceTimerRef.current);
-        checkDebounceTimerRef.current = null;
-      }
-      if (checkAbortControllerRef.current) {
-        checkAbortControllerRef.current.abort();
-        checkAbortControllerRef.current = null;
-      }
-      inFlightEmailRef.current = null;
-      setIsCheckingEmail(false);
-      setIsDuplicateEmail(false);
-      setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-      return;
-    }
-
-    // Check cache first to avoid redundant API requests
-    if (checkedEmailsCache.current[normalized] !== undefined) {
-      const exists = checkedEmailsCache.current[normalized];
-      lastCheckedEmailRef.current = normalized;
-      inFlightEmailRef.current = null;
-      setIsCheckingEmail(false);
-      setIsDuplicateEmail(exists);
-      if (exists) {
-        setEmailError('Account already exists. Please use a different email.');
-      } else {
-        setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-      }
-      return;
-    }
-
-    // Cancel any pending debounce timer
-    if (checkDebounceTimerRef.current) {
-      clearTimeout(checkDebounceTimerRef.current);
-      checkDebounceTimerRef.current = null;
-    }
-
-    const runCheck = async () => {
-      // Safely abort any in-flight request for previous email
-      if (checkAbortControllerRef.current) {
-        checkAbortControllerRef.current.abort();
-      }
-      const controller = new AbortController();
-      checkAbortControllerRef.current = controller;
-      const currentReqId = ++checkReqIdRef.current;
-      inFlightEmailRef.current = normalized;
-
-      setIsCheckingEmail(true);
-
-      // Client-side safety timeout (5500ms): guarantees request never remains pending indefinitely in browser
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, 5500);
-
-      try {
-        const res = await fetch('/api/auth/check-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: normalized }),
-          signal: controller.signal,
-        });
-
-        if (currentReqId !== checkReqIdRef.current) return;
-
-        const contentType = res.headers.get('content-type') || '';
-        if (res.ok && contentType.includes('application/json')) {
-          const result = await res.json();
-          if (currentReqId !== checkReqIdRef.current) return;
-
-          if (typeof result.exists === 'boolean') {
-            const exists = result.exists;
-            checkedEmailsCache.current[normalized] = exists;
-            lastCheckedEmailRef.current = normalized;
-            setIsDuplicateEmail(exists);
-
-            if (exists) {
-              setEmailError('Account already exists. Please use a different email.');
-            } else {
-              setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-            }
-          } else {
-            // Controlled error response (e.g. EMAIL_CHECK_UNAVAILABLE): do not block signup
-            setIsDuplicateEmail(false);
-            setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-          }
-        } else {
-          // Temporary server/network error (503/504/500): do not falsely claim email exists; do not block signup
-          setIsDuplicateEmail(false);
-          setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-        }
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-        // Temporary network failure: do not falsely claim email exists; submit path remains final authority
-        if (currentReqId === checkReqIdRef.current) {
-          setIsDuplicateEmail(false);
-          setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-        }
-      } finally {
-        clearTimeout(timeoutId);
-        if (inFlightEmailRef.current === normalized) {
-          inFlightEmailRef.current = null;
-        }
-        if (currentReqId === checkReqIdRef.current) {
-          setIsCheckingEmail(false);
-        }
-      }
-    };
-
-    if (immediate) {
-      runCheck();
-    } else {
-      checkDebounceTimerRef.current = setTimeout(runCheck, 500);
-    }
-  }, []);
+  // Email confirmation state (for Supabase projects requiring email verification)
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
 
   // Handle external prefilled email (e.g. from account switcher)
   useEffect(() => {
     if (initialEmail) {
       setEmail(initialEmail);
-      checkEmailDuplicate(initialEmail, true);
     }
-  }, [initialEmail, checkEmailDuplicate]);
-
-  // Debounced duplicate check on email change
-  useEffect(() => {
-    const normalized = normalizeEmail(email);
-    if (normalized !== lastCheckedEmailRef.current) {
-      setIsDuplicateEmail(false);
-      setEmailError((prev) => (prev === 'Account already exists. Please use a different email.' ? '' : prev));
-      checkEmailDuplicate(email, false);
-    }
-  }, [email, checkEmailDuplicate]);
-
-  // Trigger immediate check on blur if changed and not already in flight or checked
-  const handleEmailBlur = useCallback(() => {
-    const normalized = normalizeEmail(email);
-    if (normalized && isValidEmailFormat(normalized) && isValidEmailDomain(normalized)) {
-      // If already cached, or if this exact email is currently in flight, do not re-trigger or abort
-      if (checkedEmailsCache.current[normalized] === undefined && inFlightEmailRef.current !== normalized) {
-        checkEmailDuplicate(email, true);
-      }
-    }
-  }, [email, checkEmailDuplicate]);
+  }, [initialEmail]);
   
   // Track onboarding view & handle OAuth URL errors
   useEffect(() => {
@@ -255,161 +108,133 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
     setIsLoading(true);
 
     try {
-      // 1. Authoritative check if user exists (check state, cache, or call /api/auth/check-email once)
-      let isExisting = isDuplicateEmail;
+      // 1. First attempt normal email/password sign-in using existing Supabase Auth
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
 
-      if (!isExisting) {
-        if (checkedEmailsCache.current[normalizedEmail] !== undefined) {
-          isExisting = checkedEmailsCache.current[normalizedEmail];
-        } else {
-          try {
-            const res = await fetch('/api/auth/check-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'same-origin',
-              body: JSON.stringify({ email: normalizedEmail }),
-            });
-            const contentType = res.headers.get('content-type') || '';
-            if (res.ok && contentType.includes('application/json')) {
-              const result = await res.json();
-              if (result.exists) {
-                isExisting = true;
-                setIsDuplicateEmail(true);
-                checkedEmailsCache.current[normalizedEmail] = true;
-              } else if (result.exists === false) {
-                checkedEmailsCache.current[normalizedEmail] = false;
-              }
-            }
-          } catch (fetchErr) {
-            console.warn('Backend check-email error:', fetchErr);
-          }
+      // 2. If authentication succeeds: sign existing user in and continue into Cody normally
+      if (!signInError && signInData.user && signInData.session) {
+        const userObj: User = {
+          id: signInData.user.id,
+          name:
+            signInData.user.user_metadata?.full_name ||
+            signInData.user.user_metadata?.first_name ||
+            signInData.user.email?.split('@')[0] ||
+            'User',
+          email: signInData.user.email || normalizedEmail,
+          avatar: signInData.user.user_metadata?.avatar_url || signInData.user.user_metadata?.picture,
+        };
+        saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
+        identifyUser(signInData.user.id);
+        trackEvent('user_logged_in', { method: 'email' });
+        onLogin(userObj);
+        return;
+      }
+
+      // Check specific sign-in errors before attempting signup
+      if (signInError) {
+        const signInMsg = signInError.message.toLowerCase();
+        if (signInMsg.includes('email not confirmed') || signInMsg.includes('email_not_confirmed')) {
+          setEmailError('Please confirm your email address before signing in.');
+          return;
+        }
+
+        if (signInMsg.includes('rate limit') || (signInError as any).status === 429) {
+          setEmailError('Too many attempts. Please try again later.');
+          return;
         }
       }
 
-      if (isExisting) {
-        // Existing user: SIGN IN with password
-        // Supabase signUp() is NEVER called for existing accounts
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        });
+      // 3. Credentials do not correspond to an existing usable email/password account:
+      // Attempt existing Supabase email/password signup flow using the same entered email/password
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+      });
 
-        if (error) {
-          let friendlyError = error.message;
-          if (error.message.toLowerCase().includes('invalid login credentials')) {
-            friendlyError = 'Invalid email or password. Please try again.';
-          } else if (error.message.toLowerCase().includes('email not confirmed')) {
-            friendlyError = 'Please confirm your email address before signing in.';
-          }
-          setEmailError(friendlyError);
+      if (signUpError) {
+        const signUpMsg = signUpError.message.toLowerCase();
+        const signUpCode = ((signUpError as any).code || '').toLowerCase();
+        const isAlreadyRegistered =
+          signUpMsg.includes('already registered') ||
+          signUpMsg.includes('already exists') ||
+          signUpMsg.includes('user already exists') ||
+          signUpMsg.includes('email address is already in use') ||
+          signUpMsg.includes('identity_already_exists') ||
+          signUpCode.includes('already_exists') ||
+          signUpCode === 'user_already_exists' ||
+          (signUpError as any).status === 422;
+
+        if (isAlreadyRegistered) {
+          // 6. Email already registered, but sign-in failed (wrong password).
+          // Do NOT expose unnecessary account-existence info; show generic error:
+          setEmailError("We couldn't sign you in with those details. Check your email and password and try again.");
           return;
         }
 
-        if (data.user) {
-          const userObj: User = {
-            id: data.user.id,
-            name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
-            email: data.user.email || normalizedEmail,
-            avatar: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
-          };
-          saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
-          identifyUser(data.user.id);
-          trackEvent('user_logged_in', { method: 'email' });
-          onLogin(userObj);
-        }
-      } else {
-        // New user: SIGN UP
-        // If not already verified above, do a final check; otherwise reuse authoritative result
-        let isDuplicate = false;
-        if (checkedEmailsCache.current[normalizedEmail] === undefined) {
-          try {
-            const res = await fetch('/api/auth/check-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'same-origin',
-              body: JSON.stringify({ email: normalizedEmail }),
-            });
-            const contentType = res.headers.get('content-type') || '';
-            if (res.ok && contentType.includes('application/json')) {
-              const result = await res.json();
-              if (result.exists) {
-                isDuplicate = true;
-                checkedEmailsCache.current[normalizedEmail] = true;
-              }
-            }
-          } catch (fetchErr) {
-            console.warn('Backend duplicate check unavailable, falling back to Auth signUp validation:', fetchErr);
-          }
-        } else {
-          isDuplicate = Boolean(checkedEmailsCache.current[normalizedEmail]);
-        }
-
-        if (isDuplicate) {
-          setIsDuplicateEmail(true);
-          setEmailError('Account already exists. Please use a different email.');
+        if (signUpMsg.includes('password') && (signUpMsg.includes('short') || signUpMsg.includes('character') || signUpMsg.includes('weak'))) {
+          setEmailError('Password must be at least 6 characters');
           return;
         }
 
-        // Perform Supabase Auth SignUp
-        const { data, error } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password,
-        });
-
-        if (error) {
-          const errLower = error.message.toLowerCase();
-          const errCode = ((error as any).code || '').toLowerCase();
-          if (
-            errLower.includes('already registered') ||
-            errLower.includes('already exists') ||
-            errLower.includes('user already exists') ||
-            errLower.includes('email address is already in use') ||
-            errLower.includes('identity_already_exists') ||
-            errCode.includes('already_exists') ||
-            errCode === 'user_already_exists' ||
-            (error as any).status === 422
-          ) {
-            setIsDuplicateEmail(true);
-            setEmailError('Account already exists. Please use a different email.');
-          } else if (errLower.includes('password') && (errLower.includes('short') || errLower.includes('character') || errLower.includes('weak'))) {
-            setEmailError('Password must be at least 6 characters');
-          } else if (errLower.includes('rate limit') || (error as any).status === 429) {
-            setEmailError('Too many signup attempts. Please try again later.');
-          } else if (errLower.includes('invalid') && errLower.includes('email')) {
-            setEmailError('Please enter a valid email address');
-          } else {
-            setEmailError('Unable to create account. Please try again later.');
-          }
+        if (signUpMsg.includes('rate limit') || (signUpError as any).status === 429) {
+          setEmailError('Too many attempts. Please try again later.');
           return;
         }
 
-        // Check for empty identities array (GoTrue duplicate protection)
-        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-          setIsDuplicateEmail(true);
-          setEmailError('Account already exists. Please use a different email.');
+        if (signUpMsg.includes('invalid') && signUpMsg.includes('email')) {
+          setEmailError('Please enter a valid email address');
           return;
         }
 
-        // Account created successfully! Supabase Confirm Email is OFF so user is logged in immediately.
+        // Generic error to prevent enumeration
+        setEmailError("We couldn't sign you in with those details. Check your email and password and try again.");
+        return;
+      }
+
+      // GoTrue duplicate protection check:
+      // When email confirmation is enabled and user already exists, GoTrue returns user with empty identities: []
+      if (signUpData.user && Array.isArray(signUpData.user.identities) && signUpData.user.identities.length === 0) {
+        setEmailError("We couldn't sign you in with those details. Check your email and password and try again.");
+        return;
+      }
+
+      // 4. If signup succeeds with an immediately usable session:
+      if (signUpData.session && signUpData.user) {
+        const userObj: User = {
+          id: signUpData.user.id,
+          name:
+            signUpData.user.user_metadata?.full_name ||
+            signUpData.user.user_metadata?.first_name ||
+            signUpData.user.email?.split('@')[0] ||
+            'User',
+          email: signUpData.user.email || normalizedEmail,
+          avatar: signUpData.user.user_metadata?.avatar_url || signUpData.user.user_metadata?.picture,
+        };
+        saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
+        identifyUser(signUpData.user.id);
         trackEvent('user_signed_up', { method: 'email' });
-        if (data.user) {
-          const userObj: User = {
-            id: data.user.id,
-            name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
-            email: data.user.email || normalizedEmail,
-            avatar: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
-          };
-          saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
-          identifyUser(data.user.id);
-          onLogin(userObj);
-        }
+        onLogin(userObj);
+        return;
       }
+
+      // 5. If current Supabase project requires email confirmation:
+      if (signUpData.user && !signUpData.session) {
+        setConfirmationEmail(normalizedEmail);
+        setShowEmailConfirmation(true);
+        return;
+      }
+
+      // Fallback
+      setEmailError("We couldn't sign you in with those details. Check your email and password and try again.");
     } catch (err: any) {
       setEmailError(err.message || 'An unexpected authentication error occurred.');
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, isDuplicateEmail, onLogin, isLoading]);
+  }, [email, password, onLogin, isLoading]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -518,6 +343,18 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
       );
     }
 
+    if (showEmailConfirmation) {
+      return (
+        <OnboardingEmailConfirmation
+          email={confirmationEmail || email}
+          onBackToSignIn={() => {
+            setShowEmailConfirmation(false);
+            setEmailError('');
+          }}
+        />
+      );
+    }
+
     if (showForgotPassword) {
       return (
         <OnboardingForgotPassword
@@ -556,9 +393,6 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
         setForgotEmail={setForgotEmail}
         setForgotError={setForgotError}
         setForgotSuccess={setForgotSuccess}
-        isCheckingEmail={isCheckingEmail}
-        isDuplicateEmail={isDuplicateEmail}
-        onEmailBlur={handleEmailBlur}
       />
     );
   };

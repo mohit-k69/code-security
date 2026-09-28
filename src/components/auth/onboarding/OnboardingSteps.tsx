@@ -46,11 +46,11 @@ export function OnboardingEmailStep({
   );
 
   const isEmailInvalid = Boolean(
-    (emailError && !isPasswordError && emailError !== 'Account already exists. Please use a different email.') || isDuplicateEmail
+    emailError && !isPasswordError
   );
 
   const isFormReady = Boolean(email.trim() && password.trim());
-  const isSubmitDisabled = !isFormReady || isLoading || isCheckingEmail;
+  const isSubmitDisabled = !isFormReady || isLoading;
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -236,16 +236,16 @@ export function OnboardingEmailStep({
                 <span>Back</span>
               </button>
 
-              {/* Desktop-only: Welcome to Cody and Subtitle (hidden on mobile as requested) */}
+              {/* Desktop-only: Welcome to Cody and Subtitle */}
               <h2 className="hidden lg:block text-[24px] font-semibold text-gray-900 mb-2.5 text-center">
                 Welcome to Cody
               </h2>
-              <p className="hidden lg:block text-[14px] text-gray-500 mb-[30px] text-center leading-relaxed">
+              <p className="text-[15px] lg:text-[14px] text-gray-500 mb-6 lg:mb-[30px] text-center leading-relaxed">
                 Sign in or create your account to continue
               </p>
 
               <AnimatePresence>
-                {emailError && emailError !== 'Account already exists. Please use a different email.' && (
+                {emailError && (
                   <motion.div
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -277,17 +277,6 @@ export function OnboardingEmailStep({
                     className={`w-full bg-transparent border-b-2 ${isEmailInvalid ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
                   />
                 </div>
-                {isCheckingEmail && (
-                  <div id="email-checking-indicator" className="flex items-center gap-1.5 mt-2 text-[12px] text-gray-500">
-                    <Loader2 size={13} className="animate-spin text-gray-400 shrink-0" />
-                    <span>Checking email…</span>
-                  </div>
-                )}
-                {(isDuplicateEmail || emailError === 'Account already exists. Please use a different email.') && !isCheckingEmail && (
-                  <div id="email-duplicate-inline-warning" className="flex items-center gap-1.5 mt-2 text-[12px] text-red-500 font-medium">
-                    <span>Account already exists. Please use a different email.</span>
-                  </div>
-                )}
               </div>
 
               <div className="w-full mb-2">
@@ -321,9 +310,14 @@ export function OnboardingEmailStep({
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 }`}
               >
-                {isLoading
-                  ? (isDuplicateEmail ? 'Signing in...' : 'Creating account...')
-                  : isDuplicateEmail ? 'Sign In' : 'Create Account'}
+                {isLoading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-white" />
+                    <span>Continuing...</span>
+                  </span>
+                ) : (
+                  <span>Continue</span>
+                )}
               </button>
 
               <button
@@ -531,6 +525,52 @@ export function OnboardingSignupSuccess({
         className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20"
       >
         Go to Sign In
+      </button>
+    </motion.div>
+  );
+}
+
+// --- Email Confirmation Required ---
+export interface OnboardingEmailConfirmationProps {
+  email: string;
+  onBackToSignIn: () => void;
+}
+
+export function OnboardingEmailConfirmation({
+  email,
+  onBackToSignIn,
+}: OnboardingEmailConfirmationProps) {
+  return (
+    <motion.div
+      key="email-confirmation"
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.3 }}
+      className="w-full flex flex-col items-center text-center px-4"
+    >
+      <div className="w-16 h-16 rounded-full bg-[#3A2722]/10 flex items-center justify-center mb-6">
+        <Mail className="w-8 h-8 text-[#3A2722]" />
+      </div>
+      <h2 className="text-[26px] lg:text-[22px] font-bold lg:font-semibold text-gray-900 mb-3">
+        Check your email
+      </h2>
+      <p className="text-[15px] lg:text-[14px] text-gray-600 leading-relaxed mb-3 max-w-[340px]">
+        We sent a confirmation link to:
+      </p>
+      <div className="text-[15px] font-semibold text-[#3A2722] bg-[#FAF6F4] border border-[#EBDCD4] px-4 py-2 rounded-lg mb-6 break-all">
+        {email}
+      </div>
+      <p className="text-[13px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+        Click the link in your email to confirm your account and continue into Cody.
+      </p>
+      <button
+        type="button"
+        id="confirmation-back-to-signin-btn"
+        onClick={onBackToSignIn}
+        className="w-full max-w-[280px] py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors cursor-pointer shadow-xs"
+      >
+        Back to sign in
       </button>
     </motion.div>
   );
