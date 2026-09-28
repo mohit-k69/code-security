@@ -354,6 +354,7 @@ export async function runPreflightPipeline(
     filesDiscovered: totalDiscovered,
     filesAccepted: finalSafeFiles.length,
     filesRejected: totalRejected,
+    rejectedFiles: rejectedFilesList,
     totalSizeBytes,
     detectedLanguages,
     findings: allFindings,

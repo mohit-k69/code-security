@@ -110,6 +110,11 @@ export interface ThreatGateEvaluation {
   evaluatedAt: Date;
 }
 
+export type UrlRiskClassification =
+  | 'HIGH_CONFIDENCE_DANGEROUS'
+  | 'POTENTIAL_REQUEST_TARGET'
+  | 'EXAMPLE_OR_PLACEHOLDER';
+
 export interface PreflightResult {
   uploadType: UploadType;
   overallStatus: PreflightOverallStatus;
@@ -119,6 +124,7 @@ export interface PreflightResult {
   filesDiscovered: number;
   filesAccepted: number;
   filesRejected: number;
+  rejectedFiles?: Array<{ path: string; reason: string }>;
   totalSizeBytes: number;
   detectedLanguages: string[];
   findings: SuspiciousFinding[];

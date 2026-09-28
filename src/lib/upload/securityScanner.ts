@@ -15,6 +15,7 @@
 import {
   SuspiciousFinding,
   ExtractedProjectFile,
+  UrlRiskClassification,
   UNTRUSTED_BOUNDARY_PREFIX,
   UNTRUSTED_BOUNDARY_SUFFIX,
 } from './types';
@@ -122,20 +123,114 @@ const COMMAND_EXEC_RULES: Array<{
 ];
 
 // Suspicious URL schemes and SSRF vectors
-const SSRF_URL_REGEX = /\b(?:https?|ftp|gopher|file|data|javascript):\/\/([^\/\s:'"]+)(?::(\d+))?[^\s'"]*/gi;
+const SSRF_URL_REGEX = /\b(?:https?|ftp|gopher|file|data|javascript):\/\/[^\s'"<>)]+/gi;
+
+const DANGEROUS_SCHEMES = new Set(['file', 'gopher', 'javascript', 'data']);
 
 const INTERNAL_HOST_PATTERNS = [
   /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
   /^localhost$/i,
-  /^169\.254\.169\.254$/, // Cloud Instance Metadata
+  /^169\.254\.\d{1,3}\.\d{1,3}$/, // Cloud Instance Metadata & IPv4 Link-Local
   /^metadata\.google\.internal$/i,
+  /^instance-data$/i,
   /^0\.0\.0\.0$/,
   /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
   /^172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/,
   /^192\.168\.\d{1,3}\.\d{1,3}$/,
   /^::1$/,
   /^fd[0-9a-f]{2}:/i,
+  /^fe80:/i,
 ];
+
+const REQUEST_SINK_PATTERNS = [
+  /\bfetch\s*\(/i,
+  /\baxios(?:\.[a-zA-Z0-9_$]+)?\s*\(/i,
+  /\bXMLHttpRequest\b/i,
+  /\b(?:http|https)\.(?:get|request|post|put|delete)\s*\(/i,
+  /\brequests\.(?:get|post|put|delete|patch|head|options|request)\s*\(/i,
+  /\burllib(?:\.request)?\.(?:urlopen|Request)\s*\(/i,
+  /\b(?:got|superagent|ky|wretch|needle)\s*\(/i,
+  /\b(?:curl_init|file_get_contents|curl_exec)\b/i,
+  /\b(?:Net::HTTP|HTTParty|Faraday)\b/i,
+  /\b(?:HttpClient|WebClient|HttpWebRequest)\b/i,
+  /\b(?:openStream|openConnection)\b/i,
+  /\b(?:window\.location(?:\.assign|\.replace)?\s*=|window\.open\s*\(|res\.redirect\s*\(|response\.redirect\s*\()/i,
+  /\b(?:downloadFile|httpRequest|sendRequest|apiClient|makeRequest|sendGet|sendPost)\s*\(/i,
+];
+
+/**
+ * Classifies URL risk into:
+ * 1. HIGH_CONFIDENCE_DANGEROUS: Cloud metadata (169.254.169.254), localhost, internal IP ranges, dangerous schemes (file://, gopher://).
+ *    Always produces high-confidence security signal across strings, comments, examples, and code.
+ * 2. POTENTIAL_REQUEST_TARGET: Ordinary public HTTP/HTTPS URL used in an actual network request sink (fetch, axios, etc.).
+ * 3. EXAMPLE_OR_PLACEHOLDER: Ordinary public HTTP/HTTPS URL in placeholder text, UI attribute, documentation, comments, or mock data.
+ *    Does NOT trigger false-positive SSRF findings.
+ *
+ * CRITICAL INVARIANT: Static analysis only. Zero outbound network calls, DNS queries, or probing.
+ */
+export function classifyUrlRisk(
+  fullUrl: string,
+  host: string,
+  lineContext: string,
+  _fileName: string
+): {
+  classification: UrlRiskClassification;
+  isInternal: boolean;
+  isDangerousScheme: boolean;
+  rule: string;
+  severity: 'critical' | 'warning' | 'info';
+  description: string;
+} {
+  const schemeMatch = fullUrl.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
+  const scheme = schemeMatch ? schemeMatch[1].toLowerCase() : '';
+  const isDangerousScheme = DANGEROUS_SCHEMES.has(scheme);
+  
+  let parsedHost = host;
+  if (!parsedHost) {
+    const afterScheme = fullUrl.slice(schemeMatch ? schemeMatch[0].length : 0);
+    parsedHost = afterScheme.replace(/^\/+/, '').split(/[\/:]/)[0] || '';
+  }
+  const isInternal = INTERNAL_HOST_PATTERNS.some(p => p.test(parsedHost));
+
+  // 1. HIGH_CONFIDENCE_DANGEROUS: Cloud metadata, localhost, internal IP ranges, dangerous protocols
+  // Invariant: Always produces high-confidence security signal even in strings, comments, examples, etc.
+  if (isInternal || isDangerousScheme) {
+    return {
+      classification: 'HIGH_CONFIDENCE_DANGEROUS',
+      isInternal,
+      isDangerousScheme,
+      rule: isInternal ? 'SSRF_INTERNAL_ENDPOINT' : 'DANGEROUS_URL_SCHEME',
+      severity: isInternal ? 'critical' : 'warning',
+      description: isInternal
+        ? `Internal / cloud metadata target (${parsedHost || host}) found. Never visit uploaded URLs.`
+        : `Non-standard or dangerous URL scheme (${scheme}://) detected.`,
+    };
+  }
+
+  // 2. Check if the URL is used inside an actual request sink / outbound network call
+  const isRequestSink = REQUEST_SINK_PATTERNS.some(pattern => pattern.test(lineContext));
+
+  if (isRequestSink) {
+    return {
+      classification: 'POTENTIAL_REQUEST_TARGET',
+      isInternal: false,
+      isDangerousScheme: false,
+      rule: 'POTENTIAL_REQUEST_TARGET',
+      severity: 'warning',
+      description: `Outbound network request target (${parsedHost || host}) detected in code. Verify destination and enforce SSRF protections.`,
+    };
+  }
+
+  // 3. Otherwise: Merely an example, placeholder, documentation, comment, UI string, or static reference
+  return {
+    classification: 'EXAMPLE_OR_PLACEHOLDER',
+    isInternal: false,
+    isDangerousScheme: false,
+    rule: 'URL_EXAMPLE_PLACEHOLDER',
+    severity: 'info',
+    description: `Example or placeholder URL (${parsedHost || host}).`,
+  };
+}
 
 // Prompt injection patterns in uploaded comments, text, or documentation
 const PROMPT_INJECTION_PATTERNS: Array<{
@@ -263,21 +358,22 @@ export function scanFileForRisks(
     let urlMatch: RegExpExecArray | null;
     while ((urlMatch = SSRF_URL_REGEX.exec(line)) !== null) {
       const fullUrl = urlMatch[0];
-      const host = urlMatch[1];
-      const isInternal = INTERNAL_HOST_PATTERNS.some(p => p.test(host));
-      const isDangerousScheme = fullUrl.startsWith('file://') || fullUrl.startsWith('gopher://') || fullUrl.startsWith('data:') || fullUrl.startsWith('javascript:');
+      const schemeMatch = fullUrl.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
+      const afterScheme = fullUrl.slice(schemeMatch ? schemeMatch[0].length : 0);
+      const host = afterScheme.replace(/^\/+/, '').split(/[\/:]/)[0] || '';
+      const risk = classifyUrlRisk(fullUrl, host, line, file.relativePath);
 
-      if (isInternal || isDangerousScheme) {
+      // Only HIGH_CONFIDENCE_DANGEROUS and POTENTIAL_REQUEST_TARGET produce security findings.
+      // Merely decorative or example/placeholder URLs are excluded from SSRF false positives.
+      if (risk.classification === 'HIGH_CONFIDENCE_DANGEROUS' || risk.classification === 'POTENTIAL_REQUEST_TARGET') {
         findingCounter.count++;
         suspiciousUrlCount++;
         findings.push({
           id: `sec-${findingCounter.count}`,
           category: 'suspicious_url',
-          severity: isInternal ? 'critical' : 'warning',
-          rule: isInternal ? 'SSRF_INTERNAL_ENDPOINT' : 'DANGEROUS_URL_SCHEME',
-          description: isInternal
-            ? `Internal / cloud metadata target (${host}) found. Never visit uploaded URLs.`
-            : `Non-standard or dangerous URL scheme detected.`,
+          severity: risk.severity,
+          rule: risk.rule,
+          description: risk.description,
           fileName: file.relativePath,
           line: lineNumber,
           maskedSnippet: fullUrl.slice(0, 80),

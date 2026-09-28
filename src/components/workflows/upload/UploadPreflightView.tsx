@@ -5,6 +5,7 @@ import {
   AlertCircle,
   AlertTriangle,
   FileCode,
+  FileX,
   ShieldCheck,
   ChevronDown,
   ChevronUp,
@@ -49,6 +50,7 @@ export const UploadPreflightView: React.FC<UploadPreflightViewProps> = ({
 }) => {
   const [showFindingsList, setShowFindingsList] = useState(false);
   const [showFileList, setShowFileList] = useState(false);
+  const [showExcludedList, setShowExcludedList] = useState(false);
   const [showOcrSnippet, setShowOcrSnippet] = useState(false);
 
   const getStepIcon = (state: StepState) => {
@@ -220,26 +222,55 @@ export const UploadPreflightView: React.FC<UploadPreflightViewProps> = ({
           </div>
 
           {/* Compact Summary Metrics */}
-          <div className="grid grid-cols-3 gap-3 py-1">
-            <div className="flex flex-col gap-0.5 p-3 rounded-xl bg-gray-50/70 border border-gray-100">
-              <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Scanned</span>
-              <span className="text-[18px] font-semibold text-gray-800">
-                {preflightResult.filesAccepted} <span className="text-[12px] font-normal text-gray-500">files</span>
-              </span>
+          {preflightResult.uploadType === 'zip' ? (
+            <div className="grid grid-cols-4 gap-2.5 py-1">
+              <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-gray-50/70 border border-gray-100">
+                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Archive</span>
+                <span className="text-[16px] font-semibold text-gray-800">
+                  {preflightResult.filesDiscovered} <span className="text-[11px] font-normal text-gray-500">entries</span>
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5 p-2.5 rounded-xl bg-emerald-50/40 border border-emerald-100/70">
+                <span className="text-[10px] text-emerald-700 font-medium uppercase tracking-wider">Reviewable</span>
+                <span className="text-[16px] font-semibold text-emerald-900">
+                  {preflightResult.filesAccepted} <span className="text-[11px] font-normal text-emerald-700">files</span>
+                </span>
+              </div>
+              <div className={`flex flex-col gap-0.5 p-2.5 rounded-xl border ${preflightResult.filesRejected > 0 ? 'bg-amber-50/40 border-amber-100/70' : 'bg-gray-50/70 border-gray-100'}`}>
+                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Excluded</span>
+                <span className={`text-[16px] font-semibold ${preflightResult.filesRejected > 0 ? 'text-amber-800' : 'text-gray-800'}`}>
+                  {preflightResult.filesRejected} <span className="text-[11px] font-normal text-gray-500">{preflightResult.filesRejected === 1 ? 'file' : 'files'}</span>
+                </span>
+              </div>
+              <div className={`flex flex-col gap-0.5 p-2.5 rounded-xl border ${preflightResult.secretCount > 0 ? 'bg-amber-50/50 border-amber-200/60' : 'bg-gray-50/70 border-gray-100'}`}>
+                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Secrets</span>
+                <span className={`text-[16px] font-semibold ${preflightResult.secretCount > 0 ? 'text-amber-800' : 'text-gray-800'}`}>
+                  {preflightResult.secretCount} <span className="text-[11px] font-normal text-gray-500">detected</span>
+                </span>
+              </div>
             </div>
-            <div className={`flex flex-col gap-0.5 p-3 rounded-xl border ${preflightResult.secretCount > 0 ? 'bg-amber-50/50 border-amber-200/60' : 'bg-gray-50/70 border-gray-100'}`}>
-              <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Secrets</span>
-              <span className={`text-[18px] font-semibold ${preflightResult.secretCount > 0 ? 'text-amber-800' : 'text-gray-800'}`}>
-                {preflightResult.secretCount} <span className="text-[12px] font-normal text-gray-500">detected</span>
-              </span>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 py-1">
+              <div className="flex flex-col gap-0.5 p-3 rounded-xl bg-gray-50/70 border border-gray-100">
+                <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Reviewable</span>
+                <span className="text-[18px] font-semibold text-gray-800">
+                  {preflightResult.filesAccepted} <span className="text-[12px] font-normal text-gray-500">files</span>
+                </span>
+              </div>
+              <div className={`flex flex-col gap-0.5 p-3 rounded-xl border ${preflightResult.secretCount > 0 ? 'bg-amber-50/50 border-amber-200/60' : 'bg-gray-50/70 border-gray-100'}`}>
+                <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Secrets</span>
+                <span className={`text-[18px] font-semibold ${preflightResult.secretCount > 0 ? 'text-amber-800' : 'text-gray-800'}`}>
+                  {preflightResult.secretCount} <span className="text-[12px] font-normal text-gray-500">detected</span>
+                </span>
+              </div>
+              <div className={`flex flex-col gap-0.5 p-3 rounded-xl border ${preflightResult.suspiciousFileCount > 0 ? 'bg-rose-50/50 border-rose-200/60' : 'bg-gray-50/70 border-gray-100'}`}>
+                <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Suspicious</span>
+                <span className={`text-[18px] font-semibold ${preflightResult.suspiciousFileCount > 0 ? 'text-rose-800' : 'text-gray-800'}`}>
+                  {preflightResult.suspiciousFileCount} <span className="text-[12px] font-normal text-gray-500">files</span>
+                </span>
+              </div>
             </div>
-            <div className={`flex flex-col gap-0.5 p-3 rounded-xl border ${preflightResult.suspiciousFileCount > 0 ? 'bg-rose-50/50 border-rose-200/60' : 'bg-gray-50/70 border-gray-100'}`}>
-              <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Suspicious</span>
-              <span className={`text-[18px] font-semibold ${preflightResult.suspiciousFileCount > 0 ? 'text-rose-800' : 'text-gray-800'}`}>
-                {preflightResult.suspiciousFileCount} <span className="text-[12px] font-normal text-gray-500">files</span>
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Threat Gate Decision Card */}
           <div className={`p-4 rounded-xl border flex items-start gap-3 ${
@@ -391,7 +422,44 @@ export const UploadPreflightView: React.FC<UploadPreflightViewProps> = ({
             </div>
           )}
 
-          {/* Extracted Project Files Tree */}
+          {/* Excluded & Filtered Entries Preview */}
+          {preflightResult.rejectedFiles && preflightResult.rejectedFiles.length > 0 && (
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setShowExcludedList(!showExcludedList)}
+                className="w-full px-4 py-3 bg-gray-50/80 hover:bg-gray-100/70 text-left flex items-center justify-between text-[13px] font-medium text-gray-700 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <FileX className="w-4 h-4 text-amber-600" />
+                  <span>Excluded Entries ({preflightResult.rejectedFiles.length})</span>
+                </div>
+                {showExcludedList ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </button>
+
+              <AnimatePresence>
+                {showExcludedList && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="p-3 bg-white divide-y divide-gray-100 max-h-56 overflow-y-auto custom-scrollbar"
+                  >
+                    {preflightResult.rejectedFiles.map((rf, idx) => (
+                      <div key={idx} className="py-2 first:pt-1 last:pb-1 flex flex-col gap-0.5 text-[12px]">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-gray-800 truncate max-w-[280px]">{rf.path}</span>
+                          <span className="text-[10px] uppercase font-semibold text-gray-400 px-1.5 py-0.5 bg-gray-100 rounded">Excluded</span>
+                        </div>
+                        <div className="text-[11px] text-gray-500">Reason: {rf.reason}</div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Extracted Reviewable Project Files Tree */}
           {preflightResult.safeFiles.length > 0 && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -400,7 +468,7 @@ export const UploadPreflightView: React.FC<UploadPreflightViewProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <FolderTree className="w-4 h-4 text-[#3f2a24]" />
-                  <span>Project File Tree ({preflightResult.safeFiles.length} files)</span>
+                  <span>Reviewable Project Files ({preflightResult.safeFiles.length} files)</span>
                 </div>
                 {showFileList ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
               </button>

@@ -138,10 +138,13 @@ export async function inspectAndExtractZip(
     entries.push(file);
   });
 
+  const fileEntries = entries.filter(e => !e.dir);
+  const totalEntries = fileEntries.length > 0 ? fileEntries.length : entries.length;
+
   if (entries.length > UPLOAD_LIMITS.MAX_FILE_COUNT) {
     return {
       isSafe: false,
-      totalFilesDiscovered: entries.length,
+      totalFilesDiscovered: totalEntries,
       acceptedFiles: [],
       rejectedFiles: [],
       warnings: ['Excessive file count detected in archive.'],
@@ -214,6 +217,36 @@ export async function inspectAndExtractZip(
       }
     }
 
+    // Filter system metadata (.DS_Store, Thumbs.db, __MACOSX, ._*)
+    const isSystemMeta =
+      fileName === '.DS_Store' ||
+      fileName === 'Thumbs.db' ||
+      cleanPath.startsWith('__MACOSX/') ||
+      cleanPath.includes('/__MACOSX/') ||
+      fileName.startsWith('._');
+
+    if (isSystemMeta) {
+      rejectedFiles.push({ path: cleanPath, reason: 'Non-reviewable system metadata' });
+      continue;
+    }
+
+    // Filter lockfiles and checksum files
+    const isLockfile =
+      fileName === 'package-lock.json' ||
+      fileName === 'yarn.lock' ||
+      fileName === 'pnpm-lock.yaml' ||
+      fileName === 'Cargo.lock' ||
+      fileName === 'composer.lock' ||
+      fileName === 'go.sum' ||
+      fileName === 'poetry.lock' ||
+      extension === 'lock' ||
+      extension === 'sum';
+
+    if (isLockfile) {
+      rejectedFiles.push({ path: cleanPath, reason: 'Filtered non-reviewable lockfile artifact' });
+      continue;
+    }
+
     // Filter by supported source code/config extension
     // Ignore build/cache folders (.git, node_modules, dist, .next, __pycache__)
     const pathLower = cleanPath.toLowerCase();
@@ -229,12 +262,12 @@ export async function inspectAndExtractZip(
       pathLower.startsWith('.idea/') ||
       pathLower.startsWith('.vscode/')
     ) {
-      rejectedFiles.push({ path: cleanPath, reason: 'Ignored version-control or dependency cache artifact.' });
+      rejectedFiles.push({ path: cleanPath, reason: 'Filtered version-control or dependency cache artifact' });
       continue;
     }
 
     if (!isSupportedSourceExtension(extension) && fileName !== 'Dockerfile' && fileName !== 'Makefile') {
-      rejectedFiles.push({ path: cleanPath, reason: `Unsupported file extension .${extension || 'none'}` });
+      rejectedFiles.push({ path: cleanPath, reason: `Unsupported file type (.${extension || 'none'})` });
       continue;
     }
 
@@ -330,7 +363,7 @@ export async function inspectAndExtractZip(
   if (acceptedFiles.length > UPLOAD_LIMITS.MAX_REVIEWABLE_FILES) {
     return {
       isSafe: false,
-      totalFilesDiscovered: entries.length,
+      totalFilesDiscovered: totalEntries,
       acceptedFiles: [],
       rejectedFiles,
       warnings: ['Reviewable file limit exceeded.'],
@@ -346,7 +379,7 @@ export async function inspectAndExtractZip(
     );
     return {
       isSafe: false,
-      totalFilesDiscovered: entries.length,
+      totalFilesDiscovered: totalEntries,
       acceptedFiles: [],
       rejectedFiles,
       warnings,
@@ -360,7 +393,7 @@ export async function inspectAndExtractZip(
 
   return {
     isSafe: true,
-    totalFilesDiscovered: entries.length,
+    totalFilesDiscovered: totalEntries,
     acceptedFiles,
     rejectedFiles,
     warnings,
