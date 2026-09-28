@@ -309,12 +309,9 @@ export default function App() {
                 const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
                 const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
 
-                let leftContainerClass = 'flex-1';
-                if (isGithubAnalysisActive) {
-                  leftContainerClass = 'w-full lg:w-[30%] shrink-0 border-r border-gray-200';
-                } else if (isStandardAnalysisActive) {
-                  leftContainerClass = 'flex-1 border-r border-gray-200';
-                }
+                const leftContainerClass = shouldShowResultsPanel
+                  ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
+                  : 'flex-1';
 
                 return (
                   <>
@@ -411,7 +408,7 @@ export default function App() {
                         initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                        className={`h-full flex shrink-0 ${isGithubAnalysisActive ? 'flex-1 min-w-0 w-full lg:w-[70%]' : 'w-[420px] lg:w-[460px]'}`}
+                        className="h-full flex flex-1 min-w-0 w-full lg:w-[65%] shrink-0"
                       >
                         <Suspense fallback={<FallbackSpinner />}>
                           <SecurityReportPanel 
