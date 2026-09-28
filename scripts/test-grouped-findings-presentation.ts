@@ -184,27 +184,30 @@ async function runAllTests() {
   });
 
   // Test 7: Reusable GroupedFindingsList component contract verification
-  await runTest('7. GroupedFindingsList.tsx provides grouped findings UI with expandable underlying occurrences', () => {
+  await runTest('7. GroupedFindingsList.tsx provides category headers with always-visible individual occurrences and expandable details', () => {
     const listPath = path.resolve('src/components/common/GroupedFindingsList.tsx');
     const listCode = fs.readFileSync(listPath, 'utf8');
 
     // Verify groupFindingsByRule is invoked
     assert(listCode.includes('groupFindingsByRule(findings'), 'GroupedFindingsList must group findings by rule');
 
-    // Verify top-level group row rendering
-    assert(listCode.includes('groups.map((group: FindingGroup)'), 'Must map over groups');
+    // Verify category header rendering
+    assert(listCode.includes('groups.map((group: FindingGroup'), 'Must map over groups');
     assert(listCode.includes('group.rule'), 'Must display group rule');
     assert(listCode.includes('group.totalOccurrences'), 'Must display occurrences count badge');
-    assert(listCode.includes('toggleGroup(group.id)'), 'Must toggle group on click');
+    assert(listCode.includes('CIRCLED_NUMBERS'), 'Must use sequential category numbering (①, ②, etc.)');
 
-    // Verify expandable section rendering underlying occurrences
-    assert(listCode.includes('group.findings.map((finding: any, findingIdx: number)'), 'Must render all underlying findings inside expanded group');
-    assert(listCode.includes('findingIdx + 1'), 'Underlying findings must be numbered');
+    // Verify individual occurrences are mapped and rendered visible by default under each category
+    assert(listCode.includes('group.findings.map((finding: any, occIdx: number)'), 'Must render all underlying findings inside each category');
+    assert(listCode.includes('occIdx + 1'), 'Underlying findings must be numbered sequentially');
     assert(listCode.includes('locStr'), 'Must display location for each occurrence');
+    assert(listCode.includes('toggleIssue(issueKey)'), 'Must toggle individual issue on click');
+
+    // Verify expandable details per issue
     assert(listCode.includes('getCodingAgentPrompt(finding)'), 'Must provide coding agent prompt per finding');
     assert(listCode.includes('handleCopyPrompt'), 'Must provide prompt copy button per finding');
 
-    // Verify Expand all / Collapse all
+    // Verify Expand all / Collapse all toggles
     assert(listCode.includes('toggleExpandAll'), 'Must provide Expand all / Collapse all toggle');
   });
 
