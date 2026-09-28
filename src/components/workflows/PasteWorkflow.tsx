@@ -22,11 +22,18 @@ export function PasteWorkflow({
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-      className="flex-1 flex flex-col h-full max-w-3xl mx-auto w-full"
+      className="flex-1 flex flex-col h-full max-w-full mx-auto w-full"
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setActiveWorkflow('none')} className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+          <button 
+            id="paste-code-back-btn"
+            type="button"
+            onClick={() => setActiveWorkflow('none')} 
+            className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+            aria-label="Back to home"
+            title="Back to home"
+          >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h2 className="text-[18px] font-semibold text-gray-900">Paste Code</h2>

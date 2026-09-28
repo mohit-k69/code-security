@@ -340,8 +340,11 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-white font-sans overflow-hidden relative">
-      {/* Desktop & Tablet Sidebar (hidden on mobile) */}
-      <div className="hidden md:flex h-full shrink-0">
+      {/* Desktop & Tablet Sidebar (hidden on mobile, and hidden in Paste Code full-width editor mode) */}
+      <div 
+        id="desktop-sidebar-container"
+        className={`${activeTab === 'new' && activeWorkflow === 'paste' ? 'hidden' : 'hidden md:flex'} h-full shrink-0 transition-all duration-150`}
+      >
         <Sidebar 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -397,7 +400,13 @@ export default function App() {
           onDismissRecoveryPrompt={() => setShowRecoveryPrompt(false)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
           showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload')}
-          onBack={handleReturnHome}
+          onBack={() => {
+            if (activeWorkflow === 'paste') {
+              setActiveWorkflow('none');
+            } else {
+              handleReturnHome();
+            }
+          }}
         />
 
         <div className="flex-1 flex overflow-hidden">
@@ -418,13 +427,20 @@ export default function App() {
           ) : (
             <div className="flex-1 flex min-h-0 bg-white w-full">
               {(() => {
+                const isPasteCodeMode = activeTab === 'new' && activeWorkflow === 'paste';
                 const isGithubAnalysisActive = activeWorkflow === 'github' && selectedRepoId !== null && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
                 const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
 
-                const leftContainerClass = shouldShowResultsPanel
-                  ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
-                  : 'flex-1';
+                const leftContainerClass = isPasteCodeMode
+                  ? 'w-full lg:w-[45%] shrink-0 border-r border-gray-200'
+                  : shouldShowResultsPanel
+                    ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
+                    : 'flex-1';
+
+                const rightContainerClass = isPasteCodeMode
+                  ? 'h-full flex flex-1 min-w-0 w-full lg:w-[55%] shrink-0'
+                  : 'h-full flex flex-1 min-w-0 w-full lg:w-[65%] shrink-0';
 
                 return (
                   <>
@@ -443,9 +459,9 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className={`min-h-full flex flex-col items-center ${isGithubAnalysisActive ? 'py-8 px-4' : 'py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
+                      <div className={`min-h-full flex flex-col items-center ${isPasteCodeMode ? 'py-6 px-4 sm:px-6 md:px-8' : isGithubAnalysisActive ? 'py-8 px-4' : 'py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
                         <div 
-                          className={`w-full ${isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-6 md:space-y-8 pb-20 md:pb-32`}
+                          className={`w-full ${isPasteCodeMode ? 'max-w-full' : isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-6 md:space-y-8 pb-20 md:pb-32`}
                           onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
                         >
                           {activeWorkflow === 'none' && (
@@ -476,7 +492,7 @@ export default function App() {
 
                             {activeWorkflow === 'paste' && (
                               <PasteWorkflow 
-                                setActiveWorkflow={handleReturnHome}
+                                setActiveWorkflow={() => setActiveWorkflow('none')}
                                 pastedCode={pastedCode}
                                 setPastedCode={setPastedCode}
                                 handleCheckVibe={handleCheckVibe}
@@ -521,7 +537,7 @@ export default function App() {
                         initial={shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                        className="h-full flex flex-1 min-w-0 w-full lg:w-[65%] shrink-0"
+                        className={rightContainerClass}
                       >
                         <Suspense fallback={<FallbackSpinner />}>
                           <SecurityReportPanel 
