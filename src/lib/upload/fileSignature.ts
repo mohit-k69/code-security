@@ -5,10 +5,11 @@
 
 export const UPLOAD_LIMITS = {
   MAX_ZIP_SIZE_BYTES: 25 * 1024 * 1024,      // 25 MB
-  MAX_IMAGE_SIZE_BYTES: 10 * 1024 * 1024,    // 10 MB
-  MAX_SOURCE_FILE_SIZE_BYTES: 2 * 1024 * 1024, // 2 MB
-  MAX_TOTAL_EXTRACTED_BYTES: 50 * 1024 * 1024, // 50 MB
-  MAX_FILE_COUNT: 500,
+  MAX_IMAGE_SIZE_BYTES: 5 * 1024 * 1024,     // 5 MB document/image limit
+  MAX_SOURCE_FILE_SIZE_BYTES: 2 * 1024 * 1024, // 2 MB source/code/config limit
+  MAX_TOTAL_EXTRACTED_BYTES: 50 * 1024 * 1024, // 50 MB extracted content limit
+  MAX_REVIEWABLE_FILES: 100,                 // 100 reviewable files limit after extraction/filtering
+  MAX_FILE_COUNT: 500,                       // Raw entry bounds protection
   MAX_UPLOAD_FILES_AT_ONCE: 10,
   MAX_DIRECTORY_DEPTH: 10,
   MAX_COMPRESSION_RATIO: 50, // 50:1 ratio triggers bomb protection
@@ -201,13 +202,13 @@ export function validateSafeFileName(fileName: string): { isSafe: boolean; sanit
     return { isSafe: false, sanitizedName: '', reason: 'Path traversal sequence detected in filename.' };
   }
 
-  // Absolute paths
+  // Absolute paths & Windows drive-letter paths
   if (
     trimmed.startsWith('/') ||
     trimmed.startsWith('\\') ||
-    /^[a-zA-Z]:[\\\/]/.test(trimmed)
+    /^[a-zA-Z]:/.test(trimmed)
   ) {
-    return { isSafe: false, sanitizedName: '', reason: 'Absolute path is not permitted.' };
+    return { isSafe: false, sanitizedName: '', reason: 'Absolute or drive-letter path is not permitted.' };
   }
 
   // Reserved DOS/Windows device names

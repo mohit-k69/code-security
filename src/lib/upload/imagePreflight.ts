@@ -124,7 +124,7 @@ export async function inspectAndPreflightImage(
   if (size > UPLOAD_LIMITS.MAX_IMAGE_SIZE_BYTES) {
     return {
       isSafe: false,
-      error: `Image size (${(size / 1024 / 1024).toFixed(1)} MB) exceeds maximum allowed limit of ${UPLOAD_LIMITS.MAX_IMAGE_SIZE_BYTES / 1024 / 1024} MB.`,
+      error: `Image size (${(size / 1024 / 1024).toFixed(1)} MB) exceeds maximum allowed limit of ${UPLOAD_LIMITS.MAX_IMAGE_SIZE_BYTES / 1024 / 1024} MB. This file exceeds Cody's 5 MB document/image limit.`,
     };
   }
 

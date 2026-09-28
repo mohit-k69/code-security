@@ -210,7 +210,7 @@ export async function runPreflightPipeline(
       const size = f.size || f.bytes.byteLength;
       if (size > UPLOAD_LIMITS.MAX_SOURCE_FILE_SIZE_BYTES) {
         archiveWarnings.push(`File "${f.name}" skipped: exceeds 2 MB limit.`);
-        rejectedFilesList.push({ path: f.name, reason: 'File exceeds 2 MB size limit.' });
+        rejectedFilesList.push({ path: f.name, reason: "This file exceeds Cody's 2 MB code-file limit." });
         totalRejected++;
         continue;
       }
@@ -256,6 +256,11 @@ export async function runPreflightPipeline(
         status: 'accepted',
       });
       totalAccepted++;
+    }
+
+    if (extractedFiles.length > UPLOAD_LIMITS.MAX_REVIEWABLE_FILES) {
+      notify('file_safety', 'failed', 'Too many reviewable files');
+      return makeRejectedResult(firstFile.name, "This project contains more than 100 reviewable files.", 'source_files', archiveWarnings);
     }
 
     if (extractedFiles.length === 0) {

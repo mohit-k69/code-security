@@ -111,7 +111,7 @@ export async function inspectAndExtractZip(
       warnings: [],
       totalExtractedBytes: 0,
       languagesDiscovered: new Set(),
-      error: `ZIP archive size (${(compressedSize / 1024 / 1024).toFixed(1)} MB) exceeds maximum allowed limit of ${UPLOAD_LIMITS.MAX_ZIP_SIZE_BYTES / 1024 / 1024} MB.`,
+      error: `ZIP archive size (${(compressedSize / 1024 / 1024).toFixed(1)} MB) exceeds maximum allowed limit of ${UPLOAD_LIMITS.MAX_ZIP_SIZE_BYTES / 1024 / 1024} MB. This ZIP exceeds Cody's 25 MB upload limit.`,
     };
   }
 
@@ -209,7 +209,7 @@ export async function inspectAndExtractZip(
       // Check single file size limit
       if (uncompressedSize > UPLOAD_LIMITS.MAX_SOURCE_FILE_SIZE_BYTES) {
         warnings.push(`Skipped large file "${cleanPath}" (${(uncompressedSize / 1024 / 1024).toFixed(1)} MB > 2 MB).`);
-        rejectedFiles.push({ path: cleanPath, reason: 'File exceeds 2 MB size limit.' });
+        rejectedFiles.push({ path: cleanPath, reason: "This file exceeds Cody's 2 MB code-file limit." });
         continue;
       }
     }
@@ -251,7 +251,7 @@ export async function inspectAndExtractZip(
     const fileSize = rawBytes.byteLength;
     cumulativeExtractedBytes += fileSize;
 
-    // Check cumulative extraction limit (Zip bomb defense)
+    // Check cumulative extraction limit (Zip bomb defense & 50 MB total extracted content limit)
     if (cumulativeExtractedBytes > UPLOAD_LIMITS.MAX_TOTAL_EXTRACTED_BYTES) {
       return {
         isSafe: false,
@@ -261,14 +261,14 @@ export async function inspectAndExtractZip(
         warnings,
         totalExtractedBytes: cumulativeExtractedBytes,
         languagesDiscovered,
-        error: `Decompression limit exceeded: total extracted size exceeded maximum safety threshold of ${UPLOAD_LIMITS.MAX_TOTAL_EXTRACTED_BYTES / 1024 / 1024} MB.`,
+        error: `Decompression limit exceeded: total extracted size exceeded maximum safety threshold of ${UPLOAD_LIMITS.MAX_TOTAL_EXTRACTED_BYTES / 1024 / 1024} MB. This project exceeds Cody's 50 MB extracted-content limit.`,
       };
     }
 
     // Check single file size limit against actual extracted size
     if (fileSize > UPLOAD_LIMITS.MAX_SOURCE_FILE_SIZE_BYTES) {
       warnings.push(`Skipped large file "${cleanPath}" (${(fileSize / 1024 / 1024).toFixed(1)} MB > 2 MB).`);
-      rejectedFiles.push({ path: cleanPath, reason: 'File exceeds 2 MB size limit.' });
+      rejectedFiles.push({ path: cleanPath, reason: "This file exceeds Cody's 2 MB code-file limit." });
       continue;
     }
 
@@ -324,6 +324,20 @@ export async function inspectAndExtractZip(
       isBinary: false,
       status: 'accepted',
     });
+  }
+
+  // 6. Enforce reviewable file count limit (Max 100 reviewable files after extraction/filtering)
+  if (acceptedFiles.length > UPLOAD_LIMITS.MAX_REVIEWABLE_FILES) {
+    return {
+      isSafe: false,
+      totalFilesDiscovered: entries.length,
+      acceptedFiles: [],
+      rejectedFiles,
+      warnings: ['Reviewable file limit exceeded.'],
+      totalExtractedBytes: cumulativeExtractedBytes,
+      languagesDiscovered,
+      error: "This project contains more than 100 reviewable files.",
+    };
   }
 
   if (acceptedFiles.length === 0 && rejectedFiles.length > 0) {
