@@ -9,10 +9,13 @@
  *   on server authentication or session state.
  */
 
+export type AccountAuthProvider = 'google' | 'github' | 'email';
+
 export interface RememberedAccount {
   email: string;
   name: string;
   avatar?: string;
+  provider?: AccountAuthProvider;
   lastUsedAt: string;
 }
 
@@ -32,11 +35,17 @@ function sanitizeAccount(raw: any): RememberedAccount | null {
     : undefined;
   const lastUsedAt = typeof raw.lastUsedAt === 'string' ? raw.lastUsedAt : new Date().toISOString();
 
+  let provider: AccountAuthProvider | undefined = undefined;
+  if (raw.provider === 'google' || raw.provider === 'github' || raw.provider === 'email') {
+    provider = raw.provider;
+  }
+
   // Explicitly return ONLY allowed non-sensitive fields
   return {
     email,
     name,
     avatar,
+    provider,
     lastUsedAt,
   };
 }
@@ -64,17 +73,34 @@ export function getRememberedAccounts(): RememberedAccount[] {
 /**
  * Saves or updates a non-sensitive remembered account record.
  */
-export function saveRememberedAccount(account: { email: string; name?: string; avatar?: string }): void {
+export function saveRememberedAccount(account: {
+  email: string;
+  name?: string;
+  avatar?: string;
+  provider?: AccountAuthProvider;
+}): void {
   if (typeof window === 'undefined') return;
   try {
     const email = account.email?.trim().toLowerCase();
     if (!email || !email.includes('@')) return;
 
-    const existing = getRememberedAccounts().filter((a) => a.email !== email);
+    const existingAccounts = getRememberedAccounts();
+    const existing = existingAccounts.filter((a) => a.email !== email);
+    const prevEntry = existingAccounts.find((a) => a.email === email);
+
+    // Only allow non-sensitive provider identifier ('google' | 'github' | 'email')
+    let provider: AccountAuthProvider | undefined = undefined;
+    if (account.provider === 'google' || account.provider === 'github' || account.provider === 'email') {
+      provider = account.provider;
+    } else if (prevEntry?.provider) {
+      provider = prevEntry.provider;
+    }
+
     const entry: RememberedAccount = {
       email,
-      name: account.name?.trim() || email.split('@')[0],
-      avatar: account.avatar,
+      name: account.name?.trim() || prevEntry?.name || email.split('@')[0],
+      avatar: account.avatar || prevEntry?.avatar,
+      provider,
       lastUsedAt: new Date().toISOString(),
     };
 

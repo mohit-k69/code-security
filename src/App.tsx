@@ -191,7 +191,9 @@ export default function App() {
         email: user.email,
         name: user.name,
         avatar: user.avatar,
+        provider: user.authProvider,
       });
+      setIsSwitchingAccount(false);
     }
   }, [user]);
 
@@ -212,6 +214,7 @@ export default function App() {
           email: user.email,
           name: user.name,
           avatar: user.avatar,
+          provider: user.authProvider,
         });
       }
       trackEvent('user_signed_out');
@@ -236,6 +239,7 @@ export default function App() {
           email: user.email,
           name: user.name,
           avatar: user.avatar,
+          provider: user.authProvider,
         });
       }
 
@@ -291,6 +295,11 @@ export default function App() {
           </div>
         }>
           <AccountSwitcherModal
+            onAuthenticated={(authenticatedUser) => {
+              setUser(authenticatedUser);
+              setIsSwitchingAccount(false);
+              setPrefillEmail('');
+            }}
             onSelectAccount={(selectedEmail) => {
               setPrefillEmail(selectedEmail);
               setIsSwitchingAccount(false);

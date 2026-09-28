@@ -126,7 +126,12 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
           email: signInData.user.email || normalizedEmail,
           avatar: signInData.user.user_metadata?.avatar_url || signInData.user.user_metadata?.picture,
         };
-        saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
+        saveRememberedAccount({
+          email: userObj.email,
+          name: userObj.name,
+          avatar: userObj.avatar,
+          provider: 'email',
+        });
         identifyUser(signInData.user.id);
         trackEvent('user_logged_in', { method: 'email' });
         onLogin(userObj);
@@ -213,7 +218,12 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
           email: signUpData.user.email || normalizedEmail,
           avatar: signUpData.user.user_metadata?.avatar_url || signUpData.user.user_metadata?.picture,
         };
-        saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
+        saveRememberedAccount({
+          email: userObj.email,
+          name: userObj.name,
+          avatar: userObj.avatar,
+          provider: 'email',
+        });
         identifyUser(signUpData.user.id);
         trackEvent('user_signed_up', { method: 'email' });
         onLogin(userObj);
