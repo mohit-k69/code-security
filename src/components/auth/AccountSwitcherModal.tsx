@@ -622,22 +622,22 @@ export function AccountSwitcherModal({
                         setAuthError(res.error || 'Failed to authenticate with Google.');
                       }
                     }}
-                    className="w-full p-3.5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full min-h-[60px] px-5 py-2.5 rounded-full border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80 active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer text-left select-none"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-gray-200/80 shadow-xs flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
+                      <div className="w-9 h-9 rounded-full bg-white border border-gray-200/90 shadow-2xs flex items-center justify-center shrink-0">
                         <GoogleIcon className="w-4 h-4" />
                       </div>
-                      <div className="text-left">
-                        <div className="text-[14px] font-semibold text-gray-900 group-hover:text-[#3f2a24] transition-colors">
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-semibold text-gray-900 group-hover:text-[#3f2a24] transition-colors leading-tight truncate">
                           Continue with Google
                         </div>
-                        <div className="text-[11px] text-gray-500">
+                        <div className="text-[12px] text-gray-500 leading-tight mt-0.5 truncate">
                           Fast sign in with Google account
                         </div>
                       </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#3f2a24] transition-colors" />
+                    <ArrowRight className="w-[18px] h-[18px] text-gray-400 group-hover:text-[#3f2a24] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </button>
 
                   {/* GitHub */}
@@ -653,44 +653,44 @@ export function AccountSwitcherModal({
                         setAuthError(res.error || 'Failed to authenticate with GitHub.');
                       }
                     }}
-                    className="w-full p-3.5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full min-h-[60px] px-5 py-2.5 rounded-full border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80 active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer text-left select-none"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gray-900 text-white shadow-xs flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
+                      <div className="w-9 h-9 rounded-full bg-gray-900 text-white shadow-2xs flex items-center justify-center shrink-0">
                         <GithubIcon className="w-4 h-4" />
                       </div>
-                      <div className="text-left">
-                        <div className="text-[14px] font-semibold text-gray-900 group-hover:text-[#3f2a24] transition-colors">
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-semibold text-gray-900 group-hover:text-[#3f2a24] transition-colors leading-tight truncate">
                           Continue with GitHub
                         </div>
-                        <div className="text-[11px] text-gray-500">
+                        <div className="text-[12px] text-gray-500 leading-tight mt-0.5 truncate">
                           Connect with your GitHub profile
                         </div>
                       </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#3f2a24] transition-colors" />
+                    <ArrowRight className="w-[18px] h-[18px] text-gray-400 group-hover:text-[#3f2a24] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </button>
 
                   {/* Email */}
                   <button
                     type="button"
                     onClick={onUseAnotherAccount}
-                    className="w-full p-3.5 rounded-2xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full min-h-[60px] px-5 py-2.5 rounded-full border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80 active:scale-[0.98] transition-all flex items-center justify-between group cursor-pointer text-left select-none"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-[#3f2a24] text-white shadow-xs flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3.5 min-w-0 pr-2">
+                      <div className="w-9 h-9 rounded-full bg-[#3f2a24] text-white shadow-2xs flex items-center justify-center shrink-0">
                         <Mail className="w-4 h-4" />
                       </div>
-                      <div className="text-left">
-                        <div className="text-[14px] font-semibold text-gray-900 group-hover:text-[#3f2a24] transition-colors">
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-semibold text-gray-900 group-hover:text-[#3f2a24] transition-colors leading-tight truncate">
                           Continue with Email
                         </div>
-                        <div className="text-[11px] text-gray-500">
+                        <div className="text-[12px] text-gray-500 leading-tight mt-0.5 truncate">
                           Sign in or create account with password
                         </div>
                       </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#3f2a24] transition-colors" />
+                    <ArrowRight className="w-[18px] h-[18px] text-gray-400 group-hover:text-[#3f2a24] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </button>
                 </div>
 
