@@ -1,0 +1,788 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CheckCircle2, Lock, Mail, Loader2, ArrowLeft } from 'lucide-react';
+import { slideVariants } from './OnboardingComponents';
+
+// --- Types ---
+export interface OnboardingEmailStepProps {
+  mode?: 'signin' | 'signup';
+  setMode?: (mode: 'signin' | 'signup') => void;
+  email: string;
+  setEmail: (val: string) => void;
+  password: string;
+  setPassword: (val: string) => void;
+  emailError: string;
+  setEmailError: (val: string) => void;
+  isLoading: boolean;
+  handleEmailContinue: () => void;
+  handleGithubSignIn: () => void;
+  handleGoogleSignIn: () => void;
+  isGoogleLoading?: boolean;
+  setShowForgotPassword: (val: boolean) => void;
+  setShowRecoveryFlow: (val: boolean) => void;
+  setForgotEmail: (val: string) => void;
+  setForgotError: (val: string) => void;
+  setForgotSuccess: (val: boolean) => void;
+  direction?: number;
+  isCheckingEmail?: boolean;
+  isDuplicateEmail?: boolean;
+  onEmailBlur?: () => void;
+}
+
+export function OnboardingEmailStep({
+  email, setEmail, password, setPassword,
+  emailError, setEmailError, isLoading, handleEmailContinue,
+  handleGithubSignIn, handleGoogleSignIn, isGoogleLoading = false,
+  setShowForgotPassword, setShowRecoveryFlow, setForgotEmail,
+  setForgotError, setForgotSuccess,
+  isCheckingEmail = false, isDuplicateEmail = false, onEmailBlur
+}: OnboardingEmailStepProps) {
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [slideDirection, setSlideDirection] = useState(1);
+
+  const isPasswordError = Boolean(
+    emailError &&
+    (emailError.toLowerCase().includes('password') || emailError.toLowerCase().includes('credential'))
+  );
+
+  const isEmailInvalid = Boolean(
+    (emailError && !isPasswordError && emailError !== 'Account already exists. Please use a different email.') || isDuplicateEmail
+  );
+
+  const isFormReady = Boolean(email.trim() && password.trim());
+  const isSubmitDisabled = !isFormReady || isLoading || isCheckingEmail;
+
+  return (
+    <div className="w-full flex flex-col items-center">
+      {/* ── Content & Buttons ── */}
+      <div className="w-full relative overflow-hidden min-h-0">
+        <AnimatePresence custom={slideDirection} initial={false} mode="popLayout">
+          {!showEmailForm ? (
+            <motion.div
+              key="auth-options"
+              custom={slideDirection}
+              variants={{
+                enter: () => ({
+                  x: 0,
+                  y: -12,
+                  opacity: 0,
+                }),
+                center: {
+                  x: 0,
+                  y: 0,
+                  opacity: 1,
+                },
+                exit: () => ({
+                  x: 0,
+                  y: 12,
+                  opacity: 0,
+                }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                y: { type: 'spring', stiffness: 380, damping: 34 },
+                opacity: { duration: 0.18 },
+              }}
+              className="w-full flex flex-col items-center"
+            >
+              <h2 className="text-[34px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-2.5 lg:mb-2.5 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">
+                Welcome to Cody
+              </h2>
+              <p className="text-[17px] lg:text-[14px] text-gray-500 mb-8 lg:mb-[30px] text-center leading-relaxed">
+                Sign in or create your account to continue
+              </p>
+
+              <AnimatePresence>
+                {emailError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="w-full px-3.5 py-2.5 mb-5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium text-center"
+                  >
+                    {emailError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Three options: vertically stacked and back-to-back */}
+              <div className="w-full flex flex-col gap-3 lg:gap-3">
+                {/* 1. Continue with GitHub */}
+                <button
+                  id="github-signin-btn"
+                  onClick={handleGithubSignIn}
+                  disabled={isLoading || isGoogleLoading}
+                  className="w-full flex items-center justify-center gap-3 rounded-full bg-[#24292e] border border-[#24292e] hover:border-[#1b1f23] active:bg-[#16191c] hover:bg-[#1b1f23] px-5 py-3 lg:px-4 lg:py-3 h-[56px] lg:h-auto text-[16px] lg:text-[14px] font-medium lg:font-semibold text-white transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-[20px] h-[20px] lg:w-4 lg:h-4 text-white shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  <span>Continue with GitHub</span>
+                </button>
+
+                {/* 2. Continue with Google */}
+                <button
+                  id="google-signin-btn"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading || isGoogleLoading}
+                  className="w-full flex items-center justify-center gap-3 rounded-full bg-white border border-gray-200 lg:border-gray-300 hover:border-gray-300 lg:hover:border-gray-400 active:bg-gray-50 lg:hover:bg-gray-50 px-5 py-3 lg:px-4 lg:py-3 h-[56px] lg:h-auto text-[16px] lg:text-[14px] font-medium lg:font-semibold text-gray-800 lg:text-gray-700 hover:text-gray-900 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isGoogleLoading ? (
+                    <>
+                      <Loader2 className="w-[20px] h-[20px] lg:w-4 lg:h-4 animate-spin text-gray-500" />
+                      <span>Connecting to Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-[20px] h-[20px] lg:w-4 lg:h-4 shrink-0" viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                        />
+                      </svg>
+                      <span>Continue with Google</span>
+                    </>
+                  )}
+                </button>
+
+                {/* OR divider */}
+                <div className="relative flex items-center justify-center my-1.5 lg:my-2">
+                  <div className="w-full border-t border-gray-200" />
+                  <span className="absolute bg-white px-3 text-[12px] lg:text-[11px] font-medium tracking-wider text-gray-400 uppercase">
+                    OR
+                  </span>
+                </div>
+
+                {/* 3. Continue with email */}
+                <button
+                  id="email-signin-btn"
+                  type="button"
+                  onClick={() => {
+                    setSlideDirection(1);
+                    setShowEmailForm(true);
+                    setEmailError('');
+                  }}
+                  disabled={isLoading || isGoogleLoading}
+                  className="w-full flex items-center justify-center gap-3 rounded-full bg-white border border-gray-200 lg:border-gray-300 hover:border-gray-300 lg:hover:border-gray-400 active:bg-gray-50 lg:hover:bg-gray-50 px-5 py-3 lg:px-4 lg:py-3 h-[56px] lg:h-auto text-[16px] lg:text-[14px] font-medium lg:font-semibold text-gray-800 lg:text-gray-700 hover:text-gray-900 transition-all shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Mail className="w-[20px] h-[20px] lg:w-4 lg:h-4 text-gray-600 lg:text-gray-500 shrink-0" />
+                  <span>Continue with email</span>
+                </button>
+              </div>
+
+              <p className="text-[12.5px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-[30px] lg:mt-[30px] max-w-[300px] lg:max-w-none mx-auto">
+                By continuing, you agree to our{' '}
+                <a href="#" className="text-gray-500 underline hover:text-gray-700">Terms of Service</a>{' '}
+                and{' '}
+                <a href="#" className="text-gray-500 underline hover:text-gray-700">Privacy Policy</a>.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="auth-form"
+              custom={slideDirection}
+              variants={{
+                enter: () => ({
+                  x: 0,
+                  y: 12,
+                  opacity: 0,
+                }),
+                center: {
+                  x: 0,
+                  y: 0,
+                  opacity: 1,
+                },
+                exit: () => ({
+                  x: 0,
+                  y: -12,
+                  opacity: 0,
+                }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                y: { type: 'spring', stiffness: 380, damping: 34 },
+                opacity: { duration: 0.18 },
+              }}
+              className="w-full flex flex-col items-center"
+            >
+              {/* Desktop-only back button (mobile has Back placed below action) */}
+              <button
+                type="button"
+                id="back-to-auth-options-btn"
+                onClick={() => {
+                  setSlideDirection(-1);
+                  setShowEmailForm(false);
+                  setEmailError('');
+                }}
+                className="hidden lg:flex items-center gap-1.5 text-[13px] font-medium text-gray-500 hover:text-gray-900 mb-4 transition-colors cursor-pointer self-start"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+
+              {/* Desktop-only: Welcome to Cody and Subtitle (hidden on mobile as requested) */}
+              <h2 className="hidden lg:block text-[24px] font-semibold text-gray-900 mb-2.5 text-center">
+                Welcome to Cody
+              </h2>
+              <p className="hidden lg:block text-[14px] text-gray-500 mb-[30px] text-center leading-relaxed">
+                Sign in or create your account to continue
+              </p>
+
+              <AnimatePresence>
+                {emailError && emailError !== 'Account already exists. Please use a different email.' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="w-full px-3.5 py-2.5 mb-5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium text-center"
+                  >
+                    {emailError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="w-full mb-4">
+                <div className="relative">
+                  <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="onboarding-email-input"
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError && !isPasswordError) {
+                        setEmailError('');
+                      }
+                    }}
+                    onBlur={onEmailBlur}
+                    onKeyDown={(e) => e.key === 'Enter' && !isSubmitDisabled && handleEmailContinue()}
+                    placeholder="name@email.com"
+                    autoFocus
+                    className={`w-full bg-transparent border-b-2 ${isEmailInvalid ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+                  />
+                </div>
+                {isCheckingEmail && (
+                  <div id="email-checking-indicator" className="flex items-center gap-1.5 mt-2 text-[12px] text-gray-500">
+                    <Loader2 size={13} className="animate-spin text-gray-400 shrink-0" />
+                    <span>Checking email…</span>
+                  </div>
+                )}
+                {(isDuplicateEmail || emailError === 'Account already exists. Please use a different email.') && !isCheckingEmail && (
+                  <div id="email-duplicate-inline-warning" className="flex items-center gap-1.5 mt-2 text-[12px] text-red-500 font-medium">
+                    <span>Account already exists. Please use a different email.</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-full mb-2">
+                <div className="relative">
+                  <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="onboarding-password-input"
+                    type="password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (isPasswordError) {
+                        setEmailError('');
+                      }
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && !isSubmitDisabled && handleEmailContinue()}
+                    placeholder="Password"
+                    className={`w-full bg-transparent border-b-2 ${isPasswordError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+                  />
+                </div>
+              </div>
+
+              <button
+                id="email-submit-btn"
+                type="button"
+                onClick={handleEmailContinue}
+                disabled={isSubmitDisabled}
+                className={`w-full text-center h-[56px] lg:h-auto py-3 lg:py-3 text-[16px] lg:text-[14px] font-medium transition-colors mt-6 lg:mt-4 mb-3 rounded-full ${
+                  !isSubmitDisabled
+                    ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                {isLoading
+                  ? (isDuplicateEmail ? 'Signing in...' : 'Creating account...')
+                  : isDuplicateEmail ? 'Sign In' : 'Create Account'}
+              </button>
+
+              <button
+                id="forgot-password-link"
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotEmail(email);
+                  setForgotError('');
+                  setForgotSuccess(false);
+                  setEmailError('');
+                  setShowRecoveryFlow(true);
+                }}
+                className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-[#3f2a24] transition-colors mb-3 self-center cursor-pointer"
+              >
+                Forgot password?
+              </button>
+
+              {/* Mobile-only Back button below action as requested */}
+              <button
+                type="button"
+                id="mobile-back-to-auth-options-btn"
+                onClick={() => {
+                  setSlideDirection(-1);
+                  setShowEmailForm(false);
+                  setEmailError('');
+                }}
+                className="lg:hidden flex items-center justify-center gap-1.5 text-[15px] font-medium text-gray-500 hover:text-gray-800 active:text-gray-900 transition-colors py-2 mb-2 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+
+              <p className="text-[12.5px] lg:text-[11px] text-gray-400 text-center leading-relaxed mt-4 lg:mt-2 max-w-[300px] lg:max-w-none mx-auto">
+                By continuing, you agree to our{' '}
+                <a href="#" className="text-gray-500 underline hover:text-gray-700">Terms of Service</a>{' '}
+                and{' '}
+                <a href="#" className="text-gray-500 underline hover:text-gray-700">Privacy Policy</a>.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// --- Forgot Password ---
+export interface OnboardingForgotPasswordProps {
+  forgotSuccess: boolean;
+  forgotEmail: string;
+  setForgotEmail: (val: string) => void;
+  forgotError: string;
+  setForgotError: (val: string) => void;
+  forgotLoading: boolean;
+  handleForgotPassword: () => void;
+  setShowForgotPassword: (val: boolean) => void;
+  setForgotSuccess: (val: boolean) => void;
+  onOpenRecoveryFlow?: () => void;
+}
+
+export function OnboardingForgotPassword({
+  forgotSuccess, forgotEmail, setForgotEmail, forgotError,
+  setForgotError, forgotLoading, handleForgotPassword,
+  setShowForgotPassword, setForgotSuccess, onOpenRecoveryFlow
+}: OnboardingForgotPasswordProps) {
+  if (forgotSuccess) {
+    return (
+      <motion.div
+        key="forgot-success"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        className="w-full flex flex-col items-center text-center px-4"
+      >
+        <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h2 className="text-[24px] font-semibold text-gray-900 mb-3">Check your email</h2>
+        <p className="text-[15px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+          If an account exists for this email, we've sent password reset instructions.
+        </p>
+        <button
+          onClick={() => {
+            setShowForgotPassword(false);
+            setForgotSuccess(false);
+            setForgotEmail('');
+            setForgotError('');
+          }}
+          className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20"
+        >
+          Back to Sign In
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      key="forgot-form"
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.18, ease: 'easeInOut' }}
+      className="w-full flex flex-col items-center"
+    >
+      <h2 className="text-[30px] lg:text-[24px] font-bold lg:font-semibold text-gray-900 mb-2.5 lg:mb-2 text-center tracking-tight lg:tracking-normal leading-tight lg:leading-normal">Reset your password</h2>
+      <p className="text-[16px] lg:text-[14px] text-gray-500 mb-8 text-center leading-relaxed">Enter your email and we'll send you a reset link</p>
+
+      <div className="w-full mb-4">
+        <div className="relative">
+          <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="email"
+            value={forgotEmail}
+            onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
+            placeholder="name@email.com"
+            className={`w-full bg-transparent border-b-2 ${forgotError ? 'border-red-400' : 'border-gray-200 focus:border-[#3f2a24]'} pl-7 lg:pl-6 pb-3.5 lg:pb-3 pt-1 text-[16px] lg:text-[15px] text-gray-900 placeholder:text-gray-400 outline-none transition-colors`}
+          />
+        </div>
+        <AnimatePresence>
+          {forgotError && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="text-red-500 text-[12px] mt-2 text-center"
+            >
+              {forgotError}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <button
+        onClick={handleForgotPassword}
+        disabled={!forgotEmail.trim() || forgotLoading}
+        className={`w-full text-center h-[56px] lg:h-auto py-3 lg:py-3 text-[16px] lg:text-[14px] font-medium transition-colors mt-6 lg:mt-4 mb-5 lg:mb-6 rounded-full ${
+          forgotEmail.trim() && !forgotLoading
+            ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+            : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+        }`}
+      >
+        {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+      </button>
+
+      {onOpenRecoveryFlow && (
+        <button
+          type="button"
+          onClick={onOpenRecoveryFlow}
+          className="text-[13px] font-medium text-[#3f2a24] hover:underline transition-colors mb-2 cursor-pointer"
+        >
+          Have a recovery code? Use recovery code
+        </button>
+      )}
+
+      <button
+        onClick={() => {
+          setShowForgotPassword(false);
+          setForgotEmail('');
+          setForgotError('');
+        }}
+        className="text-[14px] lg:text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 cursor-pointer"
+      >
+        ← Back to Sign In
+      </button>
+    </motion.div>
+  );
+}
+
+// --- Signup Success ---
+export interface OnboardingSignupSuccessProps {
+  setSignupSuccess: (val: boolean) => void;
+  setMode: (mode: 'signin' | 'signup') => void;
+  setEmail: (val: string) => void;
+  setPassword: (val: string) => void;
+}
+
+export function OnboardingSignupSuccess({
+  setSignupSuccess, setMode, setEmail, setPassword
+}: OnboardingSignupSuccessProps) {
+  return (
+    <motion.div
+      key="signup-success"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+      className="w-full flex flex-col items-center text-center px-4"
+    >
+      <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+      </div>
+      <h2 className="text-[24px] font-semibold text-gray-900 mb-3">Account created successfully!</h2>
+      <p className="text-[15px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+        Please check your email to verify your account before signing in.
+      </p>
+      <button
+        onClick={() => {
+          setSignupSuccess(false);
+          setMode('signin');
+          setEmail('');
+          setPassword('');
+        }}
+        className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20"
+      >
+        Go to Sign In
+      </button>
+    </motion.div>
+  );
+}
+
+// --- Account Recovery & Password Reset Flow (Phase 3) ---
+export interface OnboardingRecoveryFlowProps {
+  initialEmail?: string;
+  onBackToSignIn: () => void;
+}
+
+export function OnboardingRecoveryFlow({
+  initialEmail = '',
+  onBackToSignIn,
+}: OnboardingRecoveryFlowProps) {
+  const [step, setStep] = useState<'verify_code' | 'set_password' | 'success'>('verify_code');
+  const [email, setEmail] = useState(initialEmail);
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleVerifyCode = async () => {
+    if (!email.trim() || !code.trim() || isLoading) return;
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/recovery/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ identifier: email.trim(), code: code.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Invalid account identifier or recovery code. Please check and try again.');
+        return;
+      }
+
+      // Verified! Transition to password setting.
+      // Note: recovery ticket is held exclusively in the secure HttpOnly cookie.
+      // React state NEVER receives or stores the plaintext ticket!
+      setCode('');
+      setStep('set_password');
+    } catch {
+      setError('Network error. Unable to verify recovery code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword.trim() || !confirmPassword.trim() || isLoading) return;
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/recovery/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ newPassword, confirmPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Failed to reset password. The recovery session may have expired.');
+        return;
+      }
+
+      // Success! Clear password fields from state.
+      setNewPassword('');
+      setConfirmPassword('');
+      setStep('success');
+    } catch {
+      setError('Network error. Unable to reset password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (step === 'success') {
+    return (
+      <motion.div
+        key="recovery-success"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="w-full flex flex-col items-center text-center px-4"
+      >
+        <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h2 className="text-[24px] font-semibold text-gray-900 mb-3">
+          Password reset successfully.
+        </h2>
+        <p className="text-[15px] text-gray-500 leading-relaxed mb-8 max-w-[340px]">
+          Your password has been updated and previous sessions have been revoked. Please sign in with your new password.
+        </p>
+        <button
+          onClick={onBackToSignIn}
+          className="px-8 py-3 rounded-full bg-[#3f2a24] text-white text-[14px] font-semibold hover:bg-[#2c1d19] transition-colors shadow-lg shadow-[#3f2a24]/20 cursor-pointer"
+        >
+          Sign In with New Password
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (step === 'set_password') {
+    return (
+      <motion.div
+        key="recovery-set-password"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        className="w-full flex flex-col items-center"
+      >
+        <h2 className="text-[24px] font-bold text-gray-900 mb-2 text-center">
+          Create New Password
+        </h2>
+        <p className="text-[14px] text-gray-500 mb-6 text-center">
+          Recovery verified. Enter and confirm your new password.
+        </p>
+
+        <div className="w-full mb-4">
+          <label className="text-[13px] text-gray-600 font-medium block mb-1.5">New Password</label>
+          <div className="relative">
+            <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+              placeholder="At least 6 characters"
+              className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] text-gray-900 outline-none transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="w-full mb-4">
+          <label className="text-[13px] text-gray-600 font-medium block mb-1.5">Confirm New Password</label>
+          <div className="relative">
+            <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleResetPassword()}
+              placeholder="Re-enter password"
+              className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] text-gray-900 outline-none transition-colors"
+            />
+          </div>
+          {error && <p className="text-red-500 text-[12px] mt-2 text-center">{error}</p>}
+        </div>
+
+        <button
+          onClick={handleResetPassword}
+          disabled={!newPassword || !confirmPassword || isLoading}
+          className={`w-full py-3 text-[14px] font-medium transition-colors mt-4 mb-4 rounded-full ${
+            newPassword && confirmPassword && !isLoading
+              ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          {isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Reset Password'}
+        </button>
+
+        <button
+          onClick={onBackToSignIn}
+          className="text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 cursor-pointer"
+        >
+          Cancel
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      key="recovery-verify-code"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      className="w-full flex flex-col items-center"
+    >
+      <h2 className="text-[24px] font-bold text-gray-900 mb-2 text-center">
+        Account Recovery
+      </h2>
+      <p className="text-[14px] text-gray-500 mb-6 text-center leading-relaxed">
+        Enter your account email and one of your 10 recovery codes to reset access.
+      </p>
+
+      <div className="w-full mb-4">
+        <label className="text-[13px] text-gray-600 font-medium block mb-1.5">Account Email</label>
+        <div className="relative">
+          <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(''); }}
+            placeholder="name@email.com"
+            className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] text-gray-900 outline-none transition-colors"
+          />
+        </div>
+      </div>
+
+      <div className="w-full mb-4">
+        <label className="text-[13px] text-gray-600 font-medium block mb-1.5">Recovery Code</label>
+        <div className="relative">
+          <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleVerifyCode()}
+            placeholder="ABCD-EFGH-JKMN-PQRT"
+            className="w-full bg-transparent border-b-2 border-gray-200 focus:border-[#3f2a24] pl-7 pb-3 pt-1 text-[15px] font-mono tracking-wider text-gray-900 outline-none transition-colors"
+          />
+        </div>
+        {error && <p className="text-red-500 text-[12px] mt-2 text-center">{error}</p>}
+      </div>
+
+      <button
+        onClick={handleVerifyCode}
+        disabled={!email.trim() || !code.trim() || isLoading}
+        className={`w-full py-3 text-[14px] font-medium transition-colors mt-4 mb-4 rounded-full ${
+          email.trim() && code.trim() && !isLoading
+            ? 'bg-[#3f2a24] text-white hover:bg-[#5b443c] cursor-pointer'
+            : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+        }`}
+      >
+        {isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Verify Recovery Code'}
+      </button>
+
+      <button
+        onClick={onBackToSignIn}
+        className="text-[13px] font-medium text-gray-500 hover:text-gray-800 transition-colors py-2 cursor-pointer flex items-center gap-1.5"
+      >
+        <ArrowLeft size={14} /> Back to Sign In
+      </button>
+    </motion.div>
+  );
+}

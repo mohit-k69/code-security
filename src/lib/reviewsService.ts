@@ -1,0 +1,184 @@
+import { supabase } from './supabase';
+import { type AnalysisResult } from '../analyzer';
+
+export const FREE_REVIEW_LIMIT = 5;
+
+export function isFreeLimitReached(count: number): boolean {
+  return count >= FREE_REVIEW_LIMIT;
+}
+
+export interface ReviewedItem {
+  id?: string;
+  name: string;
+  verdict: 'PASS' | 'FAIL' | 'NOT_VERIFIED' | string;
+  pr: number | null;
+  date: Date;
+  result: AnalysisResult | any;
+  reviewType?: string;
+  repoOwner?: string;
+  repoName?: string;
+  commitSha?: string;
+}
+
+export interface SaveReviewInput {
+  userId: string;
+  name: string;
+  reviewType: 'github' | 'paste' | 'upload';
+  repositoryOwner?: string | null;
+  repositoryName?: string | null;
+  prNumber?: number | null;
+  commitSha?: string | null;
+  verdict: string;
+  report: AnalysisResult | any;
+}
+
+const userReviewsCache = new Map<string, ReviewedItem[]>();
+const inFlightUserReviews = new Map<string, Promise<ReviewedItem[]>>();
+
+export function getCachedUserReviews(userId: string): ReviewedItem[] | null {
+  if (!userId) return null;
+  if (userReviewsCache.has(userId)) {
+    return userReviewsCache.get(userId)!;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = window.sessionStorage.getItem(`cody_reviews_${userId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const items = parsed.map((item: any) => ({ ...item, date: new Date(item.date) }));
+          userReviewsCache.set(userId, items);
+          return items;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function persistReviewsCache(userId: string, items: ReviewedItem[]) {
+  userReviewsCache.set(userId, items);
+  if (typeof window !== 'undefined') {
+    try {
+      window.sessionStorage.setItem(`cody_reviews_${userId}`, JSON.stringify(items));
+    } catch {}
+  }
+}
+
+/**
+ * Fetches persisted reviews for the authenticated user from the Supabase public.reviews table.
+ */
+export async function fetchUserReviews(userId: string): Promise<ReviewedItem[]> {
+  try {
+    if (!userId) return [];
+
+    // Deduplicate concurrent requests
+    if (inFlightUserReviews.has(userId)) {
+      return inFlightUserReviews.get(userId)!;
+    }
+
+    const fetchPromise = (async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase query error on public.reviews:', error);
+        return userReviewsCache.get(userId) || [];
+      }
+
+      if (!data || !Array.isArray(data)) {
+        return [];
+      }
+
+      const items: ReviewedItem[] = data.map((row: any) => ({
+        id: row.id,
+        name: row.name || 'Code Review',
+        verdict: row.verdict || 'NOT_VERIFIED',
+        pr: row.pr_number || null,
+        date: new Date(row.created_at || Date.now()),
+        result: row.report || {},
+        reviewType: row.review_type,
+        repoOwner: row.repository_owner,
+        repoName: row.repository_name,
+        commitSha: row.commit_sha
+      }));
+
+      persistReviewsCache(userId, items);
+      return items;
+    })();
+
+    inFlightUserReviews.set(userId, fetchPromise);
+    const result = await fetchPromise;
+    inFlightUserReviews.delete(userId);
+    return result;
+  } catch (err: any) {
+    inFlightUserReviews.delete(userId);
+    console.error('Unexpected error loading review history from public.reviews:', err);
+    return userReviewsCache.get(userId) || [];
+  }
+}
+
+/**
+ * Saves a completed analysis review to the Supabase public.reviews table.
+ */
+export async function saveUserReview(input: SaveReviewInput): Promise<ReviewedItem | null> {
+  try {
+    if (!input.userId) {
+      console.warn('Cannot persist review: missing user_id');
+      return null;
+    }
+
+    let totalFindings = 0;
+    if (Array.isArray(input.report?.findings)) {
+      totalFindings = input.report.findings.length;
+    } else if (input.report?.findings) {
+      const f = input.report.findings;
+      totalFindings = (f.critical?.length || 0) + (f.warning?.length || 0) + (f.info?.length || 0);
+    }
+
+    const payload = {
+      user_id: input.userId,
+      name: input.name,
+      review_type: input.reviewType,
+      repository_owner: input.repositoryOwner || null,
+      repository_name: input.repositoryName || null,
+      pr_number: input.prNumber || null,
+      commit_sha: input.commitSha || null,
+      verdict: input.verdict || 'NOT_VERIFIED',
+      total_findings: totalFindings,
+      report: input.report,
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to insert into public.reviews:', error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      verdict: data.verdict,
+      pr: data.pr_number,
+      date: new Date(data.created_at),
+      result: data.report,
+      reviewType: data.review_type,
+      repoOwner: data.repository_owner,
+      repoName: data.repository_name,
+      commitSha: data.commit_sha
+    };
+  } catch (err: any) {
+    console.error('Unexpected error in saveUserReview:', err);
+    return null;
+  }
+}
+
