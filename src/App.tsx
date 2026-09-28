@@ -330,9 +330,6 @@ export default function App() {
             setIsSwitchingAccount(false);
             setUser(loggedInUser);
           }}
-          onOpenAccountSwitcher={() => {
-            setIsSwitchingAccount(true);
-          }}
         />
       </Suspense>
     );

@@ -1,10 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { ArrowLeftRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
 import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
-import { saveRememberedAccount, getRememberedAccounts } from './lib/accountSwitcher';
+import { saveRememberedAccount } from './lib/accountSwitcher';
 
 import {
   OnboardingEmailStep,
@@ -19,10 +18,9 @@ import { type User } from './hooks/useAuth';
 interface OnboardingProps {
   onLogin: (user: User) => void;
   initialEmail?: string;
-  onOpenAccountSwitcher?: () => void;
 }
 
-export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSwitcher }: OnboardingProps) {
+export default function Onboarding({ onLogin, initialEmail = '' }: OnboardingProps) {
   // Form state
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -436,20 +434,6 @@ export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSw
             <CodeVibeIcon size={34} variant="dark" className="shrink-0 cody-logo-rotate" />
             <span className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none">Cody</span>
           </div>
-
-          {onOpenAccountSwitcher && getRememberedAccounts().length > 0 && (
-            <div className="mb-4">
-              <button
-                type="button"
-                id="onboarding-switch-account-btn"
-                onClick={onOpenAccountSwitcher}
-                className="text-[12px] font-semibold text-[#3f2a24] hover:text-[#2c1d19] bg-[#faf6f4] hover:bg-[#f5eeea] border border-[#ebdcd4] px-3.5 py-1.5 rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-xs"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-[#3f2a24]" />
-                <span>Switch to another account</span>
-              </button>
-            </div>
-          )}
 
           <div className="w-full relative min-h-0 lg:min-h-0 flex flex-col items-center justify-start lg:justify-center pt-0 lg:pt-0">
             <AnimatePresence mode="wait">
