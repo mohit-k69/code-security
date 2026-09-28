@@ -183,33 +183,51 @@ async function runAllTests() {
     assert.strictEqual(groups[3].category, 'style');    // Style
   });
 
-  // Test 7: UI Component source contract verification
-  await runTest('7. SecurityReportPanel.tsx provides grouped findings UI with expandable underlying occurrences', () => {
+  // Test 7: Reusable GroupedFindingsList component contract verification
+  await runTest('7. GroupedFindingsList.tsx provides grouped findings UI with expandable underlying occurrences', () => {
+    const listPath = path.resolve('src/components/common/GroupedFindingsList.tsx');
+    const listCode = fs.readFileSync(listPath, 'utf8');
+
+    // Verify groupFindingsByRule is invoked
+    assert(listCode.includes('groupFindingsByRule(findings'), 'GroupedFindingsList must group findings by rule');
+
+    // Verify top-level group row rendering
+    assert(listCode.includes('groups.map((group: FindingGroup)'), 'Must map over groups');
+    assert(listCode.includes('group.rule'), 'Must display group rule');
+    assert(listCode.includes('group.totalOccurrences'), 'Must display occurrences count badge');
+    assert(listCode.includes('toggleGroup(group.id)'), 'Must toggle group on click');
+
+    // Verify expandable section rendering underlying occurrences
+    assert(listCode.includes('group.findings.map((finding: any, findingIdx: number)'), 'Must render all underlying findings inside expanded group');
+    assert(listCode.includes('findingIdx + 1'), 'Underlying findings must be numbered');
+    assert(listCode.includes('locStr'), 'Must display location for each occurrence');
+    assert(listCode.includes('getCodingAgentPrompt(finding)'), 'Must provide coding agent prompt per finding');
+    assert(listCode.includes('handleCopyPrompt'), 'Must provide prompt copy button per finding');
+
+    // Verify Expand all / Collapse all
+    assert(listCode.includes('toggleExpandAll'), 'Must provide Expand all / Collapse all toggle');
+  });
+
+  // Test 8: SecurityReportPanel uses GroupedFindingsList
+  await runTest('8. SecurityReportPanel.tsx delegates finding rendering to shared GroupedFindingsList', () => {
     const panelPath = path.resolve('src/components/workflows/SecurityReportPanel.tsx');
     const panelCode = fs.readFileSync(panelPath, 'utf8');
 
-    // Verify groupFindingsByRule is invoked
-    assert(panelCode.includes('groupFindingsByRule(displayedFindings)'), 'SecurityReportPanel must group displayedFindings by rule');
+    assert(panelCode.includes('<GroupedFindingsList'), 'SecurityReportPanel must render GroupedFindingsList');
+    assert(panelCode.includes('findings={displayedFindings}'), 'SecurityReportPanel must pass displayedFindings to GroupedFindingsList');
+  });
 
-    // Verify top-level group row rendering
-    assert(panelCode.includes('displayedGroups.map((group: FindingGroup)'), 'Must map over displayedGroups');
-    assert(panelCode.includes('group.rule'), 'Must display group rule');
-    assert(panelCode.includes('group.totalOccurrences'), 'Must display occurrences count badge');
-    assert(panelCode.includes('toggleGroup(group.id)'), 'Must toggle group on click');
+  // Test 9: HistoricalReportView uses GroupedFindingsList
+  await runTest('9. HistoricalReportView.tsx renders Review history findings using shared GroupedFindingsList', () => {
+    const historyViewPath = path.resolve('src/components/analysis/HistoricalReportView.tsx');
+    const historyCode = fs.readFileSync(historyViewPath, 'utf8');
 
-    // Verify expandable section rendering underlying occurrences
-    assert(panelCode.includes('group.findings.map((finding: any, findingIdx: number)'), 'Must render all underlying findings inside expanded group');
-    assert(panelCode.includes('findingIdx + 1'), 'Underlying findings must be numbered');
-    assert(panelCode.includes('locStr'), 'Must display location for each occurrence');
-    assert(panelCode.includes('getCodingAgentPrompt(finding)'), 'Must provide coding agent prompt per finding');
-    assert(panelCode.includes('handleCopyPrompt'), 'Must provide prompt copy button per finding');
-
-    // Verify Expand all / Collapse all
-    assert(panelCode.includes('toggleExpandAll'), 'Must provide Expand all / Collapse all toggle');
+    assert(historyCode.includes('<GroupedFindingsList'), 'HistoricalReportView must render GroupedFindingsList');
+    assert(historyCode.includes('findings={allFindings}'), 'HistoricalReportView must pass allFindings to GroupedFindingsList');
   });
 
   console.log('\n==================================================================');
-  console.log('   ALL 7 GROUPED FINDINGS PRESENTATION TESTS PASSED!');
+  console.log('   ALL 9 GROUPED FINDINGS PRESENTATION TESTS PASSED!');
   console.log('==================================================================');
 }
 

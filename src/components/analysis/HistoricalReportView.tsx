@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   ArrowLeft, 
   Check, 
@@ -6,15 +6,10 @@ import {
   Calendar, 
   GitPullRequest, 
   FileCode2, 
-  Layers,
-  ChevronDown,
-  ChevronRight
+  Layers
 } from 'lucide-react';
 import type { ReviewedItem } from '../../lib/reviewsService';
-import {
-  getRealWorldScenario,
-  getFindingDisplayTitle
-} from '../workflows/SecurityReportPanel';
+import { GroupedFindingsList } from '../common/GroupedFindingsList';
 
 interface HistoricalReportViewProps {
   key?: React.Key;
@@ -29,15 +24,6 @@ interface ProcessedFinding {
 }
 
 export function HistoricalReportView({ review, onBack }: HistoricalReportViewProps) {
-  const [expandedFindings, setExpandedFindings] = useState<Record<number, boolean>>({});
-
-  const toggleFinding = (index: number) => {
-    setExpandedFindings(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
-
   // Check if review data is invalid or missing
   if (!review) {
     return (
@@ -112,20 +98,6 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
   allFindings.sort((a, b) => a._severityRank - b._severityRank);
 
   const totalFindings = allFindings.length;
-
-  const allFindingsExpanded = allFindings.length > 0 && allFindings.every((_: any, idx: number) => !!expandedFindings[idx]);
-
-  const toggleAllFindings = () => {
-    if (allFindingsExpanded) {
-      setExpandedFindings({});
-    } else {
-      const next: Record<number, boolean> = {};
-      allFindings.forEach((_: any, idx: number) => {
-        next[idx] = true;
-      });
-      setExpandedFindings(next);
-    }
-  };
 
   const isPasteReview =
     review.reviewType === 'paste' ||
@@ -321,152 +293,12 @@ export function HistoricalReportView({ review, onBack }: HistoricalReportViewPro
         </div>
 
         {/* 3. Security Findings List */}
-        {effectiveVerdict === 'FAIL' && totalFindings > 0 && (
-          <div className="space-y-3 pt-2 text-left">
-            <div className="flex items-center justify-between pb-1">
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                Security Findings ({totalFindings})
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={toggleAllFindings}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer transition-colors"
-                >
-                  {allFindingsExpanded ? 'Collapse All' : 'Expand All'}
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-200/80 shadow-xs text-left">
-              {allFindings.map((finding: ProcessedFinding, i: number) => {
-                const isCritical = finding._severityLabel === 'CRITICAL';
-                const isHigh = finding._severityLabel === 'HIGH';
-                const isMedium = finding._severityLabel === 'MEDIUM';
-
-                const displayTitle = getFindingDisplayTitle(finding);
-                const snippet = finding.evidence?.[0]?.snippet || finding.snippet || finding.code;
-                const explanation = finding.description || finding.message || 'Vulnerability detected in source code.';
-                const scenario = getRealWorldScenario(finding);
-                const suggestion = finding.suggestion || finding.remediation;
-                const isExpanded = !!expandedFindings[i];
-
-                return (
-                  <div key={i} className="transition-colors text-left">
-                    {/* List Row (Clickable) */}
-                    <button
-                      type="button"
-                      onClick={() => toggleFinding(i)}
-                      className={`w-full text-left px-5 py-3.5 sm:py-4 flex items-center justify-between gap-4 hover:bg-gray-50/80 transition-colors cursor-pointer ${
-                        isExpanded ? 'bg-gray-50/40' : ''
-                      }`}
-                      aria-expanded={isExpanded}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        <span className="text-sm font-semibold text-gray-500 w-5 shrink-0 text-left">
-                          {i + 1}
-                        </span>
-                        <span className="font-semibold text-sm text-gray-900 truncate">
-                          {displayTitle}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 shrink-0">
-                        {finding.cwes && finding.cwes.length > 0 && (
-                          <span className="text-xs font-mono bg-gray-100 border border-gray-200 text-gray-600 px-2 py-0.5 rounded">
-                            {finding.cwes[0]}
-                          </span>
-                        )}
-                        <div className="text-gray-400 pl-0.5">
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-gray-600" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Expanded Details Revealed On Click */}
-                    {isExpanded && (
-                      <div className="px-5 sm:px-6 pb-6 pt-3 bg-gray-50/50 border-t border-gray-100 space-y-4 text-left">
-                        {/* Severity Badge & CWE Tags */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`text-[11px] font-bold uppercase tracking-wide px-2.5 py-0.5 rounded border ${
-                              isCritical
-                                ? 'bg-red-100 text-red-900 border-red-300'
-                                : isHigh
-                                  ? 'bg-red-100 text-red-800 border-red-200'
-                                  : isMedium
-                                    ? 'bg-orange-100 text-orange-800 border-orange-200'
-                                    : 'bg-blue-100 text-blue-800 border-blue-200'
-                            }`}
-                          >
-                            {finding._severityLabel}
-                          </span>
-
-                          {finding.cwes && finding.cwes.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {finding.cwes.map((cwe: string, idx: number) => (
-                                <span key={idx} className="text-[10px] uppercase font-mono bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded font-medium">
-                                  {cwe}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Problematic Code Snippet (if available) */}
-                        {snippet && (
-                          <div className="rounded-lg bg-gray-900 p-3.5 overflow-x-auto border border-gray-800">
-                            <code className="text-xs font-mono text-gray-100 whitespace-pre block">
-                              {snippet}
-                            </code>
-                          </div>
-                        )}
-
-                        {/* Why it matters */}
-                        {explanation && (
-                          <div>
-                            <h5 className="text-[14px] font-bold text-gray-900 mb-1 tracking-tight">
-                              Why it matters
-                            </h5>
-                            <p className="text-gray-700 leading-relaxed text-sm">
-                              {explanation}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Real-world Scenario */}
-                        {scenario && (
-                          <div className="pt-3 border-t border-gray-200/70">
-                            <h5 className="text-[14px] font-bold text-gray-900 mb-1 tracking-tight">
-                              Real-world scenario
-                            </h5>
-                            <p className="text-gray-700 leading-relaxed text-sm">
-                              {scenario}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Recommended Remediation (if available) */}
-                        {suggestion && (
-                          <div className="pt-3 border-t border-gray-200/70">
-                            <h5 className="text-[14px] font-bold text-gray-900 mb-1 tracking-tight">
-                              Recommended Remediation
-                            </h5>
-                            <p className="text-gray-700 leading-relaxed text-sm">
-                              {suggestion}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        {totalFindings > 0 && (
+          <div className="pt-2 text-left">
+            <GroupedFindingsList
+              findings={allFindings}
+              title="Security Findings"
+            />
           </div>
         )}
       </div>
