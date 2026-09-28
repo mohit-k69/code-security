@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Upload, FileArchive, Image as ImageIcon, FileCode } from 'lucide-react';
+import { ChevronLeft, Upload, ShieldCheck } from 'lucide-react';
 import {
   runPreflightPipeline,
   INITIAL_PREFLIGHT_STEPS,
@@ -170,61 +170,76 @@ export function UploadWorkflow({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex-1 flex flex-col h-full"
+      className="flex-1 flex flex-col h-full w-full max-w-xl mx-auto"
     >
+      {/* Refined Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => setActiveWorkflow('none')}
-          className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           aria-label="Return home"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-[18px] font-semibold text-gray-900">Upload Files</h2>
-          <span className="text-[12px] text-gray-400">Phase 2 Secure Intake & Review</span>
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="text-[18px] font-semibold text-gray-900 tracking-tight">Upload Files</h2>
+          <span className="text-[12px] text-gray-400 font-normal">Phase 2 Secure Intake & Review</span>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center pb-8">
         {!isProcessing && !preflightResult ? (
-          <div className="w-full max-w-xl flex flex-col items-center gap-4">
+          <div className="w-full flex flex-col items-center gap-4">
+            {/* Redesigned Compact Drop Zone */}
             <div
+              role="button"
+              tabIndex={0}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
-              className={`w-full border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-4 transition-all cursor-pointer group ${
+              aria-label="Drop files here or click to browse"
+              className={`w-full border-2 border-dashed rounded-2xl p-7 sm:p-8 flex flex-col items-center justify-center gap-3.5 transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-[#3f2a24]/20 ${
                 isDragOver
-                  ? 'border-[#3f2a24] bg-[#f5eeea]'
-                  : 'border-[#d4c4bc] bg-[#faf6f4] hover:bg-[#f5eeea] hover:border-[#b8a298]'
+                  ? 'border-[#3f2a24] bg-[#f2e9e4]'
+                  : 'border-[#d8cbc4] bg-[#faf7f5] hover:bg-[#f5eeea] hover:border-[#b8a298]'
               }`}
             >
-              <div className="w-14 h-14 rounded-2xl bg-[#3f2a24] flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform">
-                <Upload className="w-6 h-6" />
+              {/* Outline Upload-Tray Icon in Cody Brown Container */}
+              <div className="w-14 h-14 rounded-2xl bg-[#3f2a24] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform">
+                <Upload className="w-6 h-6 stroke-[2]" />
               </div>
 
-              <div className="text-center space-y-1">
-                <p className="text-[15px] font-medium text-gray-800">
-                  Click to browse or drag and drop files here
+              {/* Primary & Secondary Call to Action */}
+              <div className="text-center space-y-0.5">
+                <p className="text-[17px] font-semibold text-gray-900 tracking-tight">
+                  Drop files here
                 </p>
                 <p className="text-[13px] text-gray-500">
-                  Accepts ZIP projects, code screenshots (PNG, JPG, WebP), or source code files
+                  or click to browse
                 </p>
               </div>
 
-              <div className="flex items-center gap-5 pt-2 text-[12px] text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <FileArchive className="w-3.5 h-3.5 text-gray-500" /> ZIP projects (up to 25 MB)
-                </span>
-                <span aria-hidden="true">·</span>
-                <span className="flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-gray-500" /> Screenshots (PNG, JPG, WebP)
-                </span>
-                <span aria-hidden="true">·</span>
-                <span className="flex items-center gap-1.5">
-                  <FileCode className="w-3.5 h-3.5 text-gray-500" /> Source files (up to 2 MB)
-                </span>
+              {/* Compact Supported Formats & Limits */}
+              <div className="pt-1 text-center space-y-1 text-[11px]">
+                <p className="font-medium text-gray-600">
+                  ZIP • Source • PNG / JPG / WebP
+                </p>
+                <p className="text-gray-400">
+                  ZIP up to 25 MB • Source files up to 2 MB
+                </p>
+              </div>
+
+              {/* Subtle Security Reassurance */}
+              <div className="w-full max-w-xs mt-1 pt-3 border-t border-[#ebdcd4]/70 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span>Files are checked securely before review</span>
               </div>
             </div>
 
