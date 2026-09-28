@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Menu, ArrowLeft, Key, X } from 'lucide-react';
+import { User, Menu, ArrowLeft, Key, X, ArrowLeftRight, LogOut } from 'lucide-react';
 import { User as UserType } from '../../hooks/useAuth';
 
 interface HeaderProps {
@@ -8,6 +8,7 @@ interface HeaderProps {
   setIsProfileOpen: (isOpen: boolean) => void;
   openProfileModal: () => void;
   onSignOut: () => void;
+  onSwitchAccount?: () => void;
   showRecoveryPrompt?: boolean;
   onDismissRecoveryPrompt?: () => void;
   onToggleMobileSidebar?: () => void;
@@ -21,6 +22,7 @@ export function Header({
   setIsProfileOpen, 
   openProfileModal, 
   onSignOut,
+  onSwitchAccount,
   showRecoveryPrompt = false,
   onDismissRecoveryPrompt,
   onToggleMobileSidebar,
@@ -126,21 +128,63 @@ export function Header({
           </div>
         </button>
         {isProfileOpen && (
-          <div className="absolute top-full right-0 mt-3 w-40 bg-white border border-gray-200 rounded-xl overflow-hidden z-30 shadow-lg flex flex-col">
-            <button 
-              id="profile-modal-btn"
-              onClick={openProfileModal}
-              className="w-full text-left px-4 py-3 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors border-b border-gray-100"
-            >
-              My Profile
-            </button>
-            <button 
-              id="sign-out-btn"
-              onClick={onSignOut}
-              className="w-full text-left px-4 py-3 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors"
-            >
-              Sign Out
-            </button>
+          <div className="absolute top-full right-0 mt-3 w-56 bg-white border border-gray-200 rounded-2xl overflow-hidden z-30 shadow-xl flex flex-col p-1.5">
+            {/* Current Account Information */}
+            <div className="px-3 py-2.5 border-b border-gray-100 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-[#3f2a24] text-white flex items-center justify-center font-semibold text-xs shrink-0 overflow-hidden shadow-xs">
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  (user.name || user.email || 'U').charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-semibold text-gray-900 truncate">{user.name}</div>
+                <div className="text-[11px] text-gray-500 truncate font-mono">{user.email}</div>
+              </div>
+            </div>
+
+            {/* Menu Actions */}
+            <div className="py-1">
+              <button 
+                id="profile-modal-btn"
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  openProfileModal();
+                }}
+                className="w-full text-left px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer"
+              >
+                <User className="w-4 h-4 text-gray-400" />
+                <span>My Profile</span>
+              </button>
+              {onSwitchAccount && (
+                <button 
+                  id="switch-account-btn"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onSwitchAccount();
+                  }}
+                  className="w-full text-left px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer"
+                >
+                  <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+                  <span>Switch account</span>
+                </button>
+              )}
+            </div>
+
+            <div className="pt-1 border-t border-gray-100">
+              <button 
+                id="sign-out-btn"
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  onSignOut();
+                }}
+                className="w-full text-left px-3 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-rose-500" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

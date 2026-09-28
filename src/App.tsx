@@ -16,12 +16,14 @@ import { WorkflowSelector } from './components/workflows/WorkflowSelector';
 
 // Lazily Loaded Feature Workflows & Modals for Fast Initial Render
 const Onboarding = React.lazy(() => import('./Onboarding'));
+const AccountSwitcherModal = React.lazy(() => import('./components/auth/AccountSwitcherModal').then(m => ({ default: m.AccountSwitcherModal })));
 const UploadWorkflow = React.lazy(() => import('./components/workflows/UploadWorkflow').then(m => ({ default: m.UploadWorkflow })));
 const PasteWorkflow = React.lazy(() => import('./components/workflows/PasteWorkflow').then(m => ({ default: m.PasteWorkflow })));
 const SecurityReportPanel = React.lazy(() => import('./components/workflows/SecurityReportPanel').then(m => ({ default: m.SecurityReportPanel })));
 const GithubWorkflow = React.lazy(() => import('./components/workflows/GithubWorkflow').then(m => ({ default: m.GithubWorkflow })));
 const HistoryView = React.lazy(() => import('./components/analysis/HistoryView').then(m => ({ default: m.HistoryView })));
 const ProfileModal = React.lazy(() => import('./components/auth/ProfileModal').then(m => ({ default: m.ProfileModal })));
+import { saveRememberedAccount } from './lib/accountSwitcher';
 
 const FallbackSpinner = () => (
   <div className="w-full h-full min-h-[300px] flex items-center justify-center">
@@ -173,28 +175,25 @@ export default function App() {
   }, [user?.id, user?.recoveryPromptSeenAt, setUser]);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
+  const [switchAccountError, setSwitchAccountError] = useState<string | null>(null);
+  const [prefillEmail, setPrefillEmail] = useState<string>('');
 
   // Derived states
   const hasUploadedCode = uploadedFiles.length > 0;
   const hasPastedCode = pastedCode.trim().length > 0;
   const githubConnected = selectedRepoId !== null;
 
-  const handleSignOut = async () => {
-    try {
-      trackEvent('user_signed_out');
-      resetUser();
-      await supabase.auth.signOut();
-      clearGithubCache();
-      setUser(null);
-    } catch (err) {
-      console.error('Error signing out:', err);
+  // Keep remembered account updated when authenticated user is present
+  useEffect(() => {
+    if (user?.email) {
+      saveRememberedAccount({
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+      });
     }
-  };
-
-  const handleOpenProfileModal = () => {
-    setIsProfileOpen(false);
-    setIsProfileModalOpen(true);
-  };
+  }, [user]);
 
   const handleReturnHome = () => {
     setActiveWorkflow('none');
@@ -202,8 +201,77 @@ export default function App() {
     setIsAnalyzing(false);
     setPastedCode('');
     setUploadedFiles([]);
-    setFileContents([]);
+    setFileContents(new Map());
     clearGithubSelection();
+  };
+
+  const handleSignOut = async () => {
+    try {
+      if (user?.email) {
+        saveRememberedAccount({
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+        });
+      }
+      trackEvent('user_signed_out');
+      resetUser();
+      await supabase.auth.signOut();
+      clearGithubCache();
+      handleReturnHome();
+      setReviewedItems([]);
+      setUser(null);
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
+  };
+
+  const handleSwitchAccount = async () => {
+    try {
+      setSwitchAccountError(null);
+
+      // 1. Identify currently authenticated user and record non-sensitive metadata
+      if (user?.email) {
+        saveRememberedAccount({
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+        });
+      }
+
+      // 2. Explicitly sign out current user via existing Supabase Auth mechanism
+      trackEvent('user_switch_account_initiated');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('[AUTH] Sign-out failed during switch account:', error);
+        setSwitchAccountError('Could not switch accounts. Please try again.');
+        return; // Invariant: DO NOT proceed to unauthenticated / new login if sign-out fails!
+      }
+
+      // 3. Clear all client-side authenticated-user state belonging to previous account
+      resetUser();
+      clearGithubCache();
+      handleReturnHome();
+      setReviewedItems([]);
+      setUser(null);
+
+      // 4. Confirm application is now unauthenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.warn('[AUTH] Session still present after switch account sign-out');
+      }
+
+      // 5. Only AFTER previous session is fully terminated, show account selection
+      setIsSwitchingAccount(true);
+    } catch (err: any) {
+      console.error('[AUTH] Unexpected error in switch account:', err);
+      setSwitchAccountError('Could not switch accounts. Please try again.');
+    }
+  };
+
+  const handleOpenProfileModal = () => {
+    setIsProfileOpen(false);
+    setIsProfileModalOpen(true);
   };
 
   if (isInitializing) {
@@ -215,13 +283,48 @@ export default function App() {
   }
 
   if (!user) {
+    if (isSwitchingAccount) {
+      return (
+        <Suspense fallback={
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-[#3f2a24] border-t-transparent rounded-full animate-spin" />
+          </div>
+        }>
+          <AccountSwitcherModal
+            onSelectAccount={(selectedEmail) => {
+              setPrefillEmail(selectedEmail);
+              setIsSwitchingAccount(false);
+            }}
+            onUseAnotherAccount={() => {
+              setPrefillEmail('');
+              setIsSwitchingAccount(false);
+            }}
+            onCancel={() => {
+              setIsSwitchingAccount(false);
+            }}
+            error={switchAccountError}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <Suspense fallback={
         <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="w-8 h-8 border-4 border-[#3f2a24] border-t-transparent rounded-full animate-spin" />
         </div>
       }>
-        <Onboarding onLogin={setUser} />
+        <Onboarding
+          initialEmail={prefillEmail}
+          onLogin={(loggedInUser) => {
+            setPrefillEmail('');
+            setIsSwitchingAccount(false);
+            setUser(loggedInUser);
+          }}
+          onOpenAccountSwitcher={() => {
+            setIsSwitchingAccount(true);
+          }}
+        />
       </Suspense>
     );
   }
@@ -280,6 +383,7 @@ export default function App() {
           setIsProfileOpen={setIsProfileOpen}
           openProfileModal={handleOpenProfileModal}
           onSignOut={handleSignOut}
+          onSwitchAccount={handleSwitchAccount}
           showRecoveryPrompt={showRecoveryPrompt}
           onDismissRecoveryPrompt={() => setShowRecoveryPrompt(false)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}

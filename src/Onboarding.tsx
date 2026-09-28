@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { ArrowLeftRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { isValidEmailFormat, isValidEmailDomain, normalizeEmail } from './components/auth/onboarding/emailUtils';
 import { trackEvent, identifyUser, trackPageView } from './lib/posthog';
+import { saveRememberedAccount, getRememberedAccounts } from './lib/accountSwitcher';
 
 import {
   OnboardingEmailStep,
@@ -15,11 +17,13 @@ import { type User } from './hooks/useAuth';
 
 interface OnboardingProps {
   onLogin: (user: User) => void;
+  initialEmail?: string;
+  onOpenAccountSwitcher?: () => void;
 }
 
-export default function Onboarding({ onLogin }: OnboardingProps) {
+export default function Onboarding({ onLogin, initialEmail = '', onOpenAccountSwitcher }: OnboardingProps) {
   // Form state
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -154,6 +158,14 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
       checkDebounceTimerRef.current = setTimeout(runCheck, 500);
     }
   }, []);
+
+  // Handle external prefilled email (e.g. from account switcher)
+  useEffect(() => {
+    if (initialEmail) {
+      setEmail(initialEmail);
+      checkEmailDuplicate(initialEmail, true);
+    }
+  }, [initialEmail, checkEmailDuplicate]);
 
   // Debounced duplicate check on email change
   useEffect(() => {
@@ -294,13 +306,16 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         }
 
         if (data.user) {
-          identifyUser(data.user.id);
-          trackEvent('user_logged_in', { method: 'email' });
-          onLogin({
+          const userObj: User = {
             id: data.user.id,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
             email: data.user.email || normalizedEmail,
-          });
+            avatar: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
+          };
+          saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
+          identifyUser(data.user.id);
+          trackEvent('user_logged_in', { method: 'email' });
+          onLogin(userObj);
         }
       } else {
         // New user: SIGN UP
@@ -378,12 +393,15 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
         // Account created successfully! Supabase Confirm Email is OFF so user is logged in immediately.
         trackEvent('user_signed_up', { method: 'email' });
         if (data.user) {
-          identifyUser(data.user.id);
-          onLogin({
+          const userObj: User = {
             id: data.user.id,
             name: data.user.user_metadata?.full_name || data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || 'User',
             email: data.user.email || normalizedEmail,
-          });
+            avatar: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture,
+          };
+          saveRememberedAccount({ email: userObj.email, name: userObj.name, avatar: userObj.avatar });
+          identifyUser(data.user.id);
+          onLogin(userObj);
         }
       }
     } catch (err: any) {
@@ -570,10 +588,24 @@ export default function Onboarding({ onLogin }: OnboardingProps) {
 
       <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 sm:px-8 py-8 lg:py-0 overflow-y-auto lg:overflow-hidden min-h-[100dvh] lg:min-h-0">
         <div className="w-full max-w-[380px] lg:max-w-[440px] flex flex-col items-center my-auto">
-          <div className="flex items-center gap-3 mb-[40px] lg:mb-[28px]">
+          <div className="flex items-center gap-3 mb-[28px]">
             <CodeVibeIcon size={34} variant="dark" className="shrink-0 cody-logo-rotate" />
             <span className="font-bold text-[31px] text-[#3A2722] tracking-tight leading-none">Cody</span>
           </div>
+
+          {onOpenAccountSwitcher && getRememberedAccounts().length > 0 && (
+            <div className="mb-4">
+              <button
+                type="button"
+                id="onboarding-switch-account-btn"
+                onClick={onOpenAccountSwitcher}
+                className="text-[12px] font-semibold text-[#3f2a24] hover:text-[#2c1d19] bg-[#faf6f4] hover:bg-[#f5eeea] border border-[#ebdcd4] px-3.5 py-1.5 rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 text-[#3f2a24]" />
+                <span>Switch to another account</span>
+              </button>
+            </div>
+          )}
 
           <div className="w-full relative min-h-0 lg:min-h-0 flex flex-col items-center justify-start lg:justify-center pt-0 lg:pt-0">
             <AnimatePresence mode="wait">
