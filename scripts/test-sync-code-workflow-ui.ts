@@ -79,18 +79,20 @@ async function runAllTests() {
 
   // 5. GitHub provider opens existing GitHub workflow
   await runTest('5. GitHub provider card triggers the existing GitHub workflow', () => {
-    assert(syncCodeWorkflow.includes("setActiveWorkflow('github')"),
+    assert(syncCodeWorkflow.includes("setActiveWorkflow(provider.id") || syncCodeWorkflow.includes("setActiveWorkflow('github')"),
       'Clicking GitHub provider card must trigger setActiveWorkflow("github")');
     assert(appTsx.includes('activeWorkflow === \'github\''),
       'App.tsx must mount GithubWorkflow when activeWorkflow is github');
   });
 
-  // 6. GitLab, Bitbucket, Azure DevOps show "Coming soon"
-  await runTest('6. GitLab, Bitbucket, and Azure DevOps display "Coming soon"', () => {
+  // 6. Bitbucket and Azure DevOps show "Coming soon" while GitLab is active
+  await runTest('6. Bitbucket and Azure DevOps display "Coming soon" while GitLab is active', () => {
     assert(syncCodeWorkflow.includes("id: 'gitlab'"), 'GitLab entry configured');
     assert(syncCodeWorkflow.includes("id: 'bitbucket'"), 'Bitbucket entry configured');
     assert(syncCodeWorkflow.includes("id: 'azure'"), 'Azure DevOps entry configured');
     assert(syncCodeWorkflow.includes("badge: 'Coming soon'"), 'Coming soon badge assigned to unreleased providers');
+    assert(syncCodeWorkflow.includes("setActiveWorkflow(provider.id as 'github' | 'gitlab')"),
+      'GitLab triggers active workflow');
   });
 
   // 7. Navigation back button supports returning from Sync Code

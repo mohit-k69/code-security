@@ -17,13 +17,13 @@ Deno.serve(async (req) => {
     }
 
     const reqBody = await req.json();
-    const { providerToken, providerRefreshToken } = reqBody;
+    const { providerToken, providerRefreshToken, provider: requestedProvider } = reqBody;
 
     if (!providerToken) {
       throw new Error('Missing provider token');
     }
 
-    const provider = 'github'; // Hardcode provider, do not trust client input
+    const provider = requestedProvider === 'gitlab' ? 'gitlab' : 'github';
 
     // 1. Verify the incoming Supabase JWT to get the user ID
     const supabaseClient = createClient(
@@ -39,24 +39,43 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // 2. Validate the GitHub token by fetching the GitHub user profile
-    const githubUserRes = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${providerToken}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'CodeVibe-Edge-Function'
-      }
-    });
+    // 2. Validate the token by fetching the user profile from the respective provider
+    let providerUserId = '';
 
-    if (!githubUserRes.ok) {
-      throw new Error('Failed to validate GitHub token with provider');
+    if (provider === 'gitlab') {
+      const gitlabUserRes = await fetch('https://gitlab.com/api/v4/user', {
+        headers: {
+          'Authorization': `Bearer ${providerToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Edge-Function'
+        }
+      });
+
+      if (!gitlabUserRes.ok) {
+        throw new Error('Failed to validate GitLab token with provider');
+      }
+
+      const gitlabUser = await gitlabUserRes.json();
+      providerUserId = String(gitlabUser.id);
+    } else {
+      const githubUserRes = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${providerToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'CodeVibe-Edge-Function'
+        }
+      });
+
+      if (!githubUserRes.ok) {
+        throw new Error('Failed to validate GitHub token with provider');
+      }
+
+      const githubUser = await githubUserRes.json();
+      providerUserId = String(githubUser.id);
     }
 
-    const githubUser = await githubUserRes.json();
-    const providerUserId = String(githubUser.id);
-
     if (!providerUserId) {
-      throw new Error('Failed to extract GitHub user ID');
+      throw new Error(`Failed to extract ${provider} user ID`);
     }
 
     // 3. Upsert the token into the database securely using the Service Role Key

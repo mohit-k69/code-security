@@ -11,7 +11,9 @@ export interface User {
   last_password_updated_at?: string;
   isGithubLinked?: boolean;
   githubUsername?: string;
-  authProvider?: 'email' | 'github' | 'google';
+  isGitlabLinked?: boolean;
+  gitlabUsername?: string;
+  authProvider?: 'email' | 'github' | 'google' | 'gitlab';
   recoveryPromptSeenAt?: string;
 }
 
@@ -247,6 +249,12 @@ export function useAuth() {
           session.provider_token
         );
 
+        let isGitlabLinked = Boolean(
+          session.user.app_metadata?.providers?.includes('gitlab') ||
+          session.user.app_metadata?.provider === 'gitlab' ||
+          identities.some((id: any) => id.provider === 'gitlab')
+        );
+
         // Determine if the user authenticated via an OAuth provider (Google or GitHub)
         const isOAuth = isOAuthUser(session.user, identities) || Boolean(session.provider_token);
 
@@ -297,6 +305,11 @@ export function useAuth() {
           meta?.user_name ||
           meta?.preferred_username;
 
+        const gitlabIdentity = identities.find((id: any) => id.provider === 'gitlab');
+        const gitlabUsername = gitlabIdentity?.identity_data?.user_name ||
+          gitlabIdentity?.identity_data?.preferred_username ||
+          gitlabIdentity?.identity_data?.name;
+
         // FAST-PATH: Set user immediately with session data and unblock initialization (instant load!)
         setUser({
           id: session.user.id,
@@ -308,6 +321,8 @@ export function useAuth() {
           last_password_updated_at: meta?.last_password_updated_at,
           isGithubLinked,
           githubUsername,
+          isGitlabLinked,
+          gitlabUsername,
           authProvider,
           recoveryPromptSeenAt: meta?.recovery_prompt_seen_at,
         });

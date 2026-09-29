@@ -22,6 +22,7 @@ const UploadWorkflow = React.lazy(() => import('./components/workflows/UploadWor
 const PasteWorkflow = React.lazy(() => import('./components/workflows/PasteWorkflow').then(m => ({ default: m.PasteWorkflow })));
 const SecurityReportPanel = React.lazy(() => import('./components/workflows/SecurityReportPanel').then(m => ({ default: m.SecurityReportPanel })));
 const GithubWorkflow = React.lazy(() => import('./components/workflows/GithubWorkflow').then(m => ({ default: m.GithubWorkflow })));
+const GitlabWorkflow = React.lazy(() => import('./components/workflows/GitlabWorkflow').then(m => ({ default: m.GitlabWorkflow })));
 const SyncCodeWorkflow = React.lazy(() => import('./components/workflows/SyncCodeWorkflow').then(m => ({ default: m.SyncCodeWorkflow })));
 const HistoryView = React.lazy(() => import('./components/analysis/HistoryView').then(m => ({ default: m.HistoryView })));
 const ProfileModal = React.lazy(() => import('./components/auth/ProfileModal').then(m => ({ default: m.ProfileModal })));
@@ -92,11 +93,14 @@ export default function App() {
     clearGithubCache
   } = useGithub(activeWorkflow, user);
 
-  // Automatically switch to GitHub workflow if redirected back from OAuth Manual Linking
+  // Automatically switch to GitHub/GitLab workflow if redirected back from OAuth Manual Linking
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('workflow') === 'github') {
       setActiveWorkflow('github');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('workflow') === 'gitlab') {
+      setActiveWorkflow('gitlab');
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.get('tab') === 'reviewed' || urlParams.get('reviewId')) {
       setActiveTab('reviewed');
@@ -400,7 +404,7 @@ export default function App() {
           showRecoveryPrompt={showRecoveryPrompt}
           onDismissRecoveryPrompt={() => setShowRecoveryPrompt(false)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
-          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload' || activeWorkflow === 'github' || activeWorkflow === 'sync')}
+          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload' || activeWorkflow === 'github' || activeWorkflow === 'gitlab' || activeWorkflow === 'sync')}
           onBack={() => {
             if (activeWorkflow === 'paste') {
               if (mobilePasteView === 'results') {
@@ -411,6 +415,8 @@ export default function App() {
               }
             } else if (activeWorkflow === 'github') {
               clearGithubSelection();
+              setActiveWorkflow('sync');
+            } else if (activeWorkflow === 'gitlab') {
               setActiveWorkflow('sync');
             } else if (activeWorkflow === 'sync') {
               setActiveWorkflow('none');
@@ -527,6 +533,14 @@ export default function App() {
                               <SyncCodeWorkflow 
                                 setActiveWorkflow={setActiveWorkflow}
                                 isGithubConnected={isGithubConnected}
+                                isGitlabConnected={Boolean(user?.isGitlabLinked)}
+                              />
+                            )}
+
+                            {activeWorkflow === 'gitlab' && (
+                              <GitlabWorkflow 
+                                user={user}
+                                setActiveWorkflow={setActiveWorkflow}
                               />
                             )}
 

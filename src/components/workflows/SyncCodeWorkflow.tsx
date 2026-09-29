@@ -3,8 +3,9 @@ import { motion } from 'motion/react';
 import { ChevronLeft, Github, GitBranch, Terminal, Shield, ArrowRight } from 'lucide-react';
 
 interface SyncCodeWorkflowProps {
-  setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'sync') => void;
+  setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'sync') => void;
   isGithubConnected?: boolean;
+  isGitlabConnected?: boolean;
 }
 
 interface ProviderItem {
@@ -19,6 +20,7 @@ interface ProviderItem {
 export function SyncCodeWorkflow({
   setActiveWorkflow,
   isGithubConnected = false,
+  isGitlabConnected = false,
 }: SyncCodeWorkflowProps) {
   const providers: ProviderItem[] = [
     {
@@ -32,14 +34,14 @@ export function SyncCodeWorkflow({
     {
       id: 'gitlab',
       name: 'GitLab',
-      description: 'GitLab SaaS and self-managed projects & merge requests',
-      isAvailable: false,
+      description: 'GitLab projects and merge request inspection',
+      isAvailable: true,
       icon: (
         <svg className="w-6 h-6 text-[#E24329]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M22.65 14.39L20.6 8.08c-.14-.42-.5-.73-.94-.78-.44-.06-.88.13-1.12.49L16.2 11.4 12 5.09a1.002 1.002 0 00-1.7 0L6.1 11.4 3.76 7.79c-.24-.36-.68-.55-1.12-.49-.44.05-.8.36-.94.78L-.35 14.39c-.19.58-.02 1.22.43 1.63l11.45 8.35c.28.2.65.2.94 0l11.45-8.35c.45-.41.62-1.05.43-1.63z" />
         </svg>
       ),
-      badge: 'Coming soon',
+      badge: isGitlabConnected ? 'Connected' : 'Available',
     },
     {
       id: 'bitbucket',
@@ -99,19 +101,19 @@ export function SyncCodeWorkflow({
       {/* Provider Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4.5 w-full">
         {providers.map((provider) => {
-          const isGithub = provider.id === 'github';
+          const isEnabled = provider.isAvailable;
 
           return (
             <div
               key={provider.id}
               id={`provider-card-${provider.id}`}
               onClick={() => {
-                if (isGithub) {
-                  setActiveWorkflow('github');
+                if (isEnabled) {
+                  setActiveWorkflow(provider.id as 'github' | 'gitlab');
                 }
               }}
               className={`relative rounded-2xl border p-5 sm:p-6 transition-all flex flex-col justify-between min-h-[140px] sm:min-h-[155px] ${
-                isGithub
+                isEnabled
                   ? 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md cursor-pointer group'
                   : 'bg-gray-50/70 border-gray-200/70 cursor-not-allowed opacity-80'
               }`}
@@ -120,7 +122,7 @@ export function SyncCodeWorkflow({
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div
                     className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                      isGithub
+                      isEnabled
                         ? 'bg-gray-100 group-hover:scale-105 transition-transform'
                         : 'bg-white border border-gray-200/60'
                     }`}
@@ -145,7 +147,7 @@ export function SyncCodeWorkflow({
 
                 <h3 className="text-[15px] sm:text-[16px] font-semibold text-gray-900 flex items-center gap-1.5">
                   {provider.name}
-                  {isGithub && (
+                  {isEnabled && (
                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-900 group-hover:translate-x-0.5 transition-all" />
                   )}
                 </h3>
@@ -154,9 +156,13 @@ export function SyncCodeWorkflow({
                 </p>
               </div>
 
-              {isGithub && (
+              {isEnabled && (
                 <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[12px] font-medium text-gray-600 group-hover:text-gray-900">
-                  <span>{isGithubConnected ? 'Open connected repositories' : 'Connect GitHub account'}</span>
+                  <span>
+                    {provider.id === 'github'
+                      ? (isGithubConnected ? 'Open connected repositories' : 'Connect GitHub account')
+                      : (isGitlabConnected ? 'Open connected projects' : 'Connect GitLab account')}
+                  </span>
                   <span className="text-gray-400 group-hover:text-gray-600">→</span>
                 </div>
               )}
