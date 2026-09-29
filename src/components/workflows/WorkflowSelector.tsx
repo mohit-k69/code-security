@@ -46,13 +46,13 @@ export function WorkflowSelector({
           id="upload-files-card-btn"
           type="button"
           onClick={() => setActiveWorkflow('upload')}
-          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[375px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2.5 min-[375px]:p-3 md:p-3 cursor-pointer ${
+          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-start justify-between md:items-center md:justify-center md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-3 min-[360px]:p-3.5 min-[375px]:p-4 md:p-3 cursor-pointer ${
             hasUploadedCode
               ? 'bg-emerald-50 border-emerald-300'
               : 'bg-white border-gray-200 hover:border-gray-300'
           }`}
         >
-          <div className={`w-8 h-8 min-[375px]:w-8.5 min-[375px]:h-8.5 min-[414px]:w-9 min-[414px]:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
+          <div className={`w-7 h-7 min-[360px]:w-7.5 min-[360px]:h-7.5 min-[375px]:w-8 min-[375px]:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 self-start md:self-center ${
             hasUploadedCode
               ? 'bg-emerald-100 text-emerald-600'
               : 'bg-blue-50 text-blue-600'
@@ -63,7 +63,7 @@ export function WorkflowSelector({
               <Upload className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" />
             )}
           </div>
-          <div className="flex flex-col items-center gap-0.5 md:gap-1">
+          <div className="flex flex-col items-start md:items-center text-left md:text-center gap-0.5 md:gap-1">
             <span className={`text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-semibold leading-tight ${hasUploadedCode ? 'text-emerald-700' : 'text-gray-900'}`}>
               {hasUploadedCode ? (uploadedFilesCount > 1 ? `${uploadedFilesCount} Files` : 'File Added') : 'Upload Files'}
             </span>
@@ -78,20 +78,20 @@ export function WorkflowSelector({
           id="paste-code-card-btn"
           type="button"
           onClick={() => setActiveWorkflow('paste')}
-          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[375px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2.5 min-[375px]:p-3 md:p-3 cursor-pointer ${
+          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-start justify-between md:items-center md:justify-center md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-3 min-[360px]:p-3.5 min-[375px]:p-4 md:p-3 cursor-pointer ${
             hasPastedCode
               ? 'bg-emerald-50 border-emerald-300'
               : 'bg-white border-gray-200 hover:border-gray-300'
           }`}
         >
-          <div className={`w-8 h-8 min-[375px]:w-8.5 min-[375px]:h-8.5 min-[414px]:w-9 min-[414px]:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
+          <div className={`w-7 h-7 min-[360px]:w-7.5 min-[360px]:h-7.5 min-[375px]:w-8 min-[375px]:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 self-start md:self-center ${
             hasPastedCode
               ? 'bg-emerald-100 text-emerald-600'
               : 'bg-purple-50 text-purple-600'
           }`}>
             {hasPastedCode ? <Check className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" /> : <Clipboard className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" />}
           </div>
-          <div className="flex flex-col items-center gap-0.5 md:gap-1">
+          <div className="flex flex-col items-start md:items-center text-left md:text-center gap-0.5 md:gap-1">
             <span className={`text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-semibold leading-tight ${hasPastedCode ? 'text-emerald-700' : 'text-gray-900'}`}>
               {hasPastedCode ? 'Code Added' : 'Paste Code'}
             </span>
@@ -104,20 +104,20 @@ export function WorkflowSelector({
           id="github-card-btn"
           type="button"
           onClick={() => setActiveWorkflow('github')}
-          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-center justify-center gap-1.5 min-[375px]:gap-2 md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-2.5 min-[375px]:p-3 md:p-3 cursor-pointer ${
+          className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-start justify-between md:items-center md:justify-center md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-3 min-[360px]:p-3.5 min-[375px]:p-4 md:p-3 cursor-pointer ${
             githubConnected
               ? 'bg-emerald-50 border-emerald-300'
               : 'bg-white border-gray-200 hover:border-gray-300'
           }`}
         >
-          <div className={`w-8 h-8 min-[375px]:w-8.5 min-[375px]:h-8.5 min-[414px]:w-9 min-[414px]:h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 ${
+          <div className={`w-7 h-7 min-[360px]:w-7.5 min-[360px]:h-7.5 min-[375px]:w-8 min-[375px]:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 self-start md:self-center ${
             githubConnected
               ? 'bg-emerald-100 text-emerald-600'
               : 'bg-gray-100 text-gray-900'
           }`}>
             {githubConnected ? <Check className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" /> : <Github className="w-3.5 h-3.5 min-[375px]:w-4 min-[375px]:h-4 md:w-4 md:h-4" />}
           </div>
-          <div className="flex flex-col items-center gap-0.5 md:gap-1">
+          <div className="flex flex-col items-start md:items-center text-left md:text-center gap-0.5 md:gap-1">
             <span className={`text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-semibold leading-tight ${githubConnected ? 'text-emerald-700' : 'text-gray-900'}`}>
               {githubConnected ? 'Connected' : 'GitHub'}
             </span>
