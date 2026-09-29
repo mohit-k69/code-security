@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing provider token');
     }
 
-    const provider = requestedProvider === 'gitlab' ? 'gitlab' : 'github';
+    const validProviders = ['github', 'gitlab', 'bitbucket', 'azure'];
+    const provider = validProviders.includes(requestedProvider) ? requestedProvider : 'github';
 
     // 1. Verify the incoming Supabase JWT to get the user ID
     const supabaseClient = createClient(
@@ -57,6 +58,36 @@ Deno.serve(async (req) => {
 
       const gitlabUser = await gitlabUserRes.json();
       providerUserId = String(gitlabUser.id);
+    } else if (provider === 'bitbucket') {
+      const bbUserRes = await fetch('https://api.bitbucket.org/2.0/user', {
+        headers: {
+          'Authorization': `Bearer ${providerToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Edge-Function'
+        }
+      });
+
+      if (!bbUserRes.ok) {
+        throw new Error('Failed to validate Bitbucket token with provider');
+      }
+
+      const bbUser = await bbUserRes.json();
+      providerUserId = String(bbUser.account_id || bbUser.uuid || bbUser.username || 'bitbucket_user');
+    } else if (provider === 'azure') {
+      const azureUserRes = await fetch('https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=6.0', {
+        headers: {
+          'Authorization': `Bearer ${providerToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Edge-Function'
+        }
+      });
+
+      if (azureUserRes.ok) {
+        const azureUser = await azureUserRes.json();
+        providerUserId = String(azureUser.id || azureUser.publicAlias || 'azure_user');
+      } else {
+        providerUserId = user.id;
+      }
     } else {
       const githubUserRes = await fetch('https://api.github.com/user', {
         headers: {

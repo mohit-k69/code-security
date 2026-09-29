@@ -3,9 +3,11 @@ import { motion } from 'motion/react';
 import { ChevronLeft, Github, GitBranch, Terminal, Shield, ArrowRight } from 'lucide-react';
 
 interface SyncCodeWorkflowProps {
-  setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'sync') => void;
+  setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'bitbucket' | 'azure' | 'sync') => void;
   isGithubConnected?: boolean;
   isGitlabConnected?: boolean;
+  isBitbucketConnected?: boolean;
+  isAzureConnected?: boolean;
 }
 
 interface ProviderItem {
@@ -21,6 +23,8 @@ export function SyncCodeWorkflow({
   setActiveWorkflow,
   isGithubConnected = false,
   isGitlabConnected = false,
+  isBitbucketConnected = false,
+  isAzureConnected = false,
 }: SyncCodeWorkflowProps) {
   const providers: ProviderItem[] = [
     {
@@ -46,26 +50,26 @@ export function SyncCodeWorkflow({
     {
       id: 'bitbucket',
       name: 'Bitbucket',
-      description: 'Bitbucket Cloud & Data Center repositories and pull requests',
-      isAvailable: false,
+      description: 'Bitbucket Cloud repositories and pull requests',
+      isAvailable: true,
       icon: (
         <svg className="w-6 h-6 text-[#0052CC]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M1.38 2.05a1.18 1.18 0 00-.97.59 1.16 1.16 0 00-.09 1.14l4.24 16.63c.12.48.56.81 1.05.81h12.78c.46 0 .87-.29 1.01-.73l4.28-16.71a1.16 1.16 0 00-.09-1.14 1.18 1.18 0 00-.97-.59H1.38zm12.35 13.56H9.37l-1.39-6.33h7.13l-1.38 6.33z" />
         </svg>
       ),
-      badge: 'Coming soon',
+      badge: isBitbucketConnected ? 'Connected' : 'Available',
     },
     {
       id: 'azure',
       name: 'Azure DevOps',
       description: 'Azure Repos, branching policies and pull request reviews',
-      isAvailable: false,
+      isAvailable: true,
       icon: (
         <svg className="w-6 h-6 text-[#0078D4]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M22.5 4.5L14.25.75v5.25L4.5 9v6l9.75 3v5.25l8.25-3.75V4.5zM14.25 15L6.75 12.38V10.5l7.5-2.62v7.12z" />
         </svg>
       ),
-      badge: 'Coming soon',
+      badge: isAzureConnected ? 'Connected' : 'Available',
     },
   ];
 
@@ -109,7 +113,7 @@ export function SyncCodeWorkflow({
               id={`provider-card-${provider.id}`}
               onClick={() => {
                 if (isEnabled) {
-                  setActiveWorkflow(provider.id as 'github' | 'gitlab');
+                  setActiveWorkflow(provider.id);
                 }
               }}
               className={`relative rounded-2xl border p-5 sm:p-6 transition-all flex flex-col justify-between min-h-[140px] sm:min-h-[155px] ${

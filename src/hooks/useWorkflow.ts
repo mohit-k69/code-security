@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export type WorkflowState = 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'sync';
+export type WorkflowState = 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'bitbucket' | 'azure' | 'sync';
 
 export function useWorkflow() {
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowState>('none');

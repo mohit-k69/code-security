@@ -85,14 +85,13 @@ async function runAllTests() {
       'App.tsx must mount GithubWorkflow when activeWorkflow is github');
   });
 
-  // 6. Bitbucket and Azure DevOps show "Coming soon" while GitLab is active
-  await runTest('6. Bitbucket and Azure DevOps display "Coming soon" while GitLab is active', () => {
+  // 6. Bitbucket and Azure DevOps are active alongside GitHub and GitLab
+  await runTest('6. All four providers (GitHub, GitLab, Bitbucket, Azure DevOps) are functional in Sync Code', () => {
     assert(syncCodeWorkflow.includes("id: 'gitlab'"), 'GitLab entry configured');
     assert(syncCodeWorkflow.includes("id: 'bitbucket'"), 'Bitbucket entry configured');
     assert(syncCodeWorkflow.includes("id: 'azure'"), 'Azure DevOps entry configured');
-    assert(syncCodeWorkflow.includes("badge: 'Coming soon'"), 'Coming soon badge assigned to unreleased providers');
-    assert(syncCodeWorkflow.includes("setActiveWorkflow(provider.id as 'github' | 'gitlab')"),
-      'GitLab triggers active workflow');
+    assert(syncCodeWorkflow.includes("setActiveWorkflow(provider.id)"),
+      'Provider cards trigger active workflow');
   });
 
   // 7. Navigation back button supports returning from Sync Code

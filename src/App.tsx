@@ -23,6 +23,8 @@ const PasteWorkflow = React.lazy(() => import('./components/workflows/PasteWorkf
 const SecurityReportPanel = React.lazy(() => import('./components/workflows/SecurityReportPanel').then(m => ({ default: m.SecurityReportPanel })));
 const GithubWorkflow = React.lazy(() => import('./components/workflows/GithubWorkflow').then(m => ({ default: m.GithubWorkflow })));
 const GitlabWorkflow = React.lazy(() => import('./components/workflows/GitlabWorkflow').then(m => ({ default: m.GitlabWorkflow })));
+const BitbucketWorkflow = React.lazy(() => import('./components/workflows/BitbucketWorkflow').then(m => ({ default: m.BitbucketWorkflow })));
+const AzureWorkflow = React.lazy(() => import('./components/workflows/AzureWorkflow').then(m => ({ default: m.AzureWorkflow })));
 const SyncCodeWorkflow = React.lazy(() => import('./components/workflows/SyncCodeWorkflow').then(m => ({ default: m.SyncCodeWorkflow })));
 const HistoryView = React.lazy(() => import('./components/analysis/HistoryView').then(m => ({ default: m.HistoryView })));
 const ProfileModal = React.lazy(() => import('./components/auth/ProfileModal').then(m => ({ default: m.ProfileModal })));
@@ -449,8 +451,10 @@ export default function App() {
                 const isFullWorkspaceMode = isPasteCodeMode || isUploadMode;
                 const isGithubAnalysisActive = activeWorkflow === 'github' && selectedRepoId !== null && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isGitlabAnalysisActive = activeWorkflow === 'gitlab' && (isAnalyzing || Boolean(analysisResult?.verdict));
+                const isBitbucketAnalysisActive = activeWorkflow === 'bitbucket' && (isAnalyzing || Boolean(analysisResult?.verdict));
+                const isAzureAnalysisActive = activeWorkflow === 'azure' && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
-                const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive || isGitlabAnalysisActive;
+                const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive || isGitlabAnalysisActive || isBitbucketAnalysisActive || isAzureAnalysisActive;
 
                 const leftContainerClass = isFullWorkspaceMode
                   ? `${isPasteCodeMode && mobilePasteView === 'results' ? 'hidden' : 'w-full'} lg:flex lg:w-[45%] lg:h-full lg:flex-col shrink-0 border-r border-gray-200`
@@ -535,11 +539,41 @@ export default function App() {
                                 setActiveWorkflow={setActiveWorkflow}
                                 isGithubConnected={isGithubConnected}
                                 isGitlabConnected={Boolean(user?.isGitlabLinked)}
+                                isBitbucketConnected={Boolean(user?.isBitbucketLinked)}
+                                isAzureConnected={Boolean(user?.isAzureLinked)}
                               />
                             )}
 
                             {activeWorkflow === 'gitlab' && (
                               <GitlabWorkflow 
+                                user={user}
+                                setActiveWorkflow={setActiveWorkflow}
+                                analysisResult={analysisResult}
+                                setAnalysisResult={setAnalysisResult}
+                                isAnalyzing={isAnalyzing}
+                                setIsAnalyzing={setIsAnalyzing}
+                                reviewedItems={reviewedItems}
+                                setReviewedItems={setReviewedItems}
+                                isLimitReached={isLimitReached}
+                              />
+                            )}
+
+                            {activeWorkflow === 'bitbucket' && (
+                              <BitbucketWorkflow 
+                                user={user}
+                                setActiveWorkflow={setActiveWorkflow}
+                                analysisResult={analysisResult}
+                                setAnalysisResult={setAnalysisResult}
+                                isAnalyzing={isAnalyzing}
+                                setIsAnalyzing={setIsAnalyzing}
+                                reviewedItems={reviewedItems}
+                                setReviewedItems={setReviewedItems}
+                                isLimitReached={isLimitReached}
+                              />
+                            )}
+
+                            {activeWorkflow === 'azure' && (
+                              <AzureWorkflow 
                                 user={user}
                                 setActiveWorkflow={setActiveWorkflow}
                                 analysisResult={analysisResult}

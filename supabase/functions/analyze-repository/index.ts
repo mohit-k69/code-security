@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 import { PipelineRunner } from "./orchestrator/PipelineRunner.ts";
 import { GithubService } from "./services/GithubService.ts";
 import { GitlabService } from "./services/GitlabService.ts";
+import { BitbucketService } from "./services/BitbucketService.ts";
+import { AzureDevOpsService } from "./services/AzureDevOpsService.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,10 +42,10 @@ Deno.serve(async (req) => {
     }
 
     const reqBody = await req.json();
-    const provider = reqBody.provider === 'gitlab' ? 'gitlab' : 'github';
+    const provider = reqBody.provider || 'github';
     const owner = reqBody.owner || '';
-    const repo = reqBody.repo || (reqBody.projectId ? String(reqBody.projectId) : '');
-    const prNumber = reqBody.prNumber || reqBody.mrIid;
+    const repo = reqBody.repo || (reqBody.projectId ? String(reqBody.projectId) : '') || reqBody.repositoryId || '';
+    const prNumber = reqBody.prNumber || reqBody.mrIid || reqBody.pullRequestId;
 
     if (!repo) {
       return jsonResponse({ error: 'Missing repository/project parameters.' }, 400);
@@ -62,8 +64,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (dbError || !connection || !connection.access_token) {
-      const providerLabel = provider === 'gitlab' ? 'GitLab' : 'GitHub';
-      return jsonResponse({ error: `${providerLabel} is not connected. Please connect your account.` }, 404);
+      const providerLabels: Record<string, string> = {
+        github: 'GitHub',
+        gitlab: 'GitLab',
+        bitbucket: 'Bitbucket',
+        azure: 'Azure DevOps',
+      };
+      const label = providerLabels[provider] || provider;
+      return jsonResponse({ error: `${label} is not connected. Please connect your account.` }, 404);
     }
 
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
@@ -79,9 +87,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Internal error: LLM_MODEL or STANDARD_MODEL not configured.' }, 500);
     }
 
-    const providerService = provider === 'gitlab'
-      ? new GitlabService(connection.access_token)
-      : new GithubService(connection.access_token);
+    let providerService;
+    if (provider === 'gitlab') {
+      providerService = new GitlabService(connection.access_token);
+    } else if (provider === 'bitbucket') {
+      providerService = new BitbucketService(connection.access_token);
+    } else if (provider === 'azure') {
+      providerService = new AzureDevOpsService(connection.access_token, reqBody.organization || '', reqBody.project || '');
+    } else {
+      providerService = new GithubService(connection.access_token);
+    }
 
     const runner = new PipelineRunner();
     const result = await runner.run({

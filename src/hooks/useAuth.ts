@@ -13,7 +13,11 @@ export interface User {
   githubUsername?: string;
   isGitlabLinked?: boolean;
   gitlabUsername?: string;
-  authProvider?: 'email' | 'github' | 'google' | 'gitlab';
+  isBitbucketLinked?: boolean;
+  bitbucketUsername?: string;
+  isAzureLinked?: boolean;
+  azureUsername?: string;
+  authProvider?: 'email' | 'github' | 'google' | 'gitlab' | 'bitbucket' | 'azure';
   recoveryPromptSeenAt?: string;
 }
 
@@ -255,6 +259,18 @@ export function useAuth() {
           identities.some((id: any) => id.provider === 'gitlab')
         );
 
+        let isBitbucketLinked = Boolean(
+          session.user.app_metadata?.providers?.includes('bitbucket') ||
+          session.user.app_metadata?.provider === 'bitbucket' ||
+          identities.some((id: any) => id.provider === 'bitbucket')
+        );
+
+        let isAzureLinked = Boolean(
+          session.user.app_metadata?.providers?.includes('azure') ||
+          session.user.app_metadata?.provider === 'azure' ||
+          identities.some((id: any) => id.provider === 'azure')
+        );
+
         // Determine if the user authenticated via an OAuth provider (Google or GitHub)
         const isOAuth = isOAuthUser(session.user, identities) || Boolean(session.provider_token);
 
@@ -310,6 +326,15 @@ export function useAuth() {
           gitlabIdentity?.identity_data?.preferred_username ||
           gitlabIdentity?.identity_data?.name;
 
+        const bitbucketIdentity = identities.find((id: any) => id.provider === 'bitbucket');
+        const bitbucketUsername = bitbucketIdentity?.identity_data?.username ||
+          bitbucketIdentity?.identity_data?.nickname ||
+          bitbucketIdentity?.identity_data?.display_name;
+
+        const azureIdentity = identities.find((id: any) => id.provider === 'azure');
+        const azureUsername = azureIdentity?.identity_data?.name ||
+          azureIdentity?.identity_data?.preferred_username;
+
         // FAST-PATH: Set user immediately with session data and unblock initialization (instant load!)
         setUser({
           id: session.user.id,
@@ -323,6 +348,10 @@ export function useAuth() {
           githubUsername,
           isGitlabLinked,
           gitlabUsername,
+          isBitbucketLinked,
+          bitbucketUsername,
+          isAzureLinked,
+          azureUsername,
           authProvider,
           recoveryPromptSeenAt: meta?.recovery_prompt_seen_at,
         });
