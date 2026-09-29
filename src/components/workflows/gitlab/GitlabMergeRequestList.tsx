@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { GitPullRequest, GitMerge, Check, AlertCircle, ArrowLeft, Loader2, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
+import { GitPullRequest, GitMerge, ArrowLeft, Loader2, Sparkles, CheckCircle2, Shield } from 'lucide-react';
 import { GitlabProject, GitlabMergeRequest } from '../../../hooks/useGitlab';
 
 interface GitlabMergeRequestListProps {
@@ -10,6 +10,8 @@ interface GitlabMergeRequestListProps {
   onBackToProjects: () => void;
   onSelectMergeRequest: (mr: GitlabMergeRequest) => void;
   selectedMR: GitlabMergeRequest | null;
+  onAnalyzeMR: (project: GitlabProject, mr: GitlabMergeRequest) => void;
+  isAnalyzing: boolean;
 }
 
 export function GitlabMergeRequestList({
@@ -19,6 +21,8 @@ export function GitlabMergeRequestList({
   onBackToProjects,
   onSelectMergeRequest,
   selectedMR,
+  onAnalyzeMR,
+  isAnalyzing,
 }: GitlabMergeRequestListProps) {
   return (
     <div className="w-full space-y-6">
@@ -52,36 +56,54 @@ export function GitlabMergeRequestList({
         </div>
       </div>
 
-      {/* Selected MR Readiness Notice */}
+      {/* Selected MR Action Banner */}
       {selectedMR && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-[#FFF5F2] border border-[#FDE3DC] rounded-2xl p-5"
         >
-          <div className="flex items-start gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-[#E24329] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-[#E24329] uppercase tracking-wider">
-                  Merge Request Selected
-                </span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-600 font-mono">!{selectedMR.iid}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-[#E24329] text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-gray-900 mt-0.5 truncate">
-                {selectedMR.title}
-              </h4>
-              <p className="text-xs text-gray-600 mt-1">
-                Branch: <span className="font-mono text-gray-800">{selectedMR.source_branch}</span> → <span className="font-mono text-gray-800">{selectedMR.target_branch}</span>
-              </p>
-              <div className="mt-3 pt-2.5 border-t border-[#FDE3DC] flex items-center gap-2 text-xs text-gray-500">
-                <Sparkles className="w-3.5 h-3.5 text-[#E24329] shrink-0" />
-                <span>Phase 1 integration confirmed. Security review analysis pipeline will hook into this MR selection in Phase 2.</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#E24329] uppercase tracking-wider">
+                    Merge Request Ready
+                  </span>
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-600 font-mono">!{selectedMR.iid}</span>
+                </div>
+                <h4 className="text-sm font-bold text-gray-900 mt-0.5 truncate">
+                  {selectedMR.title}
+                </h4>
+                <p className="text-xs text-gray-600 mt-1">
+                  Branch: <span className="font-mono text-gray-800">{selectedMR.source_branch}</span> → <span className="font-mono text-gray-800">{selectedMR.target_branch}</span>
+                </p>
               </div>
             </div>
+
+            <button
+              id="start-gitlab-review-btn"
+              type="button"
+              onClick={() => onAnalyzeMR(project, selectedMR)}
+              disabled={isAnalyzing}
+              className="px-5 py-2.5 rounded-xl bg-[#E24329] hover:bg-[#D03820] text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Reviewing MR...</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4" />
+                  <span>Review Merge Request</span>
+                </>
+              )}
+            </button>
           </div>
         </motion.div>
       )}
@@ -179,16 +201,23 @@ export function GitlabMergeRequestList({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                  <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                     <button
+                      id={`analyze-gitlab-mr-${mr.iid}-btn`}
                       type="button"
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectMergeRequest(mr);
+                        onAnalyzeMR(project, mr);
+                      }}
+                      disabled={isAnalyzing}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#E24329] text-white'
+                          ? 'bg-[#E24329] hover:bg-[#D03820] text-white shadow-xs'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {isSelected ? 'Selected' : 'Select MR'}
+                      {isAnalyzing && isSelected ? 'Reviewing...' : 'Review MR'}
                     </button>
                   </div>
                 </div>

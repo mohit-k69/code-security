@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 import { PipelineRunner } from "./orchestrator/PipelineRunner.ts";
+import { GithubService } from "./services/GithubService.ts";
+import { GitlabService } from "./services/GitlabService.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,10 +39,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
-    const { owner, repo } = await req.json();
+    const reqBody = await req.json();
+    const provider = reqBody.provider === 'gitlab' ? 'gitlab' : 'github';
+    const owner = reqBody.owner || '';
+    const repo = reqBody.repo || (reqBody.projectId ? String(reqBody.projectId) : '');
+    const prNumber = reqBody.prNumber || reqBody.mrIid;
 
-    if (!owner || !repo) {
-      return jsonResponse({ error: 'Missing owner or repo parameters.' }, 400);
+    if (!repo) {
+      return jsonResponse({ error: 'Missing repository/project parameters.' }, 400);
     }
 
     const supabaseAdmin = createClient(
@@ -52,11 +58,12 @@ Deno.serve(async (req) => {
       .from('oauth_connections')
       .select('provider, access_token')
       .eq('user_id', user.id)
-      .eq('provider', 'github')
+      .eq('provider', provider)
       .single();
 
     if (dbError || !connection || !connection.access_token) {
-      return jsonResponse({ error: 'GitHub is not connected. Please reconnect your GitHub account.' }, 404);
+      const providerLabel = provider === 'gitlab' ? 'GitLab' : 'GitHub';
+      return jsonResponse({ error: `${providerLabel} is not connected. Please connect your account.` }, 404);
     }
 
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
@@ -72,12 +79,17 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Internal error: LLM_MODEL or STANDARD_MODEL not configured.' }, 500);
     }
 
+    const providerService = provider === 'gitlab'
+      ? new GitlabService(connection.access_token)
+      : new GithubService(connection.access_token);
+
     const runner = new PipelineRunner();
     const result = await runner.run({
       owner,
       repo,
       supabaseAdmin,
-      githubToken: connection.access_token,
+      providerService,
+      prNumber: typeof prNumber === 'number' ? prNumber : undefined,
       openRouterKey,
       standardModel,
       majorModel

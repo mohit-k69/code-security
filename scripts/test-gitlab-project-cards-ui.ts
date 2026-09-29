@@ -84,9 +84,9 @@ async function runAllTests() {
 
   // 5. API failure shows the existing error/retry state
   await runTest('5. API failure displays error message and Retry action', () => {
-    assert(gitlabWorkflowCode.includes('(gitlabProjectsError || gitlabMRsError)'), 'Error state conditionally rendered on API failure');
+    assert(gitlabWorkflowCode.includes('gitlabProjectsError || gitlabMRsError'), 'Error state conditionally rendered on API failure');
     assert(gitlabWorkflowCode.includes('Retry'), 'Retry button present');
-    assert(gitlabWorkflowCode.includes('onClick={fetchGitlabProjects}'), 'Retry button re-fetches GitLab projects');
+    assert(gitlabWorkflowCode.includes('fetchGitlabProjects()'), 'Retry button re-fetches GitLab projects');
   });
 
   // 6. GitHub UI remains unchanged

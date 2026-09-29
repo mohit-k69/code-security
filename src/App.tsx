@@ -448,8 +448,9 @@ export default function App() {
                 const isUploadMode = activeTab === 'new' && activeWorkflow === 'upload';
                 const isFullWorkspaceMode = isPasteCodeMode || isUploadMode;
                 const isGithubAnalysisActive = activeWorkflow === 'github' && selectedRepoId !== null && (isAnalyzing || Boolean(analysisResult?.verdict));
+                const isGitlabAnalysisActive = activeWorkflow === 'gitlab' && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
-                const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
+                const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive || isGitlabAnalysisActive;
 
                 const leftContainerClass = isFullWorkspaceMode
                   ? `${isPasteCodeMode && mobilePasteView === 'results' ? 'hidden' : 'w-full'} lg:flex lg:w-[45%] lg:h-full lg:flex-col shrink-0 border-r border-gray-200`
@@ -541,6 +542,13 @@ export default function App() {
                               <GitlabWorkflow 
                                 user={user}
                                 setActiveWorkflow={setActiveWorkflow}
+                                analysisResult={analysisResult}
+                                setAnalysisResult={setAnalysisResult}
+                                isAnalyzing={isAnalyzing}
+                                setIsAnalyzing={setIsAnalyzing}
+                                reviewedItems={reviewedItems}
+                                setReviewedItems={setReviewedItems}
+                                isLimitReached={isLimitReached}
                               />
                             )}
 

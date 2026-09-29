@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
+import { ProviderService } from "../services/ProviderService.ts";
 import { GithubService } from "../services/GithubService.ts";
 import { PRSelector } from "../services/PRSelector.ts";
 import { DependencyResolver } from "../services/DependencyResolver.ts";
@@ -15,7 +16,9 @@ export interface PipelineConfig {
   owner: string;
   repo: string;
   supabaseAdmin: SupabaseClient;
-  githubToken: string;
+  githubToken?: string;
+  providerService?: ProviderService;
+  prNumber?: number;
   openRouterKey: string;
   standardModel: string;
   majorModel: string;
@@ -28,17 +31,28 @@ export type PipelineResult =
 
 export class PipelineRunner {
   public async run(config: PipelineConfig): Promise<PipelineResult> {
-    const { owner, repo, supabaseAdmin, githubToken, standardModel, majorModel } = config;
+    const { owner, repo, supabaseAdmin, standardModel, majorModel } = config;
 
     // 1. Instantiate Provider Service
-    const providerService = new GithubService(githubToken);
+    const providerService = config.providerService || new GithubService(config.githubToken || '');
 
     // 2. Select PR
-    const selector = new PRSelector(supabaseAdmin, providerService);
-    const selectionResult = await selector.selectNextReview(owner, repo);
+    let selectionResult: { prNumber: number; commitSha: string };
+    if (config.prNumber) {
+      try {
+        const pr = await providerService.getPullRequestDetails(owner, repo, config.prNumber);
+        selectionResult = { prNumber: pr.number, commitSha: pr.head.sha };
+      } catch (err: any) {
+        return { type: 'error', message: `Failed to fetch PR details: ${err.message}`, status: 400 };
+      }
+    } else {
+      const selector = new PRSelector(supabaseAdmin, providerService);
+      const sel = await selector.selectNextReview(owner, repo);
 
-    if (selectionResult.status !== 'pr_selected') {
-      return { type: 'error', message: selectionResult.message || 'PR selection failed', status: 400 };
+      if (sel.status !== 'pr_selected') {
+        return { type: 'error', message: sel.message || 'PR selection failed', status: 400 };
+      }
+      selectionResult = { prNumber: sel.prNumber!, commitSha: sel.commitSha! };
     }
 
     // 3. Build Context

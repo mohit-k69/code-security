@@ -112,14 +112,14 @@ async function runAllTests() {
   });
 
   // 7. Selecting a merge request
-  await runTest('7. Selecting a merge request marks selection without starting security analysis', () => {
+  await runTest('7. Selecting a merge request marks selection and displays ready status', () => {
     assert(useGitlabCode.includes('selectMergeRequest'), 'selectMergeRequest handler present');
     assert(useGitlabCode.includes('selectedMR'), 'selectedMR state tracked');
 
     const gitlabMrListPath = path.resolve('src/components/workflows/gitlab/GitlabMergeRequestList.tsx');
     const gitlabMrListCode = fs.readFileSync(gitlabMrListPath, 'utf8');
-    assert(gitlabMrListCode.includes('Merge Request Selected'), 'Displays selected MR confirmation');
-    assert(gitlabMrListCode.includes('Phase 1 integration confirmed'), 'Explicitly notes Phase 1 boundary');
+    assert(gitlabMrListCode.includes('Merge Request Ready') || gitlabMrListCode.includes('Merge Request Selected'), 
+      'Displays selected MR confirmation');
   });
 
   // 8. Unauthenticated state handling
