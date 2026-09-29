@@ -68,19 +68,19 @@ async function runAllTests() {
       'Card heights across all mobile/desktop breakpoints must be preserved');
   });
 
-  // 6. All three workflow buttons (Upload, Paste, GitHub) are styled consistently
-  await runTest('6. All workflow cards (Upload Files, Paste Code, GitHub) have consistent positioning', () => {
+  // 6. All three workflow buttons (Upload, Paste, Sync Code) are styled consistently
+  await runTest('6. All workflow cards (Upload Files, Paste Code, Sync Code) have consistent positioning', () => {
     assert(workflowSelector.includes('id="upload-files-card-btn"'), 'Upload card button present');
     assert(workflowSelector.includes('id="paste-code-card-btn"'), 'Paste card button present');
-    assert(workflowSelector.includes('id="github-card-btn"'), 'GitHub card button present');
+    assert(workflowSelector.includes('id="sync-code-card-btn"'), 'Sync Code card button present');
 
     const uploadMatch = workflowSelector.match(/id="upload-files-card-btn"[\s\S]*?<\/button>/);
     const pasteMatch = workflowSelector.match(/id="paste-code-card-btn"[\s\S]*?<\/button>/);
-    const githubMatch = workflowSelector.match(/id="github-card-btn"[\s\S]*?<\/button>/);
+    const syncMatch = workflowSelector.match(/id="sync-code-card-btn"[\s\S]*?<\/button>/);
 
     assert(uploadMatch && uploadMatch[0].includes('items-start justify-end'));
     assert(pasteMatch && pasteMatch[0].includes('items-start justify-end'));
-    assert(githubMatch && githubMatch[0].includes('items-start justify-end'));
+    assert(syncMatch && syncMatch[0].includes('items-start justify-end'));
   });
 
   console.log('\n==================================================================');

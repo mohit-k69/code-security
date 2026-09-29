@@ -15,7 +15,7 @@ import { GithubAnalysisModals, AnalysisState } from './github/GithubAnalysisModa
 
 interface GithubWorkflowProps {
   user?: User | null;
-  setActiveWorkflow: (workflow: 'none') => void;
+  setActiveWorkflow: (workflow?: any) => void;
   isFetchingRepos: boolean;
   githubReposError: string;
   githubConnectionStatus?: GithubConnectionStatus;

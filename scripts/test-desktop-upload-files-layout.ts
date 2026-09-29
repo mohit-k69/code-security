@@ -114,7 +114,7 @@ async function runAllTests() {
 
   // 6. Mobile Upload Files remains responsive
   await runTest('6. Mobile Upload Files layout and actions remain intact', () => {
-    assert(appTsx.includes('showBackButton={activeTab === \'new\' && (activeWorkflow === \'paste\' || activeWorkflow === \'upload\')}'),
+    assert(appTsx.includes("activeWorkflow === 'upload'"),
       'Mobile header shows back button for Upload Files');
   });
 

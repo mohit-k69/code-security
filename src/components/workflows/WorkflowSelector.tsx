@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Upload, Clipboard, Github, Check } from 'lucide-react';
 
 interface WorkflowSelectorProps {
-  setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github') => void;
+  setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'sync') => void;
   hasUploadedCode: boolean;
   uploadedFilesCount: number;
   hasPastedCode: boolean;
@@ -105,11 +105,11 @@ export function WorkflowSelector({
           </div>
         </button>
 
-        {/* Row 2 / Col 1: GitHub Button (Row 2 / Col 2 is empty) */}
+        {/* Row 2 / Col 1: Sync Code Button (Row 2 / Col 2 is empty) */}
         <button 
-          id="github-card-btn"
+          id="sync-code-card-btn"
           type="button"
-          onClick={() => setActiveWorkflow('github')}
+          onClick={() => setActiveWorkflow('sync')}
           className={`w-[142px] min-[360px]:w-[160px] min-[375px]:w-[168px] min-[390px]:w-[176px] min-[414px]:w-[187px] md:w-[145px] h-[78px] min-[360px]:h-[87px] min-[375px]:h-[92px] min-[390px]:h-[96px] min-[414px]:h-[102px] md:h-[110px] flex flex-col items-start justify-end gap-1.5 min-[375px]:gap-2 md:items-center md:justify-center md:gap-3 rounded-2xl md:rounded-3xl border shadow-xs md:shadow-sm hover:shadow-md transition-all group p-3.5 min-[360px]:p-4 min-[375px]:p-4.5 md:p-3 cursor-pointer ${
             githubConnected
               ? 'bg-emerald-50/80 border-emerald-300'
@@ -129,7 +129,7 @@ export function WorkflowSelector({
           </div>
           <div className="flex flex-col items-start md:items-center text-left md:text-center gap-0.5 md:gap-1">
             <span className={`text-[12.5px] min-[375px]:text-[13px] min-[414px]:text-[13.5px] md:text-[13px] font-medium leading-tight ${githubConnected ? 'text-emerald-700 font-semibold' : 'text-gray-900'}`}>
-              {githubConnected ? 'Connected' : 'GitHub'}
+              {githubConnected ? 'Connected' : 'Sync Code'}
             </span>
             <span className="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium px-2 leading-tight text-center hidden md:block">
               Repos & PRs

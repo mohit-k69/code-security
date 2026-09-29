@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Search, LayoutGrid, List, RefreshCw, ArrowLeftRight } from 'lucide-react';
 
 interface GithubHeaderProps {
-  setActiveWorkflow: (workflow: 'none') => void;
+  setActiveWorkflow: (workflow?: any) => void;
   isSearchExpanded: boolean;
   setIsSearchExpanded: (expanded: boolean) => void;
   githubSearchQuery: string;

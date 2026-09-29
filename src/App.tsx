@@ -22,6 +22,7 @@ const UploadWorkflow = React.lazy(() => import('./components/workflows/UploadWor
 const PasteWorkflow = React.lazy(() => import('./components/workflows/PasteWorkflow').then(m => ({ default: m.PasteWorkflow })));
 const SecurityReportPanel = React.lazy(() => import('./components/workflows/SecurityReportPanel').then(m => ({ default: m.SecurityReportPanel })));
 const GithubWorkflow = React.lazy(() => import('./components/workflows/GithubWorkflow').then(m => ({ default: m.GithubWorkflow })));
+const SyncCodeWorkflow = React.lazy(() => import('./components/workflows/SyncCodeWorkflow').then(m => ({ default: m.SyncCodeWorkflow })));
 const HistoryView = React.lazy(() => import('./components/analysis/HistoryView').then(m => ({ default: m.HistoryView })));
 const ProfileModal = React.lazy(() => import('./components/auth/ProfileModal').then(m => ({ default: m.ProfileModal })));
 import { saveRememberedAccount } from './lib/accountSwitcher';
@@ -399,7 +400,7 @@ export default function App() {
           showRecoveryPrompt={showRecoveryPrompt}
           onDismissRecoveryPrompt={() => setShowRecoveryPrompt(false)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
-          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload')}
+          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload' || activeWorkflow === 'github' || activeWorkflow === 'sync')}
           onBack={() => {
             if (activeWorkflow === 'paste') {
               if (mobilePasteView === 'results') {
@@ -408,6 +409,11 @@ export default function App() {
                 setActiveWorkflow('none');
                 setMobilePasteView('entry');
               }
+            } else if (activeWorkflow === 'github') {
+              clearGithubSelection();
+              setActiveWorkflow('sync');
+            } else if (activeWorkflow === 'sync') {
+              setActiveWorkflow('none');
             } else {
               handleReturnHome();
             }
@@ -517,10 +523,20 @@ export default function App() {
                               />
                             )}
 
+                            {activeWorkflow === 'sync' && (
+                              <SyncCodeWorkflow 
+                                setActiveWorkflow={setActiveWorkflow}
+                                isGithubConnected={isGithubConnected}
+                              />
+                            )}
+
                             {activeWorkflow === 'github' && (
                               <GithubWorkflow 
                                 user={user}
-                                setActiveWorkflow={handleReturnHome}
+                                setActiveWorkflow={(wf) => {
+                                  clearGithubSelection();
+                                  setActiveWorkflow('sync');
+                                }}
                                 isFetchingRepos={isFetchingRepos}
                                 githubReposError={githubReposError}
                                 githubConnectionStatus={githubConnectionStatus}
