@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { ChevronLeft } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { identifyUser, resetUser, trackPageView, trackEvent } from './lib/posthog';
 
@@ -178,6 +179,7 @@ export default function App() {
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const [switchAccountError, setSwitchAccountError] = useState<string | null>(null);
   const [prefillEmail, setPrefillEmail] = useState<string>('');
+  const [mobilePasteView, setMobilePasteView] = useState<'entry' | 'results'>('entry');
 
   // Derived states
   const hasUploadedCode = uploadedFiles.length > 0;
@@ -199,6 +201,7 @@ export default function App() {
 
   const handleReturnHome = () => {
     setActiveWorkflow('none');
+    setMobilePasteView('entry');
     setAnalysisResult(null);
     setIsAnalyzing(false);
     setPastedCode('');
@@ -399,7 +402,12 @@ export default function App() {
           showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload')}
           onBack={() => {
             if (activeWorkflow === 'paste') {
-              setActiveWorkflow('none');
+              if (mobilePasteView === 'results') {
+                setMobilePasteView('entry');
+              } else {
+                setActiveWorkflow('none');
+                setMobilePasteView('entry');
+              }
             } else {
               handleReturnHome();
             }
@@ -430,14 +438,20 @@ export default function App() {
                 const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
 
                 const leftContainerClass = isPasteCodeMode
-                  ? 'w-full lg:w-[45%] shrink-0 border-r border-gray-200'
+                  ? `${mobilePasteView === 'entry' ? 'w-full' : 'hidden'} lg:flex lg:w-[45%] shrink-0 border-r border-gray-200`
                   : shouldShowResultsPanel
                     ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
                     : 'flex-1';
 
                 const rightContainerClass = isPasteCodeMode
-                  ? 'h-full flex flex-1 min-w-0 w-full lg:w-[55%] shrink-0'
+                  ? `${mobilePasteView === 'results' ? 'w-full' : 'hidden'} lg:flex h-full flex-1 min-w-0 lg:w-[55%] shrink-0`
                   : 'h-full flex flex-1 min-w-0 w-full lg:w-[65%] shrink-0';
+
+                const handleAnalysePasteCode = () => {
+                  if (!pastedCode.trim() || isAnalyzing || isLimitReached) return;
+                  setMobilePasteView('results');
+                  handleCheckVibe();
+                };
 
                 return (
                   <>
@@ -456,9 +470,9 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className={`min-h-full flex flex-col items-center ${isPasteCodeMode ? 'py-6 px-4 sm:px-6 md:px-8' : isGithubAnalysisActive ? 'py-8 px-4' : 'py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
+                      <div className={`min-h-full flex flex-col items-center ${isPasteCodeMode ? 'py-4 sm:py-6 px-3 sm:px-6 md:px-8' : isGithubAnalysisActive ? 'py-8 px-4' : 'py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
                         <div 
-                          className={`w-full ${isPasteCodeMode ? 'max-w-full' : isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-6 md:space-y-8 pb-20 md:pb-32`}
+                          className={`w-full ${isPasteCodeMode ? 'max-w-full' : isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-4 sm:space-y-6 md:space-y-8 pb-10 sm:pb-20 md:pb-32`}
                           onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
                         >
                           {activeWorkflow === 'none' && (
@@ -489,10 +503,13 @@ export default function App() {
 
                             {activeWorkflow === 'paste' && (
                               <PasteWorkflow 
-                                setActiveWorkflow={() => setActiveWorkflow('none')}
+                                setActiveWorkflow={() => {
+                                  setActiveWorkflow('none');
+                                  setMobilePasteView('entry');
+                                }}
                                 pastedCode={pastedCode}
                                 setPastedCode={setPastedCode}
-                                handleCheckVibe={handleCheckVibe}
+                                handleCheckVibe={handleAnalysePasteCode}
                                 isAnalyzing={isAnalyzing}
                                 isLimitReached={isLimitReached}
                               />
@@ -536,6 +553,23 @@ export default function App() {
                         transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                         className={rightContainerClass}
                       >
+                        {/* Mobile Results Header when in Paste Code results view */}
+                        {isPasteCodeMode && (
+                          <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+                            <button
+                              id="mobile-paste-results-back-btn"
+                              type="button"
+                              onClick={() => setMobilePasteView('entry')}
+                              className="flex items-center gap-1.5 text-[13px] font-medium text-[#3f2a24] hover:text-[#2c1d19] px-2.5 py-1.5 -ml-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                              aria-label="Back to code editor"
+                            >
+                              <ChevronLeft className="w-4 h-4 text-[#3f2a24]" />
+                              <span>Edit Code</span>
+                            </button>
+                            <h2 className="text-[15px] font-semibold text-gray-900">Security Results</h2>
+                            <div className="w-16" />
+                          </div>
+                        )}
                         <Suspense fallback={<FallbackSpinner />}>
                           <SecurityReportPanel 
                             report={analysisResult?.verdict ? analysisResult : null}
