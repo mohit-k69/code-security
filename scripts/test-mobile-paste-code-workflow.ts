@@ -52,18 +52,20 @@ async function runAllTests() {
     mobilePasteView: 'entry' | 'results' = 'entry'
   ) {
     const isPasteCodeMode = activeTab === 'new' && activeWorkflow === 'paste';
+    const isUploadMode = activeTab === 'new' && activeWorkflow === 'upload';
+    const isFullWorkspaceMode = isPasteCodeMode || isUploadMode;
     const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
     const isGithubAnalysisActive = activeWorkflow === 'github';
     const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
 
-    const sidebarClass = isPasteCodeMode ? 'hidden' : 'hidden md:flex';
-    const leftContainerClass = isPasteCodeMode
+    const sidebarClass = isFullWorkspaceMode ? 'hidden' : 'hidden md:flex';
+    const leftContainerClass = isFullWorkspaceMode
       ? `${mobilePasteView === 'entry' ? 'flex flex-col flex-1 w-full' : 'hidden'} lg:flex lg:flex-col lg:w-[45%] shrink-0 border-r border-gray-200`
       : shouldShowResultsPanel
         ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
         : 'flex-1';
 
-    const rightContainerClass = isPasteCodeMode
+    const rightContainerClass = isFullWorkspaceMode
       ? `${mobilePasteView === 'results' ? 'flex flex-col flex-1 w-full h-full min-w-0' : 'hidden'} lg:flex lg:flex-col lg:w-[55%] lg:h-full lg:flex-1 lg:min-w-0 shrink-0`
       : 'h-full flex flex-1 min-w-0 w-full lg:w-[65%] shrink-0';
 
@@ -168,12 +170,12 @@ async function runAllTests() {
     assert(resultsDesktop.rightContainerClass.includes('lg:w-[55%]'), 'Desktop right container remains ~55% width');
   });
 
-  // 11. Upload Files behavior remains unchanged
-  await runTest('11. Upload Files behavior remains unchanged', () => {
+  // 11. Upload Files workflow has 45% workspace and 55% results with hidden sidebar
+  await runTest('11. Upload Files workflow has 45% workspace and 55% results with hidden sidebar', () => {
     const uploadLayout = computeLayout('new', 'upload');
-    assert.strictEqual(uploadLayout.sidebarClass, 'hidden md:flex');
-    assert(uploadLayout.leftContainerClass.includes('lg:w-[35%]'));
-    assert(uploadLayout.rightContainerClass.includes('lg:w-[65%]'));
+    assert.strictEqual(uploadLayout.sidebarClass, 'hidden');
+    assert(uploadLayout.leftContainerClass.includes('lg:w-[45%]'));
+    assert(uploadLayout.rightContainerClass.includes('lg:w-[55%]'));
   });
 
   // 12. GitHub behavior remains unchanged

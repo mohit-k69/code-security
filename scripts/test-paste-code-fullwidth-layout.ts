@@ -53,18 +53,20 @@ async function runAllTests() {
   // Helper simulating the layout calculations from App.tsx
   function computeLayout(activeTab: 'new' | 'reviewed', activeWorkflow: 'none' | 'upload' | 'paste' | 'github') {
     const isPasteCodeMode = activeTab === 'new' && activeWorkflow === 'paste';
+    const isUploadMode = activeTab === 'new' && activeWorkflow === 'upload';
+    const isFullWorkspaceMode = isPasteCodeMode || isUploadMode;
     const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
     const isGithubAnalysisActive = activeWorkflow === 'github';
     const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
 
-    const sidebarClass = isPasteCodeMode ? 'hidden' : 'hidden md:flex';
-    const leftContainerClass = isPasteCodeMode
+    const sidebarClass = isFullWorkspaceMode ? 'hidden' : 'hidden md:flex';
+    const leftContainerClass = isFullWorkspaceMode
       ? 'w-full lg:w-[45%] shrink-0 border-r border-gray-200'
       : shouldShowResultsPanel
         ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
         : 'flex-1';
 
-    const rightContainerClass = isPasteCodeMode
+    const rightContainerClass = isFullWorkspaceMode
       ? 'h-full flex flex-1 min-w-0 w-full lg:w-[55%] shrink-0'
       : 'h-full flex flex-1 min-w-0 w-full lg:w-[65%] shrink-0';
 
@@ -81,8 +83,8 @@ async function runAllTests() {
   await runTest('1. Paste Code mode hides the sidebar', () => {
     const layout = computeLayout('new', 'paste');
     assert.strictEqual(layout.sidebarClass, 'hidden');
-    assert(appTsx.includes("activeTab === 'new' && activeWorkflow === 'paste' ? 'hidden' : 'hidden md:flex'"),
-      'App.tsx must conditionally apply "hidden" class to sidebar in Paste Code mode');
+    assert(appTsx.includes("activeWorkflow === 'paste' || activeWorkflow === 'upload'"),
+      'App.tsx must conditionally apply "hidden" class to sidebar in Paste Code & Upload Files mode');
   });
 
   // 2. Paste Code editor uses the freed horizontal space
@@ -153,12 +155,12 @@ async function runAllTests() {
     assert.strictEqual(layoutHome.sidebarClass, 'hidden md:flex', 'Sidebar must be restored when returning home');
   });
 
-  // 8. Upload Files still displays the sidebar
-  await runTest('8. Upload Files still displays the sidebar (35% / 65% split)', () => {
+  // 8. Upload Files desktop layout matches Paste Code (sidebar hidden, 45% / 55% split)
+  await runTest('8. Upload Files desktop layout matches Paste Code (sidebar hidden, 45% / 55% split)', () => {
     const layoutUpload = computeLayout('new', 'upload');
-    assert.strictEqual(layoutUpload.sidebarClass, 'hidden md:flex', 'Upload Files must display sidebar');
-    assert(layoutUpload.leftContainerClass.includes('lg:w-[35%]'), 'Upload Files must retain 35% workspace');
-    assert(layoutUpload.rightContainerClass.includes('lg:w-[65%]'), 'Upload Files must retain 65% results');
+    assert.strictEqual(layoutUpload.sidebarClass, 'hidden', 'Upload Files must hide sidebar on desktop');
+    assert(layoutUpload.leftContainerClass.includes('lg:w-[45%]'), 'Upload Files must use 45% workspace');
+    assert(layoutUpload.rightContainerClass.includes('lg:w-[55%]'), 'Upload Files must use 55% results');
   });
 
   // 9. GitHub still displays the sidebar
