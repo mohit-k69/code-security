@@ -33,10 +33,10 @@ async function runAllTests() {
   const workflowSelectorPath = path.resolve('src/components/workflows/WorkflowSelector.tsx');
   const workflowSelector = fs.readFileSync(workflowSelectorPath, 'utf8');
 
-  // 1. Mobile cards use items-start and justify-between for top-left icon and bottom-left title
-  await runTest('1. Mobile dashboard cards position icon and title with items-start and justify-between', () => {
-    assert(workflowSelector.includes('flex flex-col items-start justify-between'),
-      'Card buttons must use items-start and justify-between on mobile');
+  // 1. Mobile cards use items-start and justify-end for upper-middle icon and bottom-left title
+  await runTest('1. Mobile dashboard cards position icon and title with items-start and justify-end', () => {
+    assert(workflowSelector.includes('flex flex-col items-start justify-end'),
+      'Card buttons must use items-start and justify-end on mobile');
     assert(workflowSelector.includes('text-left'), 'Card buttons must align text to the left on mobile');
   });
 
@@ -78,9 +78,9 @@ async function runAllTests() {
     const pasteMatch = workflowSelector.match(/id="paste-code-card-btn"[\s\S]*?<\/button>/);
     const githubMatch = workflowSelector.match(/id="github-card-btn"[\s\S]*?<\/button>/);
 
-    assert(uploadMatch && uploadMatch[0].includes('items-start justify-between'));
-    assert(pasteMatch && pasteMatch[0].includes('items-start justify-between'));
-    assert(githubMatch && githubMatch[0].includes('items-start justify-between'));
+    assert(uploadMatch && uploadMatch[0].includes('items-start justify-end'));
+    assert(pasteMatch && pasteMatch[0].includes('items-start justify-end'));
+    assert(githubMatch && githubMatch[0].includes('items-start justify-end'));
   });
 
   console.log('\n==================================================================');
