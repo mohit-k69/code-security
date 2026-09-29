@@ -22,9 +22,9 @@ export function PasteWorkflow({
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-      className="flex-1 flex flex-col h-full max-w-full mx-auto w-full"
+      className="flex-1 flex flex-col h-full min-h-0 max-w-full mx-auto w-full"
     >
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <button 
             id="paste-code-back-btn"
@@ -63,13 +63,13 @@ export function PasteWorkflow({
         </button>
       </div>
       
-      <div className="flex-1 min-h-[50vh] sm:min-h-[60vh] bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden flex flex-col h-full">
+      <div className="flex-1 min-h-[50vh] lg:min-h-0 bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden flex flex-col h-full w-full">
         <textarea 
           id="paste-code-textarea"
           value={pastedCode}
           onChange={(e) => setPastedCode(e.target.value)}
           placeholder="Paste or write your code here…"
-          className="flex-1 w-full p-4 sm:p-6 resize-none outline-none text-[13px] sm:text-[14px] font-mono text-gray-800 placeholder:text-gray-400 bg-transparent leading-relaxed"
+          className="flex-1 w-full h-full min-h-0 p-4 sm:p-6 resize-none outline-none text-[13px] sm:text-[14px] font-mono text-gray-800 placeholder:text-gray-400 bg-transparent leading-relaxed overflow-auto"
           autoFocus={false}
           spellCheck={false}
         />

@@ -438,7 +438,7 @@ export default function App() {
                 const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive;
 
                 const leftContainerClass = isPasteCodeMode
-                  ? `${mobilePasteView === 'entry' ? 'w-full' : 'hidden'} lg:flex lg:w-[45%] shrink-0 border-r border-gray-200`
+                  ? `${mobilePasteView === 'entry' ? 'w-full' : 'hidden'} lg:flex lg:w-[45%] lg:h-full lg:flex-col shrink-0 border-r border-gray-200`
                   : shouldShowResultsPanel
                     ? 'w-full lg:w-[35%] shrink-0 border-r border-gray-200'
                     : 'flex-1';
@@ -455,7 +455,7 @@ export default function App() {
 
                 return (
                   <>
-                    <div className={`overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#FAFAFA] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${leftContainerClass}`}>
+                    <div className={`${isPasteCodeMode ? 'h-full flex flex-col overflow-hidden' : 'overflow-y-auto overflow-x-hidden custom-scrollbar'} relative bg-[#FAFAFA] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${leftContainerClass}`}>
                       {/* Scanning Line Animation during active analysis */}
                       {isAnalyzing && (
                         <div 
@@ -470,9 +470,9 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className={`min-h-full flex flex-col items-center ${isPasteCodeMode ? 'py-4 sm:py-6 px-3 sm:px-6 md:px-8' : isGithubAnalysisActive ? 'py-8 px-4' : 'py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
+                      <div className={`${isPasteCodeMode ? 'h-full flex-1 flex flex-col min-h-0 w-full p-4 sm:p-5 lg:p-6' : isGithubAnalysisActive ? 'min-h-full flex flex-col items-center py-8 px-4' : 'min-h-full flex flex-col items-center py-6 px-3 sm:py-8 sm:px-4 md:py-12 md:px-6'}`}>
                         <div 
-                          className={`w-full ${isPasteCodeMode ? 'max-w-full' : isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-4 sm:space-y-6 md:space-y-8 pb-10 sm:pb-20 md:pb-32`}
+                          className={`w-full ${isPasteCodeMode ? 'max-w-full' : isGithubAnalysisActive ? 'max-w-full' : activeWorkflow === 'github' ? 'max-w-6xl' : 'max-w-4xl'} ${isPasteCodeMode ? 'h-full flex-1 flex flex-col min-h-0' : 'space-y-4 sm:space-y-6 md:space-y-8 pb-10 sm:pb-20 md:pb-32'} mx-auto`}
                           onClick={activeWorkflow === 'none' ? handleReturnHome : undefined}
                         >
                           {activeWorkflow === 'none' && (
