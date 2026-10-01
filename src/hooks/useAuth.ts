@@ -154,16 +154,25 @@ export function useAuth() {
     }
 
     if (oauthError) {
-      const isGithubWorkflow = window.location.search.includes('workflow=github');
-      const cleanUrl = window.location.pathname + (isGithubWorkflow ? '?workflow=github' : '');
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const workflow = searchParams.get('workflow') || hashParams.get('workflow');
+      const cleanSearch = (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase()))
+        ? `?workflow=${workflow.toLowerCase()}`
+        : '';
+      const cleanUrl = window.location.pathname + cleanSearch;
       window.history.replaceState({}, document.title, cleanUrl);
 
       const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
+      const providerLabel = workflow === 'gitlab' ? 'GitLab'
+        : workflow === 'bitbucket' ? 'Bitbucket'
+        : workflow === 'azure' ? 'Azure DevOps'
+        : 'GitHub';
       const userFriendlyError = isAccessDenied 
-        ? (isGithubWorkflow ? 'GitHub authorization was cancelled.' : 'Sign-in was cancelled.')
-        : (isGithubWorkflow ? `GitHub connection error: ${oauthError}` : `Authentication error: ${oauthError}`);
+        ? (workflow ? `${providerLabel} authorization was cancelled.` : 'Sign-in was cancelled.')
+        : (workflow ? `${providerLabel} connection error: ${oauthError}` : `Authentication error: ${oauthError}`);
 
-      if (isGithubWorkflow) {
+      if (workflow === 'github') {
         window.dispatchEvent(new CustomEvent('codevibe_github_oauth_error', { detail: { message: userFriendlyError } }));
       } else {
         window.dispatchEvent(new CustomEvent('codevibe_auth_error', { detail: { message: userFriendlyError } }));
@@ -294,29 +303,33 @@ export function useAuth() {
 
         const meta = session.user.user_metadata;
         let identities = session.user.identities || [];
+        const flowProvider = resolveFlowProvider();
         let isGithubLinked = Boolean(
           session.user.app_metadata?.providers?.includes('github') ||
           session.user.app_metadata?.provider === 'github' ||
           identities.some((id: any) => id.provider === 'github') ||
-          session.provider_token
+          (session.provider_token && flowProvider === 'github')
         );
 
         let isGitlabLinked = Boolean(
           session.user.app_metadata?.providers?.includes('gitlab') ||
           session.user.app_metadata?.provider === 'gitlab' ||
-          identities.some((id: any) => id.provider === 'gitlab')
+          identities.some((id: any) => id.provider === 'gitlab') ||
+          (session.provider_token && flowProvider === 'gitlab')
         );
 
         let isBitbucketLinked = Boolean(
           session.user.app_metadata?.providers?.includes('bitbucket') ||
           session.user.app_metadata?.provider === 'bitbucket' ||
-          identities.some((id: any) => id.provider === 'bitbucket')
+          identities.some((id: any) => id.provider === 'bitbucket') ||
+          (session.provider_token && flowProvider === 'bitbucket')
         );
 
         let isAzureLinked = Boolean(
           session.user.app_metadata?.providers?.includes('azure') ||
           session.user.app_metadata?.provider === 'azure' ||
-          identities.some((id: any) => id.provider === 'azure')
+          identities.some((id: any) => id.provider === 'azure') ||
+          (session.provider_token && flowProvider === 'azure')
         );
 
         // Determine if the user authenticated via an OAuth provider (Google or GitHub)
@@ -412,39 +425,81 @@ export function useAuth() {
           storeProviderTokenInBackground(session);
         }
 
-        // Extended user data sync in background only if identities are not populated in the session
-        if (identities.length === 0 && !session.user.app_metadata?.provider) {
-          supabase.auth.getUser().then(({ data: userData }) => {
-            if (userData?.user) {
-              const freshIdentities = userData.user.identities || [];
-              const freshGithubLinked = Boolean(
-                userData.user.app_metadata?.providers?.includes('github') ||
-                userData.user.app_metadata?.provider === 'github' ||
-                freshIdentities.some((id: any) => id.provider === 'github') ||
-                session.provider_token
-              );
-              const freshProvider = resolveAuthProvider(session.user, userData.user, freshIdentities);
-              const freshGithubIdentity = freshIdentities.find((id: any) => id.provider === 'github');
-              const freshGithubUsername = freshGithubIdentity?.identity_data?.user_name ||
-                freshGithubIdentity?.identity_data?.preferred_username ||
-                userData.user.user_metadata?.user_name ||
-                userData.user.user_metadata?.preferred_username ||
-                githubUsername;
+        // Authoritative user identity refresh: always fetch fresh identities from Supabase Auth
+        // Ensures secondary linked providers (GitHub, GitLab, Bitbucket, Azure) are reliably discovered
+        supabase.auth.getUser().then(({ data: userData }) => {
+          if (userData?.user) {
+            const freshIdentities = userData.user.identities || [];
+            const freshGithubLinked = Boolean(
+              userData.user.app_metadata?.providers?.includes('github') ||
+              userData.user.app_metadata?.provider === 'github' ||
+              freshIdentities.some((id: any) => id.provider === 'github') ||
+              (session.provider_token && flowProvider === 'github')
+            );
+            const freshGitlabLinked = Boolean(
+              userData.user.app_metadata?.providers?.includes('gitlab') ||
+              userData.user.app_metadata?.provider === 'gitlab' ||
+              freshIdentities.some((id: any) => id.provider === 'gitlab') ||
+              (session.provider_token && flowProvider === 'gitlab')
+            );
+            const freshBitbucketLinked = Boolean(
+              userData.user.app_metadata?.providers?.includes('bitbucket') ||
+              userData.user.app_metadata?.provider === 'bitbucket' ||
+              freshIdentities.some((id: any) => id.provider === 'bitbucket') ||
+              (session.provider_token && flowProvider === 'bitbucket')
+            );
+            const freshAzureLinked = Boolean(
+              userData.user.app_metadata?.providers?.includes('azure') ||
+              userData.user.app_metadata?.provider === 'azure' ||
+              freshIdentities.some((id: any) => id.provider === 'azure') ||
+              (session.provider_token && flowProvider === 'azure')
+            );
 
-              setUser(prev => {
-                if (!prev) return null;
-                return {
-                  ...prev,
-                  isGithubLinked: freshGithubLinked,
-                  githubUsername: freshGithubUsername,
-                  authProvider: freshProvider || prev.authProvider,
-                };
-              });
-            }
-          }).catch(e => {
-            console.warn('[AUTH] Background user data sync error:', e);
-          });
-        }
+            const freshProvider = resolveAuthProvider(session.user, userData.user, freshIdentities);
+
+            const freshGithubIdentity = freshIdentities.find((id: any) => id.provider === 'github');
+            const freshGithubUsername = freshGithubIdentity?.identity_data?.user_name ||
+              freshGithubIdentity?.identity_data?.preferred_username ||
+              userData.user.user_metadata?.user_name ||
+              userData.user.user_metadata?.preferred_username ||
+              githubUsername;
+
+            const freshGitlabIdentity = freshIdentities.find((id: any) => id.provider === 'gitlab');
+            const freshGitlabUsername = freshGitlabIdentity?.identity_data?.user_name ||
+              freshGitlabIdentity?.identity_data?.preferred_username ||
+              freshGitlabIdentity?.identity_data?.name ||
+              gitlabUsername;
+
+            const freshBitbucketIdentity = freshIdentities.find((id: any) => id.provider === 'bitbucket');
+            const freshBitbucketUsername = freshBitbucketIdentity?.identity_data?.username ||
+              freshBitbucketIdentity?.identity_data?.nickname ||
+              freshBitbucketIdentity?.identity_data?.display_name ||
+              bitbucketUsername;
+
+            const freshAzureIdentity = freshIdentities.find((id: any) => id.provider === 'azure');
+            const freshAzureUsername = freshAzureIdentity?.identity_data?.name ||
+              freshAzureIdentity?.identity_data?.preferred_username ||
+              azureUsername;
+
+            setUser(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                isGithubLinked: freshGithubLinked || prev.isGithubLinked,
+                githubUsername: freshGithubUsername,
+                isGitlabLinked: freshGitlabLinked || prev.isGitlabLinked,
+                gitlabUsername: freshGitlabUsername,
+                isBitbucketLinked: freshBitbucketLinked || prev.isBitbucketLinked,
+                bitbucketUsername: freshBitbucketUsername,
+                isAzureLinked: freshAzureLinked || prev.isAzureLinked,
+                azureUsername: freshAzureUsername,
+                authProvider: freshProvider || prev.authProvider,
+              };
+            });
+          }
+        }).catch(e => {
+          console.warn('[AUTH] Background user data sync error:', e);
+        });
       } catch (err) {
         console.error('Session handling error:', err);
         setIsInitializing(false);
@@ -464,9 +519,15 @@ export function useAuth() {
     syncSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Clean up URL if returning from OAuth redirect
+      // Clean up URL if returning from OAuth redirect while preserving workflow parameter
       if (window.location.search.includes('code=') || window.location.hash.includes('access_token=')) {
-        const cleanUrl = window.location.pathname + (window.location.search.includes('workflow=github') ? '?workflow=github' : '');
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const workflow = searchParams.get('workflow') || hashParams.get('workflow');
+        const cleanSearch = (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase()))
+          ? `?workflow=${workflow.toLowerCase()}`
+          : '';
+        const cleanUrl = window.location.pathname + cleanSearch;
         window.history.replaceState({}, document.title, cleanUrl);
       }
 
@@ -509,6 +570,24 @@ export function useAuth() {
     };
     window.addEventListener('message', handleMessage);
 
+    const handleProviderConnected = (e: Event) => {
+      const type = e.type;
+      setUser(prev => {
+        if (!prev) return null;
+        if (type === 'codevibe_github_connected') return { ...prev, isGithubLinked: true };
+        if (type === 'codevibe_gitlab_connected') return { ...prev, isGitlabLinked: true };
+        if (type === 'codevibe_bitbucket_connected') return { ...prev, isBitbucketLinked: true };
+        if (type === 'codevibe_azure_connected') return { ...prev, isAzureLinked: true };
+        return prev;
+      });
+      syncSession();
+    };
+
+    window.addEventListener('codevibe_github_connected', handleProviderConnected);
+    window.addEventListener('codevibe_gitlab_connected', handleProviderConnected);
+    window.addEventListener('codevibe_bitbucket_connected', handleProviderConnected);
+    window.addEventListener('codevibe_azure_connected', handleProviderConnected);
+
     const handleReposLoaded = () => {
       setProviderTokenSetupError(null);
     };
@@ -517,6 +596,10 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('message', handleMessage);
+      window.removeEventListener('codevibe_github_connected', handleProviderConnected);
+      window.removeEventListener('codevibe_gitlab_connected', handleProviderConnected);
+      window.removeEventListener('codevibe_bitbucket_connected', handleProviderConnected);
+      window.removeEventListener('codevibe_azure_connected', handleProviderConnected);
       window.removeEventListener('codevibe_github_repos_loaded', handleReposLoaded);
     };
   }, []);

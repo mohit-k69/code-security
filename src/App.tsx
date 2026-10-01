@@ -95,14 +95,25 @@ export default function App() {
     clearGithubCache
   } = useGithub(activeWorkflow, user);
 
-  // Automatically switch to GitHub/GitLab workflow if redirected back from OAuth Manual Linking
+  // Automatically switch to the correct workflow if redirected back from OAuth Linking
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('workflow') === 'github') {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const workflow = urlParams.get('workflow') || hashParams.get('workflow');
+    const sessionFlow = window.sessionStorage?.getItem('cody_oauth_flow_provider');
+    const targetWorkflow = (workflow || sessionFlow)?.toLowerCase();
+
+    if (targetWorkflow === 'github' || urlParams.get('workflow') === 'github') {
       setActiveWorkflow('github');
       window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (urlParams.get('workflow') === 'gitlab') {
+    } else if (targetWorkflow === 'gitlab' || urlParams.get('workflow') === 'gitlab') {
       setActiveWorkflow('gitlab');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (targetWorkflow === 'bitbucket' || urlParams.get('workflow') === 'bitbucket') {
+      setActiveWorkflow('bitbucket');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (targetWorkflow === 'azure' || urlParams.get('workflow') === 'azure') {
+      setActiveWorkflow('azure');
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.get('tab') === 'reviewed' || urlParams.get('reviewId')) {
       setActiveTab('reviewed');
