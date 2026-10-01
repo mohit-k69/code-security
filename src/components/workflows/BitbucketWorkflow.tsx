@@ -206,6 +206,8 @@ export function BitbucketWorkflow({
           onAnalyzePR={handleAnalyzePR}
           isAnalyzing={isAnalyzing}
         />
+      ) : bitbucketReposError && bitbucketRepos.length === 0 ? (
+        null
       ) : (
         <BitbucketRepoList
           repos={bitbucketRepos}

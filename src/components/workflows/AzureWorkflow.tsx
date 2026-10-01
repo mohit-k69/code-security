@@ -207,6 +207,8 @@ export function AzureWorkflow({
           onAnalyzePR={handleAnalyzePR}
           isAnalyzing={isAnalyzing}
         />
+      ) : azureReposError && azureRepos.length === 0 ? (
+        null
       ) : (
         <AzureRepoList
           repos={azureRepos}

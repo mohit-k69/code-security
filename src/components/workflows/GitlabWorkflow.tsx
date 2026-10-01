@@ -205,6 +205,8 @@ export function GitlabWorkflow({
           onAnalyzeMR={handleAnalyzeMR}
           isAnalyzing={isAnalyzing}
         />
+      ) : gitlabProjectsError && gitlabProjects.length === 0 ? (
+        null
       ) : (
         <GitlabProjectList
           projects={gitlabProjects}
