@@ -23,18 +23,71 @@ export interface User {
 
 export function isOAuthUser(user: any, identities: any[] = []): boolean {
   if (!user) return false;
+  const oauthProviders = ['google', 'github', 'gitlab', 'bitbucket', 'azure'];
   const primaryProvider = user.app_metadata?.provider;
-  if (primaryProvider === 'google' || primaryProvider === 'github') return true;
+  if (primaryProvider && oauthProviders.includes(primaryProvider)) return true;
 
   const providers: string[] = user.app_metadata?.providers || [];
-  if (providers.includes('google') || providers.includes('github')) return true;
+  if (providers.some((p: string) => oauthProviders.includes(p))) return true;
 
   const ids = identities.length > 0 ? identities : (user.identities || []);
-  if (ids.some((id: any) => id.provider === 'google' || id.provider === 'github')) {
+  if (ids.some((id: any) => oauthProviders.includes(id.provider))) {
     return true;
   }
 
   return false;
+}
+
+// Helper to resolve the OAuth provider from the explicit flow context (URL or session tracking)
+// NOTE: Strictly avoids inferring from primary Supabase auth metadata
+export function resolveFlowProvider(): 'github' | 'gitlab' | 'bitbucket' | 'azure' {
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const workflow = searchParams.get('workflow') || hashParams.get('workflow');
+    if (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase())) {
+      return workflow.toLowerCase() as any;
+    }
+    const stored = window.sessionStorage?.getItem('cody_oauth_flow_provider');
+    if (stored && ['github', 'gitlab', 'bitbucket', 'azure'].includes(stored.toLowerCase())) {
+      return stored.toLowerCase() as any;
+    }
+  } catch {}
+  return 'github';
+}
+
+// Helper to safely clean OAuth callback URL parameters AFTER session is established
+export function cleanOAuthCallbackUrl(workflowOverride?: string | null): void {
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+
+    const hasCallbackParams =
+      searchParams.has('code') ||
+      searchParams.has('error') ||
+      searchParams.has('error_description') ||
+      hashParams.has('access_token') ||
+      hashParams.has('refresh_token') ||
+      hashParams.has('provider_token') ||
+      hashParams.has('error');
+
+    if (!hasCallbackParams) return;
+
+    const targetWorkflow =
+      workflowOverride ||
+      searchParams.get('workflow') ||
+      hashParams.get('workflow') ||
+      window.sessionStorage?.getItem('cody_oauth_flow_provider');
+
+    const cleanSearch = (targetWorkflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(targetWorkflow.toLowerCase()))
+      ? `?workflow=${targetWorkflow.toLowerCase()}`
+      : '';
+
+    const cleanUrl = window.location.pathname + cleanSearch;
+    window.history.replaceState({}, document.title, cleanUrl);
+  } catch (err) {
+    console.warn('[AUTH] URL cleanup error:', err);
+  }
 }
 
 function resolveAuthProvider(
@@ -86,32 +139,44 @@ export function useAuth() {
 
   const retryProviderTokenSetup = async () => {
     setProviderTokenSetupError(null);
+    const provider = resolveFlowProvider();
+    const providerName = provider === 'gitlab' ? 'GitLab'
+      : provider === 'bitbucket' ? 'Bitbucket'
+      : provider === 'azure' ? 'Azure DevOps'
+      : 'GitHub';
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      // 1. First test if a valid GitHub connection is ALREADY stored and working in the database
+      // 1. First test if a valid connection is ALREADY stored and working in the database
       if (accessToken) {
         try {
-          const { data: repos, error: testErr } = await supabase.functions.invoke('fetch-github-repositories', {
+          const testFn = provider === 'gitlab' ? 'fetch-gitlab-projects'
+            : provider === 'bitbucket' ? 'fetch-bitbucket-repos'
+            : provider === 'azure' ? 'fetch-azure-repos'
+            : 'fetch-github-repositories';
+
+          const { data: repos, error: testErr } = await supabase.functions.invoke(testFn, {
             headers: { Authorization: `Bearer ${accessToken}` }
           });
           if (!testErr && Array.isArray(repos)) {
             // Connection is already active and healthy! Clear error and trigger UI update
             setProviderTokenSetupError(null);
-            window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+            window.dispatchEvent(new CustomEvent(`codevibe_${provider}_connected`));
             return;
           }
         } catch {}
       }
 
-      // 2. If session has provider_token, invoke store-provider-token with explicit Authorization header
+      // 2. If session has provider_token, invoke store-provider-token with explicit Authorization header & provider
       if (session?.provider_token && accessToken) {
         const { error, data } = await supabase.functions.invoke('store-provider-token', {
           headers: { Authorization: `Bearer ${accessToken}` },
           body: { 
             providerToken: session.provider_token,
-            providerRefreshToken: session.provider_refresh_token
+            providerRefreshToken: session.provider_refresh_token,
+            provider
           }
         });
         if (error) {
@@ -126,17 +191,17 @@ export function useAuth() {
         }
         if (data?.error) throw new Error(data.error);
 
-        // Success: clear error and reload/refresh github state
+        // Success: clear error and reload/refresh provider state
         setProviderTokenSetupError(null);
-        window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+        window.dispatchEvent(new CustomEvent(`codevibe_${provider}_connected`));
         return;
       }
 
       // 3. If neither worked, prompt re-authorization without destructively unlinking the identity
-      setProviderTokenSetupError('Please click Reconnect GitHub to re-authorize your account.');
+      setProviderTokenSetupError(`Please click Reconnect ${providerName} to re-authorize your account.`);
     } catch (err: any) {
-      console.error('Failed to retry token storage:', err);
-      setProviderTokenSetupError(err.message || 'Failed to complete GitHub setup.');
+      console.error(`Failed to retry ${providerName} token storage:`, err);
+      setProviderTokenSetupError(err.message || `Failed to complete ${providerName} setup.`);
     }
   };
 
@@ -144,6 +209,16 @@ export function useAuth() {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const oauthError = searchParams.get('error_description') || hashParams.get('error_description') || searchParams.get('error') || hashParams.get('error');
+
+    const hasPendingOAuthCallback = () => {
+      try {
+        const search = window.location.search;
+        const hash = window.location.hash;
+        return search.includes('code=') || hash.includes('access_token=');
+      } catch {
+        return false;
+      }
+    };
 
     if (window.location.search.includes('code=') || window.location.hash.includes('access_token=') || oauthError) {
       console.log('[GITHUB_OAUTH] CALLBACK_DETECTED', {
@@ -154,48 +229,24 @@ export function useAuth() {
     }
 
     if (oauthError) {
-      const searchParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      const workflow = searchParams.get('workflow') || hashParams.get('workflow');
-      const cleanSearch = (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase()))
-        ? `?workflow=${workflow.toLowerCase()}`
-        : '';
-      const cleanUrl = window.location.pathname + cleanSearch;
-      window.history.replaceState({}, document.title, cleanUrl);
+      cleanOAuthCallbackUrl();
 
       const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
-      const providerLabel = workflow === 'gitlab' ? 'GitLab'
-        : workflow === 'bitbucket' ? 'Bitbucket'
-        : workflow === 'azure' ? 'Azure DevOps'
+      const flowProv = resolveFlowProvider();
+      const providerLabel = flowProv === 'gitlab' ? 'GitLab'
+        : flowProv === 'bitbucket' ? 'Bitbucket'
+        : flowProv === 'azure' ? 'Azure DevOps'
         : 'GitHub';
       const userFriendlyError = isAccessDenied 
-        ? (workflow ? `${providerLabel} authorization was cancelled.` : 'Sign-in was cancelled.')
-        : (workflow ? `${providerLabel} connection error: ${oauthError}` : `Authentication error: ${oauthError}`);
+        ? (`${providerLabel} authorization was cancelled.`)
+        : (`${providerLabel} connection error: ${oauthError}`);
 
-      if (workflow === 'github') {
+      if (flowProv === 'github') {
         window.dispatchEvent(new CustomEvent('codevibe_github_oauth_error', { detail: { message: userFriendlyError } }));
       } else {
         window.dispatchEvent(new CustomEvent('codevibe_auth_error', { detail: { message: userFriendlyError } }));
       }
     }
-
-    // Helper to resolve the OAuth provider from the explicit flow context (URL or session tracking)
-    // NOTE: Strictly avoids inferring from primary Supabase auth metadata
-    const resolveFlowProvider = (): 'github' | 'gitlab' | 'bitbucket' | 'azure' => {
-      try {
-        const searchParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-        const workflow = searchParams.get('workflow') || hashParams.get('workflow');
-        if (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase())) {
-          return workflow.toLowerCase() as any;
-        }
-        const stored = window.sessionStorage?.getItem('cody_oauth_flow_provider');
-        if (stored && ['github', 'gitlab', 'bitbucket', 'azure'].includes(stored.toLowerCase())) {
-          return stored.toLowerCase() as any;
-        }
-      } catch {}
-      return 'github';
-    };
 
     // Helper to store provider token in background without blocking initial UI render
     const storeProviderTokenInBackground = async (session: any) => {
@@ -280,10 +331,23 @@ export function useAuth() {
     const handleSession = async (session: any, source: string) => {
       try {
         if (!session?.user) {
+          // If returning from an OAuth callback and waiting for Supabase to exchange code,
+          // do NOT prematurely mark initialization complete as unauthenticated!
+          // Supabase's onAuthStateChange will fire momentarily once the code exchange completes.
+          if (hasPendingOAuthCallback() && source === 'syncSession') {
+            console.log('[AUTH] In-flight OAuth callback detected in URL, waiting for onAuthStateChange exchange...');
+            return;
+          }
+
           setUser(null);
           setIsInitializing(false);
           lastProcessedSessionKeyRef.current = '';
           return;
+        }
+
+        // Clean callback parameters from the URL safely now that session is successfully established
+        if (hasPendingOAuthCallback()) {
+          cleanOAuthCallbackUrl();
         }
 
         // Deduplicate identical session triggers to avoid double-processing
@@ -518,17 +582,25 @@ export function useAuth() {
 
     syncSession();
 
+    // Safety fallback: if an OAuth code was in the URL but Supabase did not emit a session after 8 seconds,
+    // unblock initialization so the app doesn't spin indefinitely
+    let oauthTimeoutId: any = null;
+    if (hasPendingOAuthCallback()) {
+      oauthTimeoutId = setTimeout(() => {
+        setIsInitializing((curr) => {
+          if (curr) {
+            console.warn('[AUTH] OAuth exchange timeout reached, unblocking UI.');
+            return false;
+          }
+          return curr;
+        });
+      }, 8000);
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Clean up URL if returning from OAuth redirect while preserving workflow parameter
-      if (window.location.search.includes('code=') || window.location.hash.includes('access_token=')) {
-        const searchParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-        const workflow = searchParams.get('workflow') || hashParams.get('workflow');
-        const cleanSearch = (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase()))
-          ? `?workflow=${workflow.toLowerCase()}`
-          : '';
-        const cleanUrl = window.location.pathname + cleanSearch;
-        window.history.replaceState({}, document.title, cleanUrl);
+      // Clean up URL if returning from OAuth redirect ONLY AFTER session is established
+      if (session?.user && hasPendingOAuthCallback()) {
+        cleanOAuthCallbackUrl();
       }
 
       // If we are in an OAuth popup, notify parent and close
@@ -594,6 +666,7 @@ export function useAuth() {
     window.addEventListener('codevibe_github_repos_loaded', handleReposLoaded);
 
     return () => {
+      if (oauthTimeoutId) clearTimeout(oauthTimeoutId);
       subscription.unsubscribe();
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('codevibe_github_connected', handleProviderConnected);

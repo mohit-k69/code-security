@@ -105,16 +105,12 @@ export default function App() {
 
     if (targetWorkflow === 'github' || urlParams.get('workflow') === 'github') {
       setActiveWorkflow('github');
-      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (targetWorkflow === 'gitlab' || urlParams.get('workflow') === 'gitlab') {
       setActiveWorkflow('gitlab');
-      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (targetWorkflow === 'bitbucket' || urlParams.get('workflow') === 'bitbucket') {
       setActiveWorkflow('bitbucket');
-      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (targetWorkflow === 'azure' || urlParams.get('workflow') === 'azure') {
       setActiveWorkflow('azure');
-      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.get('tab') === 'reviewed' || urlParams.get('reviewId')) {
       setActiveTab('reviewed');
     }
