@@ -29,3 +29,45 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
+
+// Resilient Edge Function invoker with server-side proxy fallback
+const originalInvoke = supabase.functions.invoke.bind(supabase.functions);
+supabase.functions.invoke = async function (functionName: string, options?: any) {
+  try {
+    const result = await originalInvoke(functionName, options);
+    if (result.error && (
+      result.error.message?.includes('Failed to send a request') ||
+      result.error.message?.includes('NOT_FOUND') ||
+      (result.error as any).context?.status === 404
+    )) {
+      return await fallbackInvoke(functionName, options);
+    }
+    return result;
+  } catch (err: any) {
+    return await fallbackInvoke(functionName, options);
+  }
+};
+
+async function fallbackInvoke(functionName: string, options?: any) {
+  if (typeof window === 'undefined') {
+    return { data: null, error: new Error('Fallback invoker requires browser context') };
+  }
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options?.headers || {}),
+    };
+    const response = await fetch(`/api/functions/${functionName}`, {
+      method: options?.method || 'POST',
+      headers,
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return { data: null, error: new Error(data?.error || `HTTP ${response.status}: Failed to invoke function`) };
+    }
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err };
+  }
+}

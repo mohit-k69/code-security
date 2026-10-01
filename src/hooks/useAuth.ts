@@ -170,10 +170,30 @@ export function useAuth() {
       }
     }
 
+    // Helper to resolve the OAuth provider from the explicit flow context (URL or session tracking)
+    // NOTE: Strictly avoids inferring from primary Supabase auth metadata
+    const resolveFlowProvider = (): 'github' | 'gitlab' | 'bitbucket' | 'azure' => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const workflow = searchParams.get('workflow') || hashParams.get('workflow');
+        if (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase())) {
+          return workflow.toLowerCase() as any;
+        }
+        const stored = window.sessionStorage?.getItem('cody_oauth_flow_provider');
+        if (stored && ['github', 'gitlab', 'bitbucket', 'azure'].includes(stored.toLowerCase())) {
+          return stored.toLowerCase() as any;
+        }
+      } catch {}
+      return 'github';
+    };
+
     // Helper to store provider token in background without blocking initial UI render
     const storeProviderTokenInBackground = async (session: any) => {
       if (!session?.provider_token || isStoringTokenRef.current) return;
       if (lastStoredTokenRef.current === session.provider_token) return;
+
+      const provider = resolveFlowProvider();
 
       isStoringTokenRef.current = true;
       lastStoredTokenRef.current = session.provider_token;
@@ -183,7 +203,8 @@ export function useAuth() {
           headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
           body: { 
             providerToken: session.provider_token,
-            providerRefreshToken: session.provider_refresh_token
+            providerRefreshToken: session.provider_refresh_token,
+            provider
           }
         });
         if (error) {
@@ -198,23 +219,50 @@ export function useAuth() {
         }
         if (data?.error) throw new Error(data.error);
         setProviderTokenSetupError(null);
-        window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+        if (provider === 'gitlab') {
+          window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
+        } else if (provider === 'bitbucket') {
+          window.dispatchEvent(new CustomEvent('codevibe_bitbucket_connected'));
+        } else if (provider === 'azure') {
+          window.dispatchEvent(new CustomEvent('codevibe_azure_connected'));
+        } else {
+          window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+        }
+        try {
+          window.sessionStorage?.removeItem('cody_oauth_flow_provider');
+        } catch {}
       } catch (err: any) {
         console.warn('Background token storage error:', err);
         // Verify if a working connection is already present in oauth_connections before showing error
         if (session.access_token) {
           try {
-            const { data: testRepos, error: testErr } = await supabase.functions.invoke('fetch-github-repositories', {
+            const testFn = provider === 'gitlab' ? 'fetch-gitlab-projects'
+              : provider === 'bitbucket' ? 'fetch-bitbucket-repos'
+              : provider === 'azure' ? 'fetch-azure-repos'
+              : 'fetch-github-repositories';
+            const { data: testRepos, error: testErr } = await supabase.functions.invoke(testFn, {
               headers: { Authorization: `Bearer ${session.access_token}` }
             });
             if (!testErr && Array.isArray(testRepos)) {
               setProviderTokenSetupError(null);
-              window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+              if (provider === 'gitlab') {
+                window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
+              } else if (provider === 'bitbucket') {
+                window.dispatchEvent(new CustomEvent('codevibe_bitbucket_connected'));
+              } else if (provider === 'azure') {
+                window.dispatchEvent(new CustomEvent('codevibe_azure_connected'));
+              } else {
+                window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
+              }
               return;
             }
           } catch {}
         }
-        setProviderTokenSetupError(err.message || 'GitHub was connected, but token storage failed. Please try again.');
+        const providerName = provider === 'gitlab' ? 'GitLab'
+          : provider === 'bitbucket' ? 'Bitbucket'
+          : provider === 'azure' ? 'Azure DevOps'
+          : 'GitHub';
+        setProviderTokenSetupError(err.message || `${providerName} was connected, but token storage failed. Please try again.`);
       } finally {
         isStoringTokenRef.current = false;
       }
@@ -427,11 +475,13 @@ export function useAuth() {
       if (isPopup) {
         if (session?.provider_token) {
           try {
+            const provider = resolveFlowProvider();
             await supabase.functions.invoke('store-provider-token', {
               headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
               body: { 
                 providerToken: session.provider_token,
-                providerRefreshToken: session.provider_refresh_token
+                providerRefreshToken: session.provider_refresh_token,
+                provider
               }
             });
           } catch (err) {

@@ -105,6 +105,10 @@ export function GithubWorkflow({
         queryParams: { prompt: 'select_account' }
       });
 
+      try {
+        window.sessionStorage?.setItem('cody_oauth_flow_provider', 'github');
+      } catch {}
+
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'github',
         options: {

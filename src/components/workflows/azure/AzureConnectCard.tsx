@@ -23,6 +23,10 @@ export function AzureConnectCard({
       redirectUrl.pathname = window.location.pathname;
       redirectUrl.searchParams.set('workflow', 'azure');
 
+      try {
+        window.sessionStorage?.setItem('cody_oauth_flow_provider', 'azure');
+      } catch {}
+
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'azure',
         options: {

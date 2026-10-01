@@ -30,6 +30,10 @@ export function GitlabConnectCard({
         scopes: 'read_user read_api read_repository',
       });
 
+      try {
+        window.sessionStorage?.setItem('cody_oauth_flow_provider', 'gitlab');
+      } catch {}
+
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'gitlab',
         options: {

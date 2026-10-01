@@ -462,6 +462,160 @@ Otherwise, return JSON:
     res.send(content || "");
   });
 
+  // Edge Function Proxy Handlers (Ensures complete remote reachability & resilience)
+  const handleAuthAndConnection = async (req: express.Request, res: express.Response, provider: string) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      res.status(401).json({ error: 'No authorization header' });
+      return null;
+    }
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      res.status(503).json({ error: 'Supabase admin service unavailable' });
+      return null;
+    }
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const { data: { user }, error: userError } = await admin.auth.getUser(token);
+    if (userError || !user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return null;
+    }
+    const { data: connection, error: dbError } = await admin
+      .from('oauth_connections')
+      .select('access_token')
+      .eq('user_id', user.id)
+      .eq('provider', provider)
+      .single();
+
+    if (dbError || !connection?.access_token) {
+      if (provider === 'gitlab') {
+        res.status(404).json({ error: 'GitLab connection not found. Please connect your account.' });
+      } else if (provider === 'bitbucket') {
+        res.status(404).json({ error: 'Bitbucket connection not found. Please connect your account.' });
+      } else if (provider === 'azure') {
+        res.status(404).json({ error: 'Azure DevOps connection not found. Please connect your account.' });
+      } else {
+        res.status(404).json({ error: 'GitHub connection not found. Please connect your account.' });
+      }
+      return null;
+    }
+    return { user, accessToken: connection.access_token };
+  };
+
+  // 1. Fetch GitLab Projects
+  app.all(["/api/functions/fetch-gitlab-projects", "/functions/v1/fetch-gitlab-projects"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'gitlab');
+      if (!auth) return;
+
+      const gitlabRes = await fetch('https://gitlab.com/api/v4/projects?membership=true&simple=true&per_page=100&order_by=updated_at&sort=desc', {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!gitlabRes.ok) {
+        if (gitlabRes.status === 401) return res.status(401).json({ error: 'GitLab connection expired. Please reconnect.' });
+        return res.status(gitlabRes.status).json({ error: 'Failed to fetch projects from GitLab.' });
+      }
+
+      const projects = await gitlabRes.json();
+      const mapped = projects.map((project: any) => ({
+        id: project.id,
+        name: project.name,
+        name_with_namespace: project.name_with_namespace || project.name,
+        path: project.path,
+        path_with_namespace: project.path_with_namespace || `${project.namespace?.path || ''}/${project.path}`,
+        description: project.description || null,
+        default_branch: project.default_branch || 'main',
+        visibility: project.visibility || 'private',
+        web_url: project.web_url,
+        avatar_url: project.avatar_url || null,
+        star_count: project.star_count || 0,
+        last_activity_at: project.last_activity_at || project.updated_at || new Date().toISOString(),
+        namespace: {
+          id: project.namespace?.id,
+          name: project.namespace?.name,
+          path: project.namespace?.path,
+          kind: project.namespace?.kind,
+          full_path: project.namespace?.full_path,
+          avatar_url: project.namespace?.avatar_url || null,
+        }
+      }));
+
+      return res.json(mapped);
+    } catch (err: any) {
+      console.error('[fetch-gitlab-projects] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching GitLab projects.' });
+    }
+  });
+
+  // 2. Fetch GitLab Merge Requests
+  app.all(["/api/functions/fetch-gitlab-merge-requests", "/functions/v1/fetch-gitlab-merge-requests"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'gitlab');
+      if (!auth) return;
+
+      const projectId = req.body?.projectId || req.query?.projectId;
+      if (!projectId) return res.status(400).json({ error: 'Missing projectId parameter' });
+
+      const gitlabUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(String(projectId))}/merge_requests?state=all&order_by=updated_at&sort=desc&per_page=30`;
+      const gitlabRes = await fetch(gitlabUrl, {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!gitlabRes.ok) {
+        if (gitlabRes.status === 401) return res.status(401).json({ error: 'GitLab connection expired. Please reconnect.' });
+        if (gitlabRes.status === 404) return res.status(404).json({ error: 'GitLab project not found or inaccessible.' });
+        return res.status(gitlabRes.status).json({ error: 'Failed to fetch merge requests from GitLab.' });
+      }
+
+      const mergeRequests = await gitlabRes.json();
+      const mapped = mergeRequests.map((mr: any) => ({
+        id: mr.id,
+        iid: mr.iid,
+        project_id: mr.project_id,
+        title: mr.title,
+        description: mr.description || '',
+        state: mr.state,
+        draft: Boolean(mr.draft || mr.work_in_progress),
+        created_at: mr.created_at,
+        updated_at: mr.updated_at,
+        web_url: mr.web_url,
+        author: {
+          id: mr.author?.id,
+          name: mr.author?.name || 'Unknown',
+          username: mr.author?.username || 'unknown',
+          avatar_url: mr.author?.avatar_url || '',
+        },
+        source_branch: mr.source_branch,
+        target_branch: mr.target_branch,
+        sha: mr.sha || mr.diff_head_sha || '',
+      }));
+
+      return res.json(mapped);
+    } catch (err: any) {
+      console.error('[fetch-gitlab-merge-requests] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching merge requests.' });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

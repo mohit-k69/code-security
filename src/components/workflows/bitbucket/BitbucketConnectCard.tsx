@@ -23,6 +23,10 @@ export function BitbucketConnectCard({
       redirectUrl.pathname = window.location.pathname;
       redirectUrl.searchParams.set('workflow', 'bitbucket');
 
+      try {
+        window.sessionStorage?.setItem('cody_oauth_flow_provider', 'bitbucket');
+      } catch {}
+
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'bitbucket',
         options: {
