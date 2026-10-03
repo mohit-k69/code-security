@@ -90,6 +90,63 @@ export function cleanOAuthCallbackUrl(workflowOverride?: string | null): void {
   }
 }
 
+// Helper to authoritatively load linked provider identities from Supabase Auth
+export async function loadLinkedProviderIdentities(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.auth.getUserIdentities();
+    if (error) {
+      console.warn('[AUTH] Error loading user identities from getUserIdentities():', error);
+      return [];
+    }
+    return data?.identities || [];
+  } catch (err) {
+    console.warn('[AUTH] Failed to invoke getUserIdentities():', err);
+    return [];
+  }
+}
+
+// Helper to extract linked provider statuses and usernames from authoritative identities
+// Strictly avoids inferring provider-linked state from primary app_metadata.provider
+export function extractLinkedProviders(identities: any[]) {
+  const ids = Array.isArray(identities) ? identities : [];
+
+  const githubIdentity = ids.find((id: any) => id.provider === 'github');
+  const gitlabIdentity = ids.find((id: any) => id.provider === 'gitlab');
+  const bitbucketIdentity = ids.find((id: any) => id.provider === 'bitbucket');
+  const azureIdentity = ids.find((id: any) => id.provider === 'azure');
+
+  const isGithubLinked = Boolean(githubIdentity);
+  const isGitlabLinked = Boolean(gitlabIdentity);
+  const isBitbucketLinked = Boolean(bitbucketIdentity);
+  const isAzureLinked = Boolean(azureIdentity);
+
+  const githubUsername = githubIdentity?.identity_data?.user_name ||
+    githubIdentity?.identity_data?.preferred_username ||
+    githubIdentity?.identity_data?.login;
+
+  const gitlabUsername = gitlabIdentity?.identity_data?.user_name ||
+    gitlabIdentity?.identity_data?.preferred_username ||
+    gitlabIdentity?.identity_data?.name;
+
+  const bitbucketUsername = bitbucketIdentity?.identity_data?.username ||
+    bitbucketIdentity?.identity_data?.nickname ||
+    bitbucketIdentity?.identity_data?.display_name;
+
+  const azureUsername = azureIdentity?.identity_data?.name ||
+    azureIdentity?.identity_data?.preferred_username;
+
+  return {
+    isGithubLinked,
+    githubUsername,
+    isGitlabLinked,
+    gitlabUsername,
+    isBitbucketLinked,
+    bitbucketUsername,
+    isAzureLinked,
+    azureUsername,
+  };
+}
+
 function resolveAuthProvider(
   user: any,
   fetchedUserData: any,
@@ -133,7 +190,6 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [providerTokenSetupError, setProviderTokenSetupError] = useState<string | null>(null);
-  const lastProcessedSessionKeyRef = useRef<string>('');
   const lastStoredTokenRef = useRef<string | null>(null);
   const isStoringTokenRef = useRef(false);
 
@@ -163,6 +219,31 @@ export function useAuth() {
           if (!testErr && Array.isArray(repos)) {
             // Connection is already active and healthy! Clear error and trigger UI update
             setProviderTokenSetupError(null);
+            try {
+              const authIdentities = await loadLinkedProviderIdentities();
+              if (Array.isArray(authIdentities) && authIdentities.length > 0) {
+                const linked = extractLinkedProviders(authIdentities);
+                setUser(prev => prev ? {
+                  ...prev,
+                  isGithubLinked: linked.isGithubLinked || (provider === 'github' ? true : prev.isGithubLinked),
+                  githubUsername: linked.githubUsername || prev.githubUsername,
+                  isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
+                  gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
+                  isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+                  bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
+                  isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+                  azureUsername: linked.azureUsername || prev.azureUsername,
+                } : null);
+              } else {
+                setUser(prev => prev ? {
+                  ...prev,
+                  isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
+                  isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
+                  isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
+                  isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+                } : null);
+              }
+            } catch {}
             window.dispatchEvent(new CustomEvent(`codevibe_${provider}_connected`));
             return;
           }
@@ -191,7 +272,32 @@ export function useAuth() {
         }
         if (data?.error) throw new Error(data.error);
 
-        // Success: clear error and reload/refresh provider state
+        // Success: refresh authoritative identities, clear error and dispatch connected event
+        try {
+          const authIdentities = await loadLinkedProviderIdentities();
+          if (Array.isArray(authIdentities) && authIdentities.length > 0) {
+            const linked = extractLinkedProviders(authIdentities);
+            setUser(prev => prev ? {
+              ...prev,
+              isGithubLinked: linked.isGithubLinked || (provider === 'github' ? true : prev.isGithubLinked),
+              githubUsername: linked.githubUsername || prev.githubUsername,
+              isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
+              gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
+              isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+              bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
+              isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+              azureUsername: linked.azureUsername || prev.azureUsername,
+            } : null);
+          } else {
+            setUser(prev => prev ? {
+              ...prev,
+              isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
+              isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
+              isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
+              isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+            } : null);
+          }
+        } catch {}
         setProviderTokenSetupError(null);
         window.dispatchEvent(new CustomEvent(`codevibe_${provider}_connected`));
         return;
@@ -278,6 +384,34 @@ export function useAuth() {
           throw new Error(errorMsg);
         }
         if (data?.error) throw new Error(data.error);
+
+        // After successful provider token persistence, refresh linked identities using getUserIdentities()
+        try {
+          const authIdentities = await loadLinkedProviderIdentities();
+          if (Array.isArray(authIdentities) && authIdentities.length > 0) {
+            const linked = extractLinkedProviders(authIdentities);
+            setUser(prev => prev ? {
+              ...prev,
+              isGithubLinked: linked.isGithubLinked || (provider === 'github' ? true : prev.isGithubLinked),
+              githubUsername: linked.githubUsername || prev.githubUsername,
+              isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
+              gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
+              isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+              bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
+              isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+              azureUsername: linked.azureUsername || prev.azureUsername,
+            } : null);
+          } else {
+            setUser(prev => prev ? {
+              ...prev,
+              isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
+              isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
+              isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
+              isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+            } : null);
+          }
+        } catch {}
+
         setProviderTokenSetupError(null);
         if (provider === 'gitlab') {
           window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
@@ -305,6 +439,31 @@ export function useAuth() {
             });
             if (!testErr && Array.isArray(testRepos)) {
               setProviderTokenSetupError(null);
+              try {
+                const authIdentities = await loadLinkedProviderIdentities();
+                if (Array.isArray(authIdentities) && authIdentities.length > 0) {
+                  const linked = extractLinkedProviders(authIdentities);
+                  setUser(prev => prev ? {
+                    ...prev,
+                    isGithubLinked: linked.isGithubLinked || (provider === 'github' ? true : prev.isGithubLinked),
+                    githubUsername: linked.githubUsername || prev.githubUsername,
+                    isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
+                    gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
+                    isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+                    bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
+                    isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+                    azureUsername: linked.azureUsername || prev.azureUsername,
+                  } : null);
+                } else {
+                  setUser(prev => prev ? {
+                    ...prev,
+                    isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
+                    isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
+                    isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
+                    isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+                  } : null);
+                }
+              } catch {}
               if (provider === 'gitlab') {
                 window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
               } else if (provider === 'bitbucket') {
@@ -341,7 +500,6 @@ export function useAuth() {
 
           setUser(null);
           setIsInitializing(false);
-          lastProcessedSessionKeyRef.current = '';
           return;
         }
 
@@ -349,14 +507,6 @@ export function useAuth() {
         if (hasPendingOAuthCallback()) {
           cleanOAuthCallbackUrl();
         }
-
-        // Deduplicate identical session triggers to avoid double-processing
-        const sessionKey = `${session.user.id}_${session.access_token ? session.access_token.slice(-16) : ''}_${session.provider_token ? 'tok' : ''}`;
-        if (lastProcessedSessionKeyRef.current === sessionKey && user) {
-          setIsInitializing(false);
-          return;
-        }
-        lastProcessedSessionKeyRef.current = sessionKey;
 
         console.log('[AUTH] SESSION_RECEIVED', {
           source,
@@ -366,35 +516,14 @@ export function useAuth() {
         });
 
         const meta = session.user.user_metadata;
-        let identities = session.user.identities || [];
+        const identities = session.user.identities || [];
         const flowProvider = resolveFlowProvider();
-        let isGithubLinked = Boolean(
-          session.user.app_metadata?.providers?.includes('github') ||
-          session.user.app_metadata?.provider === 'github' ||
-          identities.some((id: any) => id.provider === 'github') ||
-          (session.provider_token && flowProvider === 'github')
-        );
+        const sessionLinked = extractLinkedProviders(identities);
 
-        let isGitlabLinked = Boolean(
-          session.user.app_metadata?.providers?.includes('gitlab') ||
-          session.user.app_metadata?.provider === 'gitlab' ||
-          identities.some((id: any) => id.provider === 'gitlab') ||
-          (session.provider_token && flowProvider === 'gitlab')
-        );
-
-        let isBitbucketLinked = Boolean(
-          session.user.app_metadata?.providers?.includes('bitbucket') ||
-          session.user.app_metadata?.provider === 'bitbucket' ||
-          identities.some((id: any) => id.provider === 'bitbucket') ||
-          (session.provider_token && flowProvider === 'bitbucket')
-        );
-
-        let isAzureLinked = Boolean(
-          session.user.app_metadata?.providers?.includes('azure') ||
-          session.user.app_metadata?.provider === 'azure' ||
-          identities.some((id: any) => id.provider === 'azure') ||
-          (session.provider_token && flowProvider === 'azure')
-        );
+        const isGithubLinked = sessionLinked.isGithubLinked || Boolean(session.provider_token && flowProvider === 'github');
+        const isGitlabLinked = sessionLinked.isGitlabLinked || Boolean(session.provider_token && flowProvider === 'gitlab');
+        const isBitbucketLinked = sessionLinked.isBitbucketLinked || Boolean(session.provider_token && flowProvider === 'bitbucket');
+        const isAzureLinked = sessionLinked.isAzureLinked || Boolean(session.provider_token && flowProvider === 'azure');
 
         // Determine if the user authenticated via an OAuth provider (Google or GitHub)
         const isOAuth = isOAuthUser(session.user, identities) || Boolean(session.provider_token);
@@ -440,28 +569,9 @@ export function useAuth() {
 
         const authProvider = resolveAuthProvider(session.user, null, identities);
 
-        const githubIdentity = identities.find((id: any) => id.provider === 'github');
-        const githubUsername = githubIdentity?.identity_data?.user_name ||
-          githubIdentity?.identity_data?.preferred_username ||
-          meta?.user_name ||
-          meta?.preferred_username;
-
-        const gitlabIdentity = identities.find((id: any) => id.provider === 'gitlab');
-        const gitlabUsername = gitlabIdentity?.identity_data?.user_name ||
-          gitlabIdentity?.identity_data?.preferred_username ||
-          gitlabIdentity?.identity_data?.name;
-
-        const bitbucketIdentity = identities.find((id: any) => id.provider === 'bitbucket');
-        const bitbucketUsername = bitbucketIdentity?.identity_data?.username ||
-          bitbucketIdentity?.identity_data?.nickname ||
-          bitbucketIdentity?.identity_data?.display_name;
-
-        const azureIdentity = identities.find((id: any) => id.provider === 'azure');
-        const azureUsername = azureIdentity?.identity_data?.name ||
-          azureIdentity?.identity_data?.preferred_username;
-
         // FAST-PATH: Set user immediately with session data and unblock initialization (instant load!)
-        setUser({
+        // Invariant: Never overwrite already-connected provider states back to false from a stale session object
+        setUser(prev => ({
           id: session.user.id,
           name: meta?.full_name || meta?.name || meta?.first_name || userEmail.split('@')[0] || 'User',
           email: userEmail,
@@ -469,17 +579,17 @@ export function useAuth() {
           created_at: session.user.created_at,
           last_name_updated_at: meta?.last_name_updated_at,
           last_password_updated_at: meta?.last_password_updated_at,
-          isGithubLinked,
-          githubUsername,
-          isGitlabLinked,
-          gitlabUsername,
-          isBitbucketLinked,
-          bitbucketUsername,
-          isAzureLinked,
-          azureUsername,
-          authProvider,
+          isGithubLinked: Boolean(isGithubLinked || prev?.isGithubLinked),
+          githubUsername: sessionLinked.githubUsername || prev?.githubUsername,
+          isGitlabLinked: Boolean(isGitlabLinked || prev?.isGitlabLinked),
+          gitlabUsername: sessionLinked.gitlabUsername || prev?.gitlabUsername,
+          isBitbucketLinked: Boolean(isBitbucketLinked || prev?.isBitbucketLinked),
+          bitbucketUsername: sessionLinked.bitbucketUsername || prev?.bitbucketUsername,
+          isAzureLinked: Boolean(isAzureLinked || prev?.isAzureLinked),
+          azureUsername: sessionLinked.azureUsername || prev?.azureUsername,
+          authProvider: authProvider || prev?.authProvider,
           recoveryPromptSeenAt: meta?.recovery_prompt_seen_at,
-        });
+        }));
 
         // Unblock UI immediately so the user doesn't wait
         setIsInitializing(false);
@@ -489,80 +599,28 @@ export function useAuth() {
           storeProviderTokenInBackground(session);
         }
 
-        // Authoritative user identity refresh: always fetch fresh identities from Supabase Auth
-        // Ensures secondary linked providers (GitHub, GitLab, Bitbucket, Azure) are reliably discovered
-        supabase.auth.getUser().then(({ data: userData }) => {
-          if (userData?.user) {
-            const freshIdentities = userData.user.identities || [];
-            const freshGithubLinked = Boolean(
-              userData.user.app_metadata?.providers?.includes('github') ||
-              userData.user.app_metadata?.provider === 'github' ||
-              freshIdentities.some((id: any) => id.provider === 'github') ||
-              (session.provider_token && flowProvider === 'github')
-            );
-            const freshGitlabLinked = Boolean(
-              userData.user.app_metadata?.providers?.includes('gitlab') ||
-              userData.user.app_metadata?.provider === 'gitlab' ||
-              freshIdentities.some((id: any) => id.provider === 'gitlab') ||
-              (session.provider_token && flowProvider === 'gitlab')
-            );
-            const freshBitbucketLinked = Boolean(
-              userData.user.app_metadata?.providers?.includes('bitbucket') ||
-              userData.user.app_metadata?.provider === 'bitbucket' ||
-              freshIdentities.some((id: any) => id.provider === 'bitbucket') ||
-              (session.provider_token && flowProvider === 'bitbucket')
-            );
-            const freshAzureLinked = Boolean(
-              userData.user.app_metadata?.providers?.includes('azure') ||
-              userData.user.app_metadata?.provider === 'azure' ||
-              freshIdentities.some((id: any) => id.provider === 'azure') ||
-              (session.provider_token && flowProvider === 'azure')
-            );
-
-            const freshProvider = resolveAuthProvider(session.user, userData.user, freshIdentities);
-
-            const freshGithubIdentity = freshIdentities.find((id: any) => id.provider === 'github');
-            const freshGithubUsername = freshGithubIdentity?.identity_data?.user_name ||
-              freshGithubIdentity?.identity_data?.preferred_username ||
-              userData.user.user_metadata?.user_name ||
-              userData.user.user_metadata?.preferred_username ||
-              githubUsername;
-
-            const freshGitlabIdentity = freshIdentities.find((id: any) => id.provider === 'gitlab');
-            const freshGitlabUsername = freshGitlabIdentity?.identity_data?.user_name ||
-              freshGitlabIdentity?.identity_data?.preferred_username ||
-              freshGitlabIdentity?.identity_data?.name ||
-              gitlabUsername;
-
-            const freshBitbucketIdentity = freshIdentities.find((id: any) => id.provider === 'bitbucket');
-            const freshBitbucketUsername = freshBitbucketIdentity?.identity_data?.username ||
-              freshBitbucketIdentity?.identity_data?.nickname ||
-              freshBitbucketIdentity?.identity_data?.display_name ||
-              bitbucketUsername;
-
-            const freshAzureIdentity = freshIdentities.find((id: any) => id.provider === 'azure');
-            const freshAzureUsername = freshAzureIdentity?.identity_data?.name ||
-              freshAzureIdentity?.identity_data?.preferred_username ||
-              azureUsername;
-
+        // Authoritative user identity refresh using getUserIdentities():
+        // Always query the server for fresh linked identities, and update state without reverting connected flags
+        loadLinkedProviderIdentities().then(authIdentities => {
+          if (Array.isArray(authIdentities) && authIdentities.length > 0) {
+            const freshLinked = extractLinkedProviders(authIdentities);
             setUser(prev => {
               if (!prev) return null;
               return {
                 ...prev,
-                isGithubLinked: freshGithubLinked || prev.isGithubLinked,
-                githubUsername: freshGithubUsername,
-                isGitlabLinked: freshGitlabLinked || prev.isGitlabLinked,
-                gitlabUsername: freshGitlabUsername,
-                isBitbucketLinked: freshBitbucketLinked || prev.isBitbucketLinked,
-                bitbucketUsername: freshBitbucketUsername,
-                isAzureLinked: freshAzureLinked || prev.isAzureLinked,
-                azureUsername: freshAzureUsername,
-                authProvider: freshProvider || prev.authProvider,
+                isGithubLinked: freshLinked.isGithubLinked || prev.isGithubLinked,
+                githubUsername: freshLinked.githubUsername || prev.githubUsername,
+                isGitlabLinked: freshLinked.isGitlabLinked || prev.isGitlabLinked,
+                gitlabUsername: freshLinked.gitlabUsername || prev.gitlabUsername,
+                isBitbucketLinked: freshLinked.isBitbucketLinked || prev.isBitbucketLinked,
+                bitbucketUsername: freshLinked.bitbucketUsername || prev.bitbucketUsername,
+                isAzureLinked: freshLinked.isAzureLinked || prev.isAzureLinked,
+                azureUsername: freshLinked.azureUsername || prev.azureUsername,
               };
             });
           }
         }).catch(e => {
-          console.warn('[AUTH] Background user data sync error:', e);
+          console.warn('[AUTH] Background getUserIdentities sync error:', e);
         });
       } catch (err) {
         console.error('Session handling error:', err);
@@ -642,7 +700,7 @@ export function useAuth() {
     };
     window.addEventListener('message', handleMessage);
 
-    const handleProviderConnected = (e: Event) => {
+    const handleProviderConnected = async (e: Event) => {
       const type = e.type;
       setUser(prev => {
         if (!prev) return null;
@@ -652,7 +710,30 @@ export function useAuth() {
         if (type === 'codevibe_azure_connected') return { ...prev, isAzureLinked: true };
         return prev;
       });
-      syncSession();
+
+      // Authoritative identity sync without wiping out the true state
+      try {
+        const identities = await loadLinkedProviderIdentities();
+        if (Array.isArray(identities) && identities.length > 0) {
+          const linked = extractLinkedProviders(identities);
+          setUser(prev => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              isGithubLinked: linked.isGithubLinked || prev.isGithubLinked,
+              githubUsername: linked.githubUsername || prev.githubUsername,
+              isGitlabLinked: linked.isGitlabLinked || prev.isGitlabLinked,
+              gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
+              isBitbucketLinked: linked.isBitbucketLinked || prev.isBitbucketLinked,
+              bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
+              isAzureLinked: linked.isAzureLinked || prev.isAzureLinked,
+              azureUsername: linked.azureUsername || prev.azureUsername,
+            };
+          });
+        }
+      } catch (err) {
+        console.warn('[AUTH] Error refreshing identities on provider connected event:', err);
+      }
     };
 
     window.addEventListener('codevibe_github_connected', handleProviderConnected);
