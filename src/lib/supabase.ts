@@ -44,6 +44,8 @@ supabase.functions.invoke = async function (functionName: string, options?: any)
       if (!fallback.error) {
         return fallback;
       }
+      console.warn(`[FUNCTIONS] Fallback invocation of "${functionName}" also returned error (${fallback.error.message})`);
+      return fallback;
     }
     return result;
   } catch (err: any) {
@@ -66,11 +68,18 @@ async function fallbackInvoke(functionName: string, options?: any) {
       headers,
       body: options?.body ? JSON.stringify(options.body) : undefined,
     });
-    const data = await response.json();
-    if (!response.ok) {
-      return { data: null, error: new Error(data?.error || `HTTP ${response.status}: Failed to invoke function`) };
+    
+    let data: any = null;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      data = await response.json().catch(() => null);
     }
-    return { data, error: null };
+    
+    if (!response.ok) {
+      const errorMsg = data?.error || `HTTP ${response.status}: Failed to invoke function`;
+      return { data: null, error: new Error(errorMsg) };
+    }
+    return { data: data ?? {}, error: null };
   } catch (err: any) {
     return { data: null, error: err };
   }

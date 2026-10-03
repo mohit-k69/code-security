@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-let cachedAdminClient: ReturnType<typeof createClient> | null = null;
+let cachedAdminClient: any = null;
 
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): any {
   if (cachedAdminClient) return cachedAdminClient;
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -20,44 +20,54 @@ function getSupabaseAdmin() {
   return cachedAdminClient;
 }
 
+function sendJson(res: any, status: number, body: any) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  if (typeof res.json === "function") {
+    return res.json(body);
+  }
+  return res.end(JSON.stringify(body));
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
 
   if (req.method === "OPTIONS") {
-    return res.status(204).end();
+    res.statusCode = 204;
+    return res.end();
   }
 
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: "No authorization header" });
+      return sendJson(res, 401, { error: "No authorization header" });
     }
 
     const admin = getSupabaseAdmin();
     if (!admin) {
-      return res.status(503).json({ error: "Service unavailable: admin client not configured" });
+      return sendJson(res, 503, { error: "Service unavailable: admin client not configured" });
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const { data: { user }, error: userError } = await admin.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return sendJson(res, 401, { error: "Unauthorized" });
     }
 
-    const { data: connection, error: dbError } = await admin
+    const { data: connection, error: dbError } = await (admin as any)
       .from("oauth_connections")
       .select("access_token")
       .eq("user_id", user.id)
       .eq("provider", "azure")
       .single();
 
-    if (dbError || !connection || !connection.access_token) {
-      return res.status(404).json({ error: "Azure DevOps connection not found. Please connect your account." });
+    if (dbError || !connection || !(connection as any).access_token) {
+      return sendJson(res, 404, { error: "Azure DevOps connection not found. Please connect your account." });
     }
 
-    const azureToken = connection.access_token;
+    const azureToken = (connection as any).access_token;
 
     let body = req.body;
     if (typeof body === "string") {
@@ -66,7 +76,7 @@ export default async function handler(req: any, res: any) {
 
     const { organization, project, repositoryId } = body || {};
     if (!organization || !repositoryId) {
-      return res.status(400).json({ error: "Missing organization or repositoryId parameter" });
+      return sendJson(res, 400, { error: "Missing organization or repositoryId parameter" });
     }
 
     const prsUrl = `https://dev.azure.com/${organization}/${project ? project + "/" : ""}_apis/git/repositories/${repositoryId}/pullrequests?searchCriteria.status=active&api-version=6.0`;
@@ -80,9 +90,9 @@ export default async function handler(req: any, res: any) {
 
     if (!prsRes.ok) {
       if (prsRes.status === 401) {
-        return res.status(401).json({ error: "Azure DevOps connection expired. Please reconnect." });
+        return sendJson(res, 401, { error: "Azure DevOps connection expired. Please reconnect." });
       }
-      return res.status(prsRes.status).json({ error: "Failed to fetch pull requests from Azure DevOps." });
+      return sendJson(res, prsRes.status, { error: "Failed to fetch pull requests from Azure DevOps." });
     }
 
     const prsData = await prsRes.json();
@@ -104,9 +114,9 @@ export default async function handler(req: any, res: any) {
       lastMergeCommit: pr.lastMergeCommit?.commitId || "",
     }));
 
-    return res.status(200).json(mappedPRs);
+    return sendJson(res, 200, mappedPRs);
   } catch (err: any) {
     console.error("[fetch-azure-prs] Internal error:", err?.message || err);
-    return res.status(500).json({ error: "Internal server error while fetching Azure DevOps pull requests." });
+    return sendJson(res, 500, { error: "Internal server error while fetching Azure DevOps pull requests." });
   }
 }

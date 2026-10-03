@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-let cachedAdminClient: ReturnType<typeof createClient> | null = null;
+let cachedAdminClient: any = null;
 
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): any {
   if (cachedAdminClient) return cachedAdminClient;
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -20,45 +20,55 @@ function getSupabaseAdmin() {
   return cachedAdminClient;
 }
 
+function sendJson(res: any, status: number, body: any) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  if (typeof res.json === "function") {
+    return res.json(body);
+  }
+  return res.end(JSON.stringify(body));
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
 
   if (req.method === "OPTIONS") {
-    return res.status(204).end();
+    res.statusCode = 204;
+    return res.end();
   }
 
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: "No authorization header" });
+      return sendJson(res, 401, { error: "No authorization header" });
     }
 
     const admin = getSupabaseAdmin();
     if (!admin) {
-      return res.status(503).json({ error: "Service unavailable: admin client not configured" });
+      return sendJson(res, 503, { error: "Service unavailable: admin client not configured" });
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const { data: { user }, error: userError } = await admin.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return sendJson(res, 401, { error: "Unauthorized" });
     }
 
     // Fetch the stored GitHub token from oauth_connections
-    const { data: connection, error: dbError } = await admin
+    const { data: connection, error: dbError } = await (admin as any)
       .from("oauth_connections")
       .select("access_token")
       .eq("user_id", user.id)
       .eq("provider", "github")
       .single();
 
-    if (dbError || !connection || !connection.access_token) {
-      return res.status(404).json({ error: "GitHub connection not found. Please connect your account." });
+    if (dbError || !connection || !(connection as any).access_token) {
+      return sendJson(res, 404, { error: "GitHub connection not found. Please connect your account." });
     }
 
-    const githubToken = connection.access_token;
+    const githubToken = (connection as any).access_token;
 
     // Call the GitHub REST API
     const githubRes = await fetch("https://api.github.com/user/repos?sort=updated&per_page=100", {
@@ -71,9 +81,9 @@ export default async function handler(req: any, res: any) {
 
     if (!githubRes.ok) {
       if (githubRes.status === 401) {
-        return res.status(401).json({ error: "GitHub connection expired. Please reconnect." });
+        return sendJson(res, 401, { error: "GitHub connection expired. Please reconnect." });
       }
-      return res.status(502).json({ error: "Failed to fetch repositories from GitHub." });
+      return sendJson(res, 502, { error: "Failed to fetch repositories from GitHub." });
     }
 
     const repos = await githubRes.json();
@@ -93,9 +103,9 @@ export default async function handler(req: any, res: any) {
       },
     }));
 
-    return res.status(200).json(mappedRepos);
+    return sendJson(res, 200, mappedRepos);
   } catch (err: any) {
     console.error("[fetch-github-repositories] Internal error:", err?.message || err);
-    return res.status(500).json({ error: "Internal server error while fetching repositories." });
+    return sendJson(res, 500, { error: "Internal server error while fetching repositories." });
   }
 }

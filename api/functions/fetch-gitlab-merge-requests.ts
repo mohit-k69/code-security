@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-let cachedAdminClient: ReturnType<typeof createClient> | null = null;
+let cachedAdminClient: any = null;
 
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): any {
   if (cachedAdminClient) return cachedAdminClient;
 
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -20,44 +20,54 @@ function getSupabaseAdmin() {
   return cachedAdminClient;
 }
 
+function sendJson(res: any, status: number, body: any) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  if (typeof res.json === "function") {
+    return res.json(body);
+  }
+  return res.end(JSON.stringify(body));
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
 
   if (req.method === "OPTIONS") {
-    return res.status(204).end();
+    res.statusCode = 204;
+    return res.end();
   }
 
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: "No authorization header" });
+      return sendJson(res, 401, { error: "No authorization header" });
     }
 
     const admin = getSupabaseAdmin();
     if (!admin) {
-      return res.status(503).json({ error: "Service unavailable: admin client not configured" });
+      return sendJson(res, 503, { error: "Service unavailable: admin client not configured" });
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const { data: { user }, error: userError } = await admin.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return sendJson(res, 401, { error: "Unauthorized" });
     }
 
-    const { data: connection, error: dbError } = await admin
+    const { data: connection, error: dbError } = await (admin as any)
       .from("oauth_connections")
       .select("access_token")
       .eq("user_id", user.id)
       .eq("provider", "gitlab")
       .single();
 
-    if (dbError || !connection || !connection.access_token) {
-      return res.status(404).json({ error: "GitLab connection not found. Please connect your account." });
+    if (dbError || !connection || !(connection as any).access_token) {
+      return sendJson(res, 404, { error: "GitLab connection not found. Please connect your account." });
     }
 
-    const gitlabToken = connection.access_token;
+    const gitlabToken = (connection as any).access_token;
 
     let body = req.body;
     if (typeof body === "string") {
@@ -66,7 +76,7 @@ export default async function handler(req: any, res: any) {
 
     const projectId = body?.projectId || req.query?.projectId;
     if (!projectId) {
-      return res.status(400).json({ error: "Missing projectId parameter" });
+      return sendJson(res, 400, { error: "Missing projectId parameter" });
     }
 
     const gitlabUrl = `https://gitlab.com/api/v4/projects/${encodeURIComponent(String(projectId))}/merge_requests?state=all&order_by=updated_at&sort=desc&per_page=30`;
@@ -80,12 +90,12 @@ export default async function handler(req: any, res: any) {
 
     if (!gitlabRes.ok) {
       if (gitlabRes.status === 401) {
-        return res.status(401).json({ error: "GitLab connection expired. Please reconnect." });
+        return sendJson(res, 401, { error: "GitLab connection expired. Please reconnect." });
       }
       if (gitlabRes.status === 404) {
-        return res.status(404).json({ error: "GitLab project not found or inaccessible." });
+        return sendJson(res, 404, { error: "GitLab project not found or inaccessible." });
       }
-      return res.status(gitlabRes.status).json({ error: "Failed to fetch merge requests from GitLab." });
+      return sendJson(res, gitlabRes.status, { error: "Failed to fetch merge requests from GitLab." });
     }
 
     const mergeRequests = await gitlabRes.json();
@@ -111,9 +121,9 @@ export default async function handler(req: any, res: any) {
       sha: mr.sha || mr.diff_head_sha || "",
     }));
 
-    return res.status(200).json(mapped);
+    return sendJson(res, 200, mapped);
   } catch (err: any) {
     console.error("[fetch-gitlab-merge-requests] Internal error:", err?.message || err);
-    return res.status(500).json({ error: "Internal server error while fetching merge requests." });
+    return sendJson(res, 500, { error: "Internal server error while fetching merge requests." });
   }
 }
