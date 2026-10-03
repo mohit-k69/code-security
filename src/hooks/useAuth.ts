@@ -215,6 +215,7 @@ export function useAuth() {
   const [providerTokenSetupError, setProviderTokenSetupError] = useState<string | null>(null);
   const lastStoredTokenRef = useRef<string | null>(null);
   const isStoringTokenRef = useRef(false);
+  const isOAuthCallbackPendingRef = useRef(false);
 
   const retryProviderTokenSetup = async (explicitProvider?: string) => {
     setProviderTokenSetupError(null);
@@ -343,11 +344,26 @@ export function useAuth() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const oauthError = searchParams.get('error_description') || hashParams.get('error_description') || searchParams.get('error') || hashParams.get('error');
 
+    // Latch in-flight OAuth callback detection at mount so it survives URL modification by Supabase PKCE exchange
+    const initialHasCallback = Boolean(
+      window.location.search.includes('code=') ||
+      window.location.hash.includes('access_token=') ||
+      searchParams.has('workflow') ||
+      window.sessionStorage?.getItem('cody_oauth_flow_provider') ||
+      window.localStorage?.getItem('cody_oauth_flow_provider')
+    );
+    if (initialHasCallback && !oauthError) {
+      isOAuthCallbackPendingRef.current = true;
+    }
+
     const hasPendingOAuthCallback = () => {
       try {
         const search = window.location.search;
         const hash = window.location.hash;
-        return search.includes('code=') || hash.includes('access_token=');
+        if (search.includes('code=') || hash.includes('access_token=')) {
+          return true;
+        }
+        return Boolean(isOAuthCallbackPendingRef.current);
       } catch {
         return false;
       }
@@ -362,6 +378,7 @@ export function useAuth() {
     }
 
     if (oauthError) {
+      isOAuthCallbackPendingRef.current = false;
       cleanOAuthCallbackUrl();
 
       const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
@@ -531,8 +548,8 @@ export function useAuth() {
           // If returning from an OAuth callback and waiting for Supabase to exchange code,
           // do NOT prematurely mark initialization complete as unauthenticated!
           // Supabase's onAuthStateChange will fire momentarily once the code exchange completes.
-          if (hasPendingOAuthCallback() && source === 'syncSession') {
-            console.log('[AUTH] In-flight OAuth callback detected in URL, waiting for onAuthStateChange exchange...');
+          if ((hasPendingOAuthCallback() && source === 'syncSession') || (hasPendingOAuthCallback() && source === 'onAuthStateChange')) {
+            console.log(`[AUTH] In-flight OAuth callback detected in URL (${source}), waiting for onAuthStateChange exchange...`);
             return;
           }
 
@@ -545,6 +562,7 @@ export function useAuth() {
         if (hasPendingOAuthCallback()) {
           cleanOAuthCallbackUrl();
         }
+        isOAuthCallbackPendingRef.current = false;
 
         console.log('[AUTH] SESSION_RECEIVED', {
           source,
@@ -669,6 +687,37 @@ export function useAuth() {
     const syncSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await handleSession(session, 'syncSession');
+          return;
+        }
+
+        // If an OAuth callback resolution is in flight and in-memory session is not yet loaded,
+        // check whether an active authenticated session exists in storage before awaiting onAuthStateChange
+        if (isOAuthCallbackPendingRef.current) {
+          try {
+            for (let i = 0; i < window.localStorage.length; i++) {
+              const key = window.localStorage.key(i);
+              if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                const storedVal = window.localStorage.getItem(key);
+                if (storedVal) {
+                  const parsed = JSON.parse(storedVal);
+                  if (parsed?.access_token && parsed?.refresh_token) {
+                    const { data: recoveredData } = await supabase.auth.setSession({
+                      access_token: parsed.access_token,
+                      refresh_token: parsed.refresh_token,
+                    });
+                    if (recoveredData?.session?.user) {
+                      await handleSession(recoveredData.session, 'syncSession');
+                      return;
+                    }
+                  }
+                }
+              }
+            }
+          } catch {}
+        }
+
         await handleSession(session, 'syncSession');
       } catch (err) {
         console.error('Session sync error:', err);
@@ -686,6 +735,8 @@ export function useAuth() {
         setIsInitializing((curr) => {
           if (curr) {
             console.warn('[AUTH] OAuth exchange timeout reached, unblocking UI.');
+            isOAuthCallbackPendingRef.current = false;
+            syncSession();
             return false;
           }
           return curr;
@@ -694,9 +745,17 @@ export function useAuth() {
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (_event === 'SIGNED_OUT') {
+        isOAuthCallbackPendingRef.current = false;
+        setUser(null);
+        setIsInitializing(false);
+        return;
+      }
+
       // Clean up URL if returning from OAuth redirect ONLY AFTER session is established
       if (session?.user && hasPendingOAuthCallback()) {
         cleanOAuthCallbackUrl();
+        isOAuthCallbackPendingRef.current = false;
       }
 
       // If we are in an OAuth popup, notify parent and close
