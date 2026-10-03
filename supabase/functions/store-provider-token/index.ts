@@ -24,7 +24,10 @@ Deno.serve(async (req) => {
     }
 
     const validProviders = ['github', 'gitlab', 'bitbucket', 'azure'];
-    const provider = validProviders.includes(requestedProvider) ? requestedProvider : 'github';
+    if (!requestedProvider || !validProviders.includes(requestedProvider)) {
+      throw new Error('Missing or invalid provider');
+    }
+    const provider = requestedProvider;
 
     // 1. Verify the incoming Supabase JWT to get the user ID
     const supabaseClient = createClient(
@@ -143,7 +146,7 @@ Deno.serve(async (req) => {
     console.error('store-provider-token internal error:', error?.message || error, error?.stack);
     
     // Return a descriptive error message to the client
-    return new Response(JSON.stringify({ error: error?.message || 'Unable to store GitHub connection.' }), {
+    return new Response(JSON.stringify({ error: error?.message || 'Unable to store provider connection.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });

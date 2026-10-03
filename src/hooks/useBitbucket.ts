@@ -138,6 +138,25 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     }
   }, [activeWorkflow, isBitbucketConnected, bitbucketRepos.length, isFetchingRepos, bitbucketReposError, fetchBitbucketRepos]);
 
+  // Listen for connection completion event from OAuth linking
+  useEffect(() => {
+    const handleConnected = () => {
+      trackEvent('bitbucket_connected');
+      setBitbucketRepos([]);
+      setSelectedRepoFullName(null);
+      setSelectedPR(null);
+      setBitbucketSearchQuery('');
+      setBitbucketReposError('');
+      if (activeWorkflow === 'bitbucket') {
+        fetchBitbucketRepos();
+      }
+    };
+    window.addEventListener('codevibe_bitbucket_connected', handleConnected);
+    return () => {
+      window.removeEventListener('codevibe_bitbucket_connected', handleConnected);
+    };
+  }, [activeWorkflow, fetchBitbucketRepos]);
+
   const clearBitbucketSelection = useCallback(() => {
     setBitbucketSearchQuery('');
     setSelectedRepoFullName(null);

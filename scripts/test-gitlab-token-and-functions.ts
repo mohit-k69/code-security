@@ -66,9 +66,10 @@ async function runAllTests() {
   });
 
   // 2. GitHub token storage still sends provider='github'
-  await runTest('2. GitHub token storage still defaults/identifies provider="github"', () => {
+  await runTest('2. GitHub token storage still identifies provider="github"', () => {
     assert(githubWorkflowCode.includes("cody_oauth_flow_provider', 'github'"), 'GithubWorkflow marks session provider as github');
-    assert(useAuthCode.includes("return 'github'"), 'Fallback provider is github');
+    assert(useAuthCode.includes("'github'"), 'useAuth recognizes github workflow');
+    assert(useAuthCode.includes("return null"), 'resolveFlowProvider safely returns null instead of dangerous silent fallback to github');
   });
 
   // 3. Bitbucket token storage identifies Bitbucket correctly

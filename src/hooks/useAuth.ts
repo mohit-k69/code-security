@@ -38,22 +38,44 @@ export function isOAuthUser(user: any, identities: any[] = []): boolean {
   return false;
 }
 
-// Helper to resolve the OAuth provider from the explicit flow context (URL or session tracking)
-// NOTE: Strictly avoids inferring from primary Supabase auth metadata
-export function resolveFlowProvider(): 'github' | 'gitlab' | 'bitbucket' | 'azure' {
+// Helper to resolve the OAuth provider from the explicit flow context (URL or session/local storage tracking)
+// NOTE: Strictly avoids inferring from primary Supabase auth metadata and NEVER silently falls back to 'github'
+export function resolveFlowProvider(
+  explicitProvider?: string | null
+): 'github' | 'gitlab' | 'bitbucket' | 'azure' | null {
+  const validProviders: Array<'github' | 'gitlab' | 'bitbucket' | 'azure'> = [
+    'github',
+    'gitlab',
+    'bitbucket',
+    'azure'
+  ];
+
+  if (explicitProvider && validProviders.includes(explicitProvider.toLowerCase() as any)) {
+    return explicitProvider.toLowerCase() as any;
+  }
+
   try {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const workflow = searchParams.get('workflow') || hashParams.get('workflow');
-    if (workflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(workflow.toLowerCase())) {
+    if (workflow && validProviders.includes(workflow.toLowerCase() as any)) {
       return workflow.toLowerCase() as any;
     }
-    const stored = window.sessionStorage?.getItem('cody_oauth_flow_provider');
-    if (stored && ['github', 'gitlab', 'bitbucket', 'azure'].includes(stored.toLowerCase())) {
-      return stored.toLowerCase() as any;
+
+    const sessionStored = window.sessionStorage?.getItem('cody_oauth_flow_provider');
+    if (sessionStored && validProviders.includes(sessionStored.toLowerCase() as any)) {
+      return sessionStored.toLowerCase() as any;
+    }
+
+    const localStored = window.localStorage?.getItem('cody_oauth_flow_provider');
+    if (localStored && validProviders.includes(localStored.toLowerCase() as any)) {
+      return localStored.toLowerCase() as any;
     }
   } catch {}
-  return 'github';
+
+  // CRITICAL: NEVER silently fall back to 'github'!
+  // A missing provider context must return null to prevent token misattribution.
+  return null;
 }
 
 // Helper to safely clean OAuth callback URL parameters AFTER session is established
@@ -77,7 +99,8 @@ export function cleanOAuthCallbackUrl(workflowOverride?: string | null): void {
       workflowOverride ||
       searchParams.get('workflow') ||
       hashParams.get('workflow') ||
-      window.sessionStorage?.getItem('cody_oauth_flow_provider');
+      window.sessionStorage?.getItem('cody_oauth_flow_provider') ||
+      window.localStorage?.getItem('cody_oauth_flow_provider');
 
     const cleanSearch = (targetWorkflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(targetWorkflow.toLowerCase()))
       ? `?workflow=${targetWorkflow.toLowerCase()}`
@@ -193,9 +216,13 @@ export function useAuth() {
   const lastStoredTokenRef = useRef<string | null>(null);
   const isStoringTokenRef = useRef(false);
 
-  const retryProviderTokenSetup = async () => {
+  const retryProviderTokenSetup = async (explicitProvider?: string) => {
     setProviderTokenSetupError(null);
-    const provider = resolveFlowProvider();
+    const provider = resolveFlowProvider(explicitProvider);
+    if (!provider) {
+      console.warn('[AUTH] Cannot retry token storage: flow provider context missing');
+      return;
+    }
     const providerName = provider === 'gitlab' ? 'GitLab'
       : provider === 'bitbucket' ? 'Bitbucket'
       : provider === 'azure' ? 'Azure DevOps'
@@ -342,7 +369,8 @@ export function useAuth() {
       const providerLabel = flowProv === 'gitlab' ? 'GitLab'
         : flowProv === 'bitbucket' ? 'Bitbucket'
         : flowProv === 'azure' ? 'Azure DevOps'
-        : 'GitHub';
+        : flowProv === 'github' ? 'GitHub'
+        : 'Provider';
       const userFriendlyError = isAccessDenied 
         ? (`${providerLabel} authorization was cancelled.`)
         : (`${providerLabel} connection error: ${oauthError}`);
@@ -355,11 +383,17 @@ export function useAuth() {
     }
 
     // Helper to store provider token in background without blocking initial UI render
-    const storeProviderTokenInBackground = async (session: any) => {
+    const storeProviderTokenInBackground = async (session: any, explicitProvider?: string) => {
       if (!session?.provider_token || isStoringTokenRef.current) return;
       if (lastStoredTokenRef.current === session.provider_token) return;
 
-      const provider = resolveFlowProvider();
+      const provider = resolveFlowProvider(explicitProvider);
+      if (!provider) {
+        console.warn('[AUTH] Provider token present but flow provider could not be resolved. Skipping token persistence to prevent misattribution.');
+        return;
+      }
+
+      console.log(`[OAUTH_DEBUG] provider=${provider} event=store_token_start has_session=${Boolean(session)} has_provider_token=true has_provider_refresh_token=${Boolean(session.provider_refresh_token)}`);
 
       isStoringTokenRef.current = true;
       lastStoredTokenRef.current = session.provider_token;
@@ -385,9 +419,12 @@ export function useAuth() {
         }
         if (data?.error) throw new Error(data.error);
 
+        console.log(`[OAUTH_DEBUG] provider=${provider} store_provider_token=success oauth_connection_exists=true`);
+
         // After successful provider token persistence, refresh linked identities using getUserIdentities()
         try {
           const authIdentities = await loadLinkedProviderIdentities();
+          console.log(`[OAUTH_DEBUG] provider=${provider} identities=${JSON.stringify(authIdentities.map((i: any) => i.provider))}`);
           if (Array.isArray(authIdentities) && authIdentities.length > 0) {
             const linked = extractLinkedProviders(authIdentities);
             setUser(prev => prev ? {
@@ -424,9 +461,10 @@ export function useAuth() {
         }
         try {
           window.sessionStorage?.removeItem('cody_oauth_flow_provider');
+          window.localStorage?.removeItem('cody_oauth_flow_provider');
         } catch {}
       } catch (err: any) {
-        console.warn('Background token storage error:', err);
+        console.warn(`[OAUTH_DEBUG] provider=${provider} store_provider_token=failed`, err?.message || err);
         // Verify if a working connection is already present in oauth_connections before showing error
         if (session.access_token) {
           try {
@@ -667,14 +705,16 @@ export function useAuth() {
         if (session?.provider_token) {
           try {
             const provider = resolveFlowProvider();
-            await supabase.functions.invoke('store-provider-token', {
-              headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-              body: { 
-                providerToken: session.provider_token,
-                providerRefreshToken: session.provider_refresh_token,
-                provider
-              }
-            });
+            if (provider) {
+              await supabase.functions.invoke('store-provider-token', {
+                headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+                body: { 
+                  providerToken: session.provider_token,
+                  providerRefreshToken: session.provider_refresh_token,
+                  provider
+                }
+              });
+            }
           } catch (err) {
             console.error('Failed to trigger token storage from popup:', err);
           }

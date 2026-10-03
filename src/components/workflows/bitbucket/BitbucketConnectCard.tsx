@@ -25,6 +25,7 @@ export function BitbucketConnectCard({
 
       try {
         window.sessionStorage?.setItem('cody_oauth_flow_provider', 'bitbucket');
+        window.localStorage?.setItem('cody_oauth_flow_provider', 'bitbucket');
       } catch {}
 
       const { data, error } = await supabase.auth.linkIdentity({

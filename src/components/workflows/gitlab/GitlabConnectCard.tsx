@@ -32,6 +32,7 @@ export function GitlabConnectCard({
 
       try {
         window.sessionStorage?.setItem('cody_oauth_flow_provider', 'gitlab');
+        window.localStorage?.setItem('cody_oauth_flow_provider', 'gitlab');
       } catch {}
 
       const { data, error } = await supabase.auth.linkIdentity({

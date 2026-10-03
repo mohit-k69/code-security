@@ -35,15 +35,19 @@ const originalInvoke = supabase.functions.invoke.bind(supabase.functions);
 supabase.functions.invoke = async function (functionName: string, options?: any) {
   try {
     const result = await originalInvoke(functionName, options);
-    if (result.error && (
-      result.error.message?.includes('Failed to send a request') ||
-      result.error.message?.includes('NOT_FOUND') ||
-      (result.error as any).context?.status === 404
-    )) {
-      return await fallbackInvoke(functionName, options);
+    // If the remote function returned an error:
+    // (e.g. 400 Bad Request because remote edge function is outdated or only supports GitHub,
+    // or 404 Not Found, or network / send failure), fall back to server proxy!
+    if (result.error) {
+      console.warn(`[FUNCTIONS] Remote invocation of "${functionName}" returned error (${result.error.message}), attempting server fallback...`);
+      const fallback = await fallbackInvoke(functionName, options);
+      if (!fallback.error) {
+        return fallback;
+      }
     }
     return result;
   } catch (err: any) {
+    console.warn(`[FUNCTIONS] Exception during remote invocation of "${functionName}", attempting server fallback...`, err);
     return await fallbackInvoke(functionName, options);
   }
 };

@@ -25,6 +25,7 @@ export function AzureConnectCard({
 
       try {
         window.sessionStorage?.setItem('cody_oauth_flow_provider', 'azure');
+        window.localStorage?.setItem('cody_oauth_flow_provider', 'azure');
       } catch {}
 
       const { data, error } = await supabase.auth.linkIdentity({

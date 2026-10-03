@@ -140,6 +140,25 @@ export function useAzure(activeWorkflow: string, user?: User | null) {
     }
   }, [activeWorkflow, isAzureConnected, azureRepos.length, isFetchingRepos, azureReposError, fetchAzureRepos]);
 
+  // Listen for connection completion event from OAuth linking
+  useEffect(() => {
+    const handleConnected = () => {
+      trackEvent('azure_connected');
+      setAzureRepos([]);
+      setSelectedRepoId(null);
+      setSelectedPR(null);
+      setAzureSearchQuery('');
+      setAzureReposError('');
+      if (activeWorkflow === 'azure') {
+        fetchAzureRepos();
+      }
+    };
+    window.addEventListener('codevibe_azure_connected', handleConnected);
+    return () => {
+      window.removeEventListener('codevibe_azure_connected', handleConnected);
+    };
+  }, [activeWorkflow, fetchAzureRepos]);
+
   const clearAzureSelection = useCallback(() => {
     setAzureSearchQuery('');
     setSelectedRepoId(null);

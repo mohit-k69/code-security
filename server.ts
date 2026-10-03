@@ -482,7 +482,7 @@ Otherwise, return JSON:
     }
     const { data: connection, error: dbError } = await admin
       .from('oauth_connections')
-      .select('access_token')
+      .select('access_token, provider_user_id')
       .eq('user_id', user.id)
       .eq('provider', provider)
       .single();
@@ -499,8 +499,125 @@ Otherwise, return JSON:
       }
       return null;
     }
-    return { user, accessToken: connection.access_token };
+    return { user, accessToken: connection.access_token, providerUserId: connection.provider_user_id };
   };
+
+  // 0. Store Provider Token (Authoritative Multi-Provider storage with zero credential logging)
+  app.all(["/api/functions/store-provider-token", "/functions/v1/store-provider-token"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No authorization header' });
+    }
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({ error: 'Supabase admin service unavailable' });
+    }
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const { data: { user }, error: userError } = await admin.auth.getUser(token);
+    if (userError || !user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { providerToken, providerRefreshToken, provider: requestedProvider } = req.body || {};
+    if (!providerToken) {
+      return res.status(400).json({ error: 'Missing provider token' });
+    }
+
+    const validProviders = ['github', 'gitlab', 'bitbucket', 'azure'];
+    if (!requestedProvider || !validProviders.includes(requestedProvider)) {
+      return res.status(400).json({ error: 'Missing or invalid provider' });
+    }
+    const provider = requestedProvider;
+
+    let providerUserId = '';
+    try {
+      if (provider === 'gitlab') {
+        const gitlabUserRes = await fetch('https://gitlab.com/api/v4/user', {
+          headers: {
+            'Authorization': `Bearer ${providerToken}`,
+            'Accept': 'application/json',
+            'User-Agent': 'CodeVibe-Applet'
+          }
+        });
+        if (!gitlabUserRes.ok) {
+          return res.status(400).json({ error: 'Failed to validate GitLab token with provider' });
+        }
+        const gitlabUser = await gitlabUserRes.json();
+        providerUserId = String(gitlabUser.id);
+      } else if (provider === 'bitbucket') {
+        const bbUserRes = await fetch('https://api.bitbucket.org/2.0/user', {
+          headers: {
+            'Authorization': `Bearer ${providerToken}`,
+            'Accept': 'application/json',
+            'User-Agent': 'CodeVibe-Applet'
+          }
+        });
+        if (!bbUserRes.ok) {
+          return res.status(400).json({ error: 'Failed to validate Bitbucket token with provider' });
+        }
+        const bbUser = await bbUserRes.json();
+        providerUserId = String(bbUser.account_id || bbUser.uuid || bbUser.username || 'bitbucket_user');
+      } else if (provider === 'azure') {
+        const azureUserRes = await fetch('https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=6.0', {
+          headers: {
+            'Authorization': `Bearer ${providerToken}`,
+            'Accept': 'application/json',
+            'User-Agent': 'CodeVibe-Applet'
+          }
+        });
+        if (azureUserRes.ok) {
+          const azureUser = await azureUserRes.json();
+          providerUserId = String(azureUser.id || azureUser.publicAlias || 'azure_user');
+        } else {
+          providerUserId = user.id;
+        }
+      } else {
+        const githubUserRes = await fetch('https://api.github.com/user', {
+          headers: {
+            'Authorization': `Bearer ${providerToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'CodeVibe-Applet'
+          }
+        });
+        if (!githubUserRes.ok) {
+          return res.status(400).json({ error: 'Failed to validate GitHub token with provider' });
+        }
+        const githubUser = await githubUserRes.json();
+        providerUserId = String(githubUser.id);
+      }
+
+      if (!providerUserId) {
+        return res.status(400).json({ error: `Failed to extract ${provider} user ID` });
+      }
+
+      const { error: upsertError } = await admin
+        .from('oauth_connections')
+        .upsert({
+          user_id: user.id,
+          provider: provider,
+          provider_user_id: providerUserId,
+          access_token: providerToken,
+          refresh_token: providerRefreshToken || null,
+          expires_at: null,
+        }, { onConflict: 'user_id,provider' });
+
+      if (upsertError) {
+        console.error('Database upsert failed in server store-provider-token:', upsertError.message);
+        return res.status(500).json({ error: 'Failed to persist connection' });
+      }
+
+      console.log(`[OAUTH_DEBUG] server store-provider-token succeeded for provider=${provider} user=${user.id}`);
+      return res.status(200).json({ success: true, message: 'Provider connection secured' });
+    } catch (err: any) {
+      console.error('store-provider-token error in server:', err?.message || err);
+      return res.status(500).json({ error: err?.message || 'Failed to process provider token storage' });
+    }
+  });
 
   // 1. Fetch GitLab Projects
   app.all(["/api/functions/fetch-gitlab-projects", "/functions/v1/fetch-gitlab-projects"], async (req, res) => {
@@ -613,6 +730,312 @@ Otherwise, return JSON:
     } catch (err: any) {
       console.error('[fetch-gitlab-merge-requests] error:', err);
       return res.status(500).json({ error: 'Internal server error while fetching merge requests.' });
+    }
+  });
+
+  // 3. Fetch Bitbucket Repositories
+  app.all(["/api/functions/fetch-bitbucket-repos", "/functions/v1/fetch-bitbucket-repos"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'bitbucket');
+      if (!auth) return;
+
+      const bbRes = await fetch('https://api.bitbucket.org/2.0/repositories?role=contributor&sort=-updated_on&pagelen=100', {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!bbRes.ok) {
+        if (bbRes.status === 401) return res.status(401).json({ error: 'Bitbucket connection expired. Please reconnect.' });
+        return res.status(bbRes.status).json({ error: 'Failed to fetch repositories from Bitbucket.' });
+      }
+
+      const bbData = await bbRes.json();
+      const repos = (bbData.values || []).map((repo: any) => ({
+        id: repo.uuid || repo.full_name,
+        uuid: repo.uuid,
+        name: repo.name,
+        full_name: repo.full_name,
+        owner: repo.owner?.nickname || repo.owner?.display_name || repo.workspace?.slug || '',
+        workspace: repo.workspace?.slug || repo.workspace?.name || '',
+        description: repo.description || '',
+        is_private: Boolean(repo.is_private),
+        default_branch: repo.mainbranch?.name || 'main',
+        updated_on: repo.updated_on,
+        avatar_url: repo.links?.avatar?.href || '',
+        html_url: repo.links?.html?.href || `https://bitbucket.org/${repo.full_name}`,
+      }));
+
+      return res.json(repos);
+    } catch (err: any) {
+      console.error('[fetch-bitbucket-repos] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching Bitbucket repositories.' });
+    }
+  });
+
+  // 4. Fetch Bitbucket Pull Requests
+  app.all(["/api/functions/fetch-bitbucket-prs", "/functions/v1/fetch-bitbucket-prs"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'bitbucket');
+      if (!auth) return;
+
+      const repoFullName = req.body?.repoFullName || req.query?.repoFullName;
+      if (!repoFullName) return res.status(400).json({ error: 'Missing repoFullName parameter' });
+
+      const prsRes = await fetch(`https://api.bitbucket.org/2.0/repositories/${encodeURIComponent(String(repoFullName))}/pullrequests?state=OPEN&pagelen=30`, {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!prsRes.ok) {
+        if (prsRes.status === 401) return res.status(401).json({ error: 'Bitbucket connection expired. Please reconnect.' });
+        return res.status(prsRes.status).json({ error: 'Failed to fetch pull requests from Bitbucket.' });
+      }
+
+      const prsData = await prsRes.json();
+      const mappedPRs = (prsData.values || []).map((pr: any) => ({
+        id: pr.id,
+        number: pr.id,
+        title: pr.title,
+        description: pr.description || '',
+        state: pr.state?.toLowerCase() || 'open',
+        created_at: pr.created_on,
+        updated_at: pr.updated_on,
+        html_url: pr.links?.html?.href || '',
+        author: {
+          name: pr.author?.display_name || pr.author?.nickname || 'Unknown',
+          username: pr.author?.username || pr.author?.nickname || 'unknown',
+          avatar_url: pr.author?.links?.avatar?.href || '',
+        },
+        source_branch: pr.source?.branch?.name || '',
+        target_branch: pr.destination?.branch?.name || '',
+        sha: pr.source?.commit?.hash || '',
+      }));
+
+      return res.json(mappedPRs);
+    } catch (err: any) {
+      console.error('[fetch-bitbucket-prs] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching Bitbucket pull requests.' });
+    }
+  });
+
+  // 5. Fetch Azure DevOps Repositories
+  app.all(["/api/functions/fetch-azure-repos", "/functions/v1/fetch-azure-repos"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'azure');
+      if (!auth) return;
+
+      // 1. Get Accounts / Organizations for user
+      let orgNames: string[] = [];
+      try {
+        const admin = getSupabaseAdmin()!;
+        const { data: conn } = await admin
+          .from('oauth_connections')
+          .select('provider_user_id')
+          .eq('user_id', auth.user.id)
+          .eq('provider', 'azure')
+          .single();
+
+        const orgsRes = await fetch('https://app.vssps.visualstudio.com/_apis/accounts?memberId=' + (conn?.provider_user_id || '') + '&api-version=6.0', {
+          headers: {
+            'Authorization': `Bearer ${auth.accessToken}`,
+            'Accept': 'application/json',
+            'User-Agent': 'CodeVibe-Applet'
+          }
+        });
+        if (orgsRes.ok) {
+          const orgsData = await orgsRes.json();
+          orgNames = (orgsData.value || []).map((o: any) => o.accountName);
+        }
+      } catch {}
+
+      if (orgNames.length === 0) {
+        const orgEnv = process.env.AZURE_DEVOPS_ORG;
+        if (orgEnv) orgNames = [orgEnv];
+      }
+
+      if (orgNames.length === 0) {
+        return res.json([]);
+      }
+
+      const allRepos: any[] = [];
+      for (const org of orgNames) {
+        try {
+          const reposRes = await fetch(`https://dev.azure.com/${org}/_apis/git/repositories?api-version=6.0`, {
+            headers: {
+              'Authorization': `Bearer ${auth.accessToken}`,
+              'Accept': 'application/json',
+              'User-Agent': 'CodeVibe-Applet'
+            }
+          });
+          if (reposRes.ok) {
+            const reposData = await reposRes.json();
+            for (const r of (reposData.value || [])) {
+              allRepos.push({
+                id: r.id,
+                name: r.name,
+                full_name: `${org}/${r.project?.name}/${r.name}`,
+                organization: org,
+                project_name: r.project?.name || '',
+                project_id: r.project?.id || '',
+                description: r.project?.description || '',
+                default_branch: r.defaultBranch?.replace('refs/heads/', '') || 'main',
+                web_url: r.webUrl || r.remoteUrl,
+                size: r.size || 0,
+                is_disabled: Boolean(r.isDisabled),
+              });
+            }
+          }
+        } catch {}
+      }
+
+      return res.json(allRepos);
+    } catch (err: any) {
+      console.error('[fetch-azure-repos] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching Azure DevOps repositories.' });
+    }
+  });
+
+  // 6. Fetch Azure DevOps Pull Requests
+  app.all(["/api/functions/fetch-azure-prs", "/functions/v1/fetch-azure-prs"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'azure');
+      if (!auth) return;
+
+      const { organization, project, repositoryId } = req.body || req.query || {};
+      if (!organization || !repositoryId) {
+        return res.status(400).json({ error: 'Missing organization or repositoryId parameter' });
+      }
+
+      const prsUrl = `https://dev.azure.com/${organization}/${project ? project + '/' : ''}_apis/git/repositories/${repositoryId}/pullrequests?searchCriteria.status=active&api-version=6.0`;
+      const prsRes = await fetch(prsUrl, {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!prsRes.ok) {
+        if (prsRes.status === 401) return res.status(401).json({ error: 'Azure DevOps connection expired. Please reconnect.' });
+        return res.status(prsRes.status).json({ error: 'Failed to fetch pull requests from Azure DevOps.' });
+      }
+
+      const prsData = await prsRes.json();
+      const mappedPRs = (prsData.value || []).map((pr: any) => ({
+        id: String(pr.pullRequestId),
+        pullRequestId: pr.pullRequestId,
+        title: pr.title,
+        description: pr.description || '',
+        status: pr.status?.toLowerCase() || 'active',
+        created_at: pr.creationDate,
+        author: {
+          displayName: pr.createdBy?.displayName || 'Unknown',
+          uniqueName: pr.createdBy?.uniqueName || 'unknown',
+          imageUrl: pr.createdBy?._links?.avatar?.href || '',
+        },
+        sourceRefName: pr.sourceRefName?.replace('refs/heads/', '') || '',
+        targetRefName: pr.targetRefName?.replace('refs/heads/', '') || '',
+        mergeStatus: pr.mergeStatus,
+        lastMergeCommit: pr.lastMergeCommit?.commitId || '',
+      }));
+
+      return res.json(mappedPRs);
+    } catch (err: any) {
+      console.error('[fetch-azure-prs] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching Azure DevOps pull requests.' });
+    }
+  });
+
+  // 7. Fetch GitHub Repositories
+  app.all(["/api/functions/fetch-github-repositories", "/functions/v1/fetch-github-repositories"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'github');
+      if (!auth) return;
+
+      const ghRes = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100&affiliation=owner,collaborator,organization_member', {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!ghRes.ok) {
+        if (ghRes.status === 401) return res.status(401).json({ error: 'GitHub connection expired. Please reconnect.' });
+        return res.status(ghRes.status).json({ error: 'Failed to fetch repositories from GitHub.' });
+      }
+
+      const repos = await ghRes.json();
+      return res.json(repos);
+    } catch (err: any) {
+      console.error('[fetch-github-repositories] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching GitHub repositories.' });
+    }
+  });
+
+  // 8. Fetch GitHub Pull Requests
+  app.all(["/api/functions/fetch-github-pull-requests", "/functions/v1/fetch-github-pull-requests"], async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+
+    try {
+      const auth = await handleAuthAndConnection(req, res, 'github');
+      if (!auth) return;
+
+      const { owner, repo } = req.body || req.query || {};
+      if (!owner || !repo) return res.status(400).json({ error: 'Missing owner or repo parameter' });
+
+      const prsRes = await fetch(`https://api.github.com/repos/${encodeURIComponent(String(owner))}/${encodeURIComponent(String(repo))}/pulls?state=open&per_page=30`, {
+        headers: {
+          'Authorization': `Bearer ${auth.accessToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'CodeVibe-Applet'
+        }
+      });
+
+      if (!prsRes.ok) {
+        if (prsRes.status === 401) return res.status(401).json({ error: 'GitHub connection expired. Please reconnect.' });
+        return res.status(prsRes.status).json({ error: 'Failed to fetch pull requests from GitHub.' });
+      }
+
+      const prs = await prsRes.json();
+      return res.json(prs);
+    } catch (err: any) {
+      console.error('[fetch-github-pull-requests] error:', err);
+      return res.status(500).json({ error: 'Internal server error while fetching GitHub pull requests.' });
     }
   });
 

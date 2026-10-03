@@ -107,6 +107,7 @@ export function GithubWorkflow({
 
       try {
         window.sessionStorage?.setItem('cody_oauth_flow_provider', 'github');
+        window.localStorage?.setItem('cody_oauth_flow_provider', 'github');
       } catch {}
 
       const { data, error } = await supabase.auth.linkIdentity({
