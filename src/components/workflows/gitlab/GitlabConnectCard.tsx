@@ -40,6 +40,9 @@ export function GitlabConnectCard({
         options: {
           redirectTo: redirectUrl.toString(),
           scopes: 'read_user read_api read_repository',
+          queryParams: {
+            scope: 'read_user read_api read_repository',
+          },
           skipBrowserRedirect: true,
         },
       });

@@ -634,7 +634,7 @@ export function useAuth() {
 
         // Store provider token in background without blocking the UI
         if (session.provider_token) {
-          storeProviderTokenInBackground(session);
+          storeProviderTokenInBackground(session, flowProvider || undefined);
         }
 
         // Authoritative user identity refresh using getUserIdentities():

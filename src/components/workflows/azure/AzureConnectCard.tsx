@@ -33,6 +33,9 @@ export function AzureConnectCard({
         options: {
           redirectTo: redirectUrl.toString(),
           scopes: '499b84de-3a79-4731-8f21-7e9b08479570/vso.code offline_access',
+          queryParams: {
+            scope: '499b84de-3a79-4731-8f21-7e9b08479570/vso.code offline_access',
+          },
           skipBrowserRedirect: true,
         },
       });

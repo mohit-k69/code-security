@@ -33,6 +33,9 @@ export function BitbucketConnectCard({
         options: {
           redirectTo: redirectUrl.toString(),
           scopes: 'account repository pullrequest',
+          queryParams: {
+            scope: 'account repository pullrequest',
+          },
           skipBrowserRedirect: true,
         },
       });

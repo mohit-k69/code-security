@@ -101,7 +101,8 @@ export default function App() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const workflow = urlParams.get('workflow') || hashParams.get('workflow');
     const sessionFlow = window.sessionStorage?.getItem('cody_oauth_flow_provider');
-    const targetWorkflow = (workflow || sessionFlow)?.toLowerCase();
+    const localFlow = window.localStorage?.getItem('cody_oauth_flow_provider');
+    const targetWorkflow = (workflow || sessionFlow || localFlow)?.toLowerCase();
 
     if (targetWorkflow === 'github' || urlParams.get('workflow') === 'github') {
       setActiveWorkflow('github');
