@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { type User } from './useAuth';
 import { trackEvent } from '../lib/posthog';
@@ -30,6 +30,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const [githubConnectionStatus, setGithubConnectionStatus] = useState<GithubConnectionStatus>('checking');
   const [githubUsername, setGithubUsername] = useState<string | null>(user?.githubUsername || null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const connectionInstanceRef = useRef(0);
 
   const checkConnection = useCallback(async () => {
     if (!user?.id) {
@@ -37,11 +38,14 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       return;
     }
     
+    const currentInstance = connectionInstanceRef.current;
     setGithubConnectionStatus('checking');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-         setGithubConnectionStatus('disconnected');
+         if (connectionInstanceRef.current === currentInstance) {
+           setGithubConnectionStatus('disconnected');
+         }
          return;
       }
       
@@ -49,12 +53,14 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
          headers: { Authorization: `Bearer ${session.access_token}` }
       });
       
+      if (connectionInstanceRef.current !== currentInstance) return;
       if (error) throw error;
       setGithubConnectionStatus(data.status || 'disconnected');
       if (data.username) {
         setGithubUsername(data.username);
       }
     } catch (err) {
+      if (connectionInstanceRef.current !== currentInstance) return;
       console.warn('Failed to check github connection:', err);
       setGithubConnectionStatus('disconnected');
     }
@@ -67,6 +73,15 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const disconnectGithub = useCallback(async () => {
     if (isDisconnecting) return;
     setIsDisconnecting(true);
+    connectionInstanceRef.current += 1;
+    
+    // Optimistic UI update
+    setGithubConnectionStatus('disconnected');
+    setGithubRepos([]);
+    setGithubUsername(null);
+    setSelectedRepoId(null);
+    setGithubReposError('');
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -77,14 +92,10 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       
       if (error) throw error;
       
-      setGithubConnectionStatus('disconnected');
-      setGithubUsername(null);
-      setGithubRepos([]);
-      setSelectedRepoId(null);
-      setGithubReposError('');
       trackEvent('github_disconnected');
     } catch (err) {
       console.error('Failed to disconnect github:', err);
+      // Optional: rollback optimistic UI if you want, or just leave it disconnected
     } finally {
       setIsDisconnecting(false);
     }
@@ -93,6 +104,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const fetchGithubRepositories = useCallback(async () => {
     if (githubConnectionStatus === 'disconnected' || githubConnectionStatus === 'expired') return;
 
+    const currentInstance = connectionInstanceRef.current;
     setIsFetchingRepos(true);
     setGithubReposError('');
     console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_START', {
@@ -109,6 +121,9 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       const { data, error } = await supabase.functions.invoke('fetch-github-repositories', {
         headers
       });
+      
+      if (connectionInstanceRef.current !== currentInstance) return;
+
       console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_RESULT', {
         success: !error && !data?.error,
         count: Array.isArray(data) ? data.length : undefined,
@@ -137,13 +152,16 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       setGithubReposError('');
       window.dispatchEvent(new CustomEvent('codevibe_github_repos_loaded'));
     } catch (err: any) {
+      if (connectionInstanceRef.current !== currentInstance) return;
       const msg = err.message || 'Failed to fetch repositories.';
       setGithubReposError(msg);
       if (msg.includes('expired')) {
          setGithubConnectionStatus('expired');
       }
     } finally {
-      setIsFetchingRepos(false);
+      if (connectionInstanceRef.current === currentInstance) {
+        setIsFetchingRepos(false);
+      }
     }
   }, [githubConnectionStatus]);
 

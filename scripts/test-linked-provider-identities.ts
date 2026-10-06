@@ -57,8 +57,8 @@ async function runAllTests() {
     // D & E: getUserIdentities returns GitHub identity and isGithubLinked becomes true
     assert(useAuthCode.includes("isGithubLinked: freshLinked.isGithubLinked || prev.isGithubLinked"), 'authoritative sync sets isGithubLinked');
     // F: GitHub workflow loads repositories
-    assert(useGithubCode.includes("const isGithubConnected = Boolean(user?.isGithubLinked)"), 'useGithub derives isGithubConnected from isGithubLinked');
-    assert(useGithubCode.includes("if (activeWorkflow === 'github' && isGithubConnected)"), 'useGithub triggers repository fetching when isGithubConnected is true');
+    assert(useGithubCode.includes("const isGithubConnected = githubConnectionStatus === 'connected'"), 'useGithub derives isGithubConnected from githubConnectionStatus');
+    assert(useGithubCode.includes("if (activeWorkflow === 'github' && githubConnectionStatus === 'connected')"), 'useGithub triggers repository fetching when githubConnectionStatus is connected');
     assert(githubWorkflowCode.includes("!isGithubConnected ?"), 'GithubWorkflow renders ConnectionError only when isGithubConnected is false');
   });
 

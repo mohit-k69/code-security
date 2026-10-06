@@ -61,7 +61,7 @@ export function ConnectionError({ githubReposError, handleConnectGithub, linkErr
           {isConnecting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Connecting...</span>
+              <span>Connecting to GitHub...</span>
             </>
           ) : (
             'Connect GitHub'
