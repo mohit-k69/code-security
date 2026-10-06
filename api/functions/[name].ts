@@ -748,6 +748,46 @@ async function handleDisconnectGithub(req: any, res: any, admin: any) {
   if (!auth) return;
   const { user } = auth;
 
+  // Retrieve the access token before deleting
+  const { data: connection } = await (admin as any)
+    .from("oauth_connections")
+    .select("access_token")
+    .eq("user_id", user.id)
+    .eq("provider", "github")
+    .single();
+
+  if (connection && connection.access_token) {
+    const clientId = process.env.GITHUB_INTEGRATION_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_INTEGRATION_CLIENT_SECRET;
+    
+    if (clientId && clientSecret) {
+      try {
+        const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+        const revokeRes = await fetch(`https://api.github.com/applications/${clientId}/grant`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'CodeVibe-Vercel-Function'
+          },
+          body: JSON.stringify({ access_token: connection.access_token })
+        });
+        
+        // ONLY 204 No Content means successfully revoked.
+        if (revokeRes.status !== 204) {
+          console.error('[disconnect-github] GitHub revocation failed with status:', revokeRes.status);
+          return sendJson(res, 502, { error: 'Failed to revoke GitHub authorization. Please try again.' });
+        }
+      } catch (err: any) {
+        console.error('[disconnect-github] GitHub revocation request error:', err.message);
+        return sendJson(res, 500, { error: 'Internal error while revoking GitHub authorization.' });
+      }
+    } else {
+      console.warn('[disconnect-github] Missing GitHub Client ID/Secret. Skipping revocation.');
+    }
+  }
+
   const { error: deleteError } = await (admin as any)
     .from("oauth_connections")
     .delete()
@@ -757,6 +797,17 @@ async function handleDisconnectGithub(req: any, res: any, admin: any) {
   if (deleteError) {
     console.error("[disconnect-github] Delete failed:", deleteError.message);
     return sendJson(res, 500, { error: "Failed to disconnect GitHub" });
+  }
+
+  // Attempt to unlink legacy Supabase identity
+  const { data: identities } = await (admin as any).auth.admin.getUserById(user.id);
+  const githubIdentity = identities?.user?.identities?.find((id: any) => id.provider === 'github');
+  if (githubIdentity) {
+    try {
+      await (admin as any).auth.admin.unlinkIdentity(user.id, githubIdentity);
+    } catch (e: any) {
+      console.warn('[disconnect-github] Failed to unlink legacy github identity:', e.message);
+    }
   }
 
   return sendJson(res, 200, { success: true });

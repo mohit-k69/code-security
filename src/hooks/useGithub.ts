@@ -73,29 +73,39 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const disconnectGithub = useCallback(async () => {
     if (isDisconnecting) return;
     setIsDisconnecting(true);
-    connectionInstanceRef.current += 1;
-    
-    // Optimistic UI update
-    setGithubConnectionStatus('disconnected');
-    setGithubRepos([]);
-    setGithubUsername(null);
-    setSelectedRepoId(null);
-    setGithubReposError('');
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const { error } = await supabase.functions.invoke('disconnect-github', {
-        headers: { Authorization: `Bearer ${session.access_token}` }
+      const res = await fetch('/api/functions/disconnect-github', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (error) throw error;
+      if (!res.ok) {
+        let errorMsg = 'Failed to disconnect github.';
+        try {
+          const body = await res.json();
+          if (body.error) errorMsg = body.error;
+        } catch {}
+        throw new Error(errorMsg);
+      }
+      
+      // Successfully disconnected on the server. Now update the UI and invalidate stale requests.
+      connectionInstanceRef.current += 1;
+      setGithubConnectionStatus('disconnected');
+      setGithubRepos([]);
+      setGithubUsername(null);
+      setSelectedRepoId(null);
+      setGithubReposError('');
       
       trackEvent('github_disconnected');
     } catch (err) {
       console.error('Failed to disconnect github:', err);
-      // Optional: rollback optimistic UI if you want, or just leave it disconnected
     } finally {
       setIsDisconnecting(false);
     }

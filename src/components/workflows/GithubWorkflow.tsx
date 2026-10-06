@@ -239,7 +239,7 @@ export function GithubWorkflow({
         setViewStyle={setViewStyle}
         onRefresh={fetchGithubRepositories}
         isAnalysisMode={selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict)}
-        githubUsername={githubUsername || user?.githubUsername}
+        githubUsername={githubUsername}
         showSwitchAccount={Boolean(isGithubConnected && user?.authProvider !== 'github')}
         onSwitchAccount={handleConnectGithub}
         isConnectingGithub={isConnectingGithub}
