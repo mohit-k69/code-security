@@ -16,6 +16,8 @@ interface GithubHeaderProps {
   showSwitchAccount?: boolean;
   onSwitchAccount?: () => void;
   isConnectingGithub?: boolean;
+  disconnectGithub?: () => void;
+  isDisconnecting?: boolean;
 }
 
 export function GithubHeader({
@@ -31,7 +33,9 @@ export function GithubHeader({
   githubUsername,
   showSwitchAccount = false,
   onSwitchAccount,
-  isConnectingGithub = false
+  isConnectingGithub = false,
+  disconnectGithub,
+  isDisconnecting = false
 }: GithubHeaderProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +137,21 @@ export function GithubHeader({
                     <ArrowLeftRight className="w-3.5 h-3.5 text-gray-500" />
                     <span className="hidden sm:inline">Switch GitHub Account</span>
                     <span className="sm:hidden">Switch</span>
+                  </motion.button>
+                )}
+                {disconnectGithub && githubUsername && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={disconnectGithub}
+                    disabled={isDisconnecting || isConnectingGithub}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 text-[13px] font-medium transition-colors shadow-xs h-9 disabled:opacity-50"
+                    title="Disconnect GitHub"
+                  >
+                    <span className="hidden sm:inline">{isDisconnecting ? 'Disconnecting...' : 'Disconnect'}</span>
+                    <span className="sm:hidden">{isDisconnecting ? '...' : 'Disconnect'}</span>
                   </motion.button>
                 )}
                 <motion.button

@@ -20,6 +20,9 @@ interface GithubWorkflowProps {
   githubReposError: string;
   githubConnectionStatus?: GithubConnectionStatus;
   isGithubConnected?: boolean;
+  githubUsername?: string | null;
+  disconnectGithub?: () => void;
+  isDisconnecting?: boolean;
   fetchGithubRepositories: () => void;
   githubSearchQuery: string;
   setGithubSearchQuery: (query: string) => void;
@@ -43,6 +46,9 @@ export function GithubWorkflow({
   githubReposError,
   githubConnectionStatus = 'disconnected',
   isGithubConnected = false,
+  githubUsername = null,
+  disconnectGithub,
+  isDisconnecting = false,
   fetchGithubRepositories,
   githubSearchQuery,
   setGithubSearchQuery,
@@ -233,10 +239,12 @@ export function GithubWorkflow({
         setViewStyle={setViewStyle}
         onRefresh={fetchGithubRepositories}
         isAnalysisMode={selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict)}
-        githubUsername={user?.githubUsername}
+        githubUsername={githubUsername || user?.githubUsername}
         showSwitchAccount={Boolean(isGithubConnected && user?.authProvider !== 'github')}
         onSwitchAccount={handleConnectGithub}
         isConnectingGithub={isConnectingGithub}
+        disconnectGithub={disconnectGithub}
+        isDisconnecting={isDisconnecting}
       />
       
       <div className={`flex-1 flex flex-col ${selectedRepoId !== null ? 'max-w-full' : 'max-w-6xl'} mx-auto w-full pt-4 h-[calc(100vh-200px)]`}>

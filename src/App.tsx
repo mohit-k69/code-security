@@ -91,6 +91,9 @@ export default function App() {
     fetchGithubRepositories,
     githubConnectionStatus,
     isGithubConnected,
+    githubUsername,
+    disconnectGithub,
+    isDisconnecting,
     clearGithubSelection,
     clearGithubCache
   } = useGithub(activeWorkflow, user);
@@ -574,7 +577,7 @@ export default function App() {
                             {activeWorkflow === 'sync' && (
                               <SyncCodeWorkflow 
                                 setActiveWorkflow={setActiveWorkflow}
-                                isGithubConnected={isGithubConnected}
+                                githubConnectionStatus={githubConnectionStatus}
                                 isGitlabConnected={Boolean(user?.isGitlabLinked)}
                                 isBitbucketConnected={Boolean(user?.isBitbucketLinked)}
                                 isAzureConnected={Boolean(user?.isAzureLinked)}
@@ -624,17 +627,20 @@ export default function App() {
                             )}
 
                             {activeWorkflow === 'github' && (
-                              <GithubWorkflow 
-                                user={user}
-                                setActiveWorkflow={(wf) => {
-                                  clearGithubSelection();
-                                  setActiveWorkflow('sync');
-                                }}
-                                isFetchingRepos={isFetchingRepos}
-                                githubReposError={githubReposError}
-                                githubConnectionStatus={githubConnectionStatus}
-                                isGithubConnected={isGithubConnected}
-                                fetchGithubRepositories={fetchGithubRepositories}
+                                <GithubWorkflow 
+                                  user={user}
+                                  setActiveWorkflow={(wf) => {
+                                    clearGithubSelection();
+                                    setActiveWorkflow('sync');
+                                  }}
+                                  isFetchingRepos={isFetchingRepos}
+                                  githubReposError={githubReposError}
+                                  githubConnectionStatus={githubConnectionStatus}
+                                  isGithubConnected={isGithubConnected}
+                                  githubUsername={githubUsername}
+                                  disconnectGithub={disconnectGithub}
+                                  isDisconnecting={isDisconnecting}
+                                  fetchGithubRepositories={fetchGithubRepositories}
                                 githubSearchQuery={githubSearchQuery}
                                 setGithubSearchQuery={setGithubSearchQuery}
                                 githubRepos={githubRepos}
