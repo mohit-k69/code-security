@@ -71,7 +71,7 @@ export default async function handler(req: any, res: any) {
         provider: "github",
         expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 mins
       })
-      .select("state")
+      .select("id")
       .single();
 
     if (dbError || !stateRecord) {
@@ -79,7 +79,7 @@ export default async function handler(req: any, res: any) {
       return sendJson(res, 500, { error: "Failed to initialize OAuth flow" });
     }
 
-    const state = stateRecord.state;
+    const state = stateRecord.id;
     // We assume Vercel routes or production URL is configured, but redirect_uri is optional if configured properly in GitHub App.
     // If not, we might need process.env.PUBLIC_SITE_URL. We'll let GitHub use the registered callback.
     const githubAuthUrl = new URL("https://github.com/login/oauth/authorize");
