@@ -99,10 +99,39 @@ export default function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    
+    // Only use localStorage/sessionStorage intents if we are actually returning from an OAuth flow
+    const hasCallbackParams = 
+      urlParams.has('code') || 
+      hashParams.has('access_token') || 
+      hashParams.has('provider_token') ||
+      urlParams.has('workflow') || 
+      hashParams.has('workflow');
+
     const workflow = urlParams.get('workflow') || hashParams.get('workflow');
-    const sessionFlow = window.sessionStorage?.getItem('cody_oauth_flow_provider');
-    const localFlow = window.localStorage?.getItem('cody_oauth_flow_provider');
-    const targetWorkflow = (workflow || sessionFlow || localFlow)?.toLowerCase();
+    
+    let sessionFlow = null;
+    let localFlow = null;
+    
+    if (hasCallbackParams) {
+      sessionFlow = window.sessionStorage?.getItem('cody_oauth_flow_provider');
+      localFlow = window.localStorage?.getItem('cody_oauth_flow_provider');
+    }
+    
+    // Clear the intent immediately so it doesn't survive across unrelated future logins
+    try {
+      window.sessionStorage?.removeItem('cody_oauth_flow_provider');
+      window.localStorage?.removeItem('cody_oauth_flow_provider');
+    } catch {}
+
+    let targetWorkflow = (workflow || sessionFlow || localFlow)?.toLowerCase();
+
+    // The new GitHub integration explicitly passes ?workflow=github in the URL.
+    // If we only have 'github' from a stale storage intent, ignore it to prevent 
+    // fresh Google logins from inappropriately landing in the GitHub workflow.
+    if (!workflow && (sessionFlow === 'github' || localFlow === 'github')) {
+      targetWorkflow = null;
+    }
 
     if (targetWorkflow === 'github' || urlParams.get('workflow') === 'github') {
       setActiveWorkflow('github');

@@ -38,42 +38,60 @@ export function isOAuthUser(user: any, identities: any[] = []): boolean {
   return false;
 }
 
+let initialSessionFlow: string | null = null;
+let initialLocalFlow: string | null = null;
+try {
+  initialSessionFlow = window.sessionStorage?.getItem('cody_oauth_flow_provider') || null;
+  initialLocalFlow = window.localStorage?.getItem('cody_oauth_flow_provider') || null;
+} catch {}
+
 // Helper to resolve the OAuth provider from the explicit flow context (URL or session/local storage tracking)
-// NOTE: Strictly avoids inferring from primary Supabase auth metadata and NEVER silently falls back to 'github'
+// NOTE: Strictly avoids inferring from primary Supabase auth metadata and NEVER silently falls back!
 export function resolveFlowProvider(
   explicitProvider?: string | null
 ): 'github' | 'gitlab' | 'bitbucket' | 'azure' | null {
-  const validProviders: Array<'github' | 'gitlab' | 'bitbucket' | 'azure'> = [
-    'github',
+  const validProviders: Array<'gitlab' | 'bitbucket' | 'azure'> = [
     'gitlab',
     'bitbucket',
     'azure'
   ];
 
-  if (explicitProvider && validProviders.includes(explicitProvider.toLowerCase() as any)) {
-    return explicitProvider.toLowerCase() as any;
+  if (explicitProvider) {
+    const ep = explicitProvider.toLowerCase();
+    if (ep === 'github' || validProviders.includes(ep as any)) {
+      return ep as any;
+    }
   }
 
   try {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const workflow = searchParams.get('workflow') || hashParams.get('workflow');
+    
+    // Only use stored intents if we are actually processing an OAuth callback
+    const hasCallbackParams = 
+      searchParams.has('code') || 
+      hashParams.has('access_token') || 
+      hashParams.has('provider_token');
+
     if (workflow && validProviders.includes(workflow.toLowerCase() as any)) {
       return workflow.toLowerCase() as any;
     }
 
-    const sessionStored = window.sessionStorage?.getItem('cody_oauth_flow_provider');
-    if (sessionStored && validProviders.includes(sessionStored.toLowerCase() as any)) {
-      return sessionStored.toLowerCase() as any;
-    }
+    if (hasCallbackParams) {
+      const sessionStored = window.sessionStorage?.getItem('cody_oauth_flow_provider') || initialSessionFlow;
+      if (sessionStored && validProviders.includes(sessionStored.toLowerCase() as any)) {
+        return sessionStored.toLowerCase() as any;
+      }
 
-    const localStored = window.localStorage?.getItem('cody_oauth_flow_provider');
-    if (localStored && validProviders.includes(localStored.toLowerCase() as any)) {
-      return localStored.toLowerCase() as any;
+      const localStored = window.localStorage?.getItem('cody_oauth_flow_provider') || initialLocalFlow;
+      if (localStored && validProviders.includes(localStored.toLowerCase() as any)) {
+        return localStored.toLowerCase() as any;
+      }
     }
   } catch {}
 
-  // CRITICAL: NEVER silently fall back to 'github'!
+  // CRITICAL: NEVER silently fall back!
   // A missing provider context must return null to prevent token misattribution.
   return null;
 }
@@ -95,12 +113,15 @@ export function cleanOAuthCallbackUrl(workflowOverride?: string | null): void {
 
     if (!hasCallbackParams) return;
 
-    const targetWorkflow =
-      workflowOverride ||
-      searchParams.get('workflow') ||
-      hashParams.get('workflow') ||
-      window.sessionStorage?.getItem('cody_oauth_flow_provider') ||
-      window.localStorage?.getItem('cody_oauth_flow_provider');
+    let targetWorkflow = workflowOverride || searchParams.get('workflow') || hashParams.get('workflow');
+    
+    // Only fallback to storage for providers that still use the legacy flow
+    if (!targetWorkflow) {
+      const stored = window.sessionStorage?.getItem('cody_oauth_flow_provider') || window.localStorage?.getItem('cody_oauth_flow_provider');
+      if (stored && ['gitlab', 'bitbucket', 'azure'].includes(stored.toLowerCase())) {
+        targetWorkflow = stored;
+      }
+    }
 
     const cleanSearch = (targetWorkflow && ['github', 'gitlab', 'bitbucket', 'azure'].includes(targetWorkflow.toLowerCase()))
       ? `?workflow=${targetWorkflow.toLowerCase()}`
