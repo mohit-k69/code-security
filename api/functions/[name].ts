@@ -707,6 +707,61 @@ async function handleFetchAzurePrs(req: any, res: any, admin: any) {
   return sendJson(res, 200, mappedPRs);
 }
 
+async function handleCheckGithubConnection(req: any, res: any, admin: any) {
+  const auth = await authenticateRequest(req, res, admin);
+  if (!auth) return;
+  const { user } = auth;
+
+  const { data: connection, error: dbError } = await (admin as any)
+    .from("oauth_connections")
+    .select("access_token")
+    .eq("user_id", user.id)
+    .eq("provider", "github")
+    .single();
+
+  if (dbError || !connection || !(connection as any).access_token) {
+    return sendJson(res, 200, { status: "disconnected" });
+  }
+
+  const githubToken = (connection as any).access_token;
+  const githubRes = await fetch("https://api.github.com/user", {
+    headers: {
+      Authorization: `Bearer ${githubToken}`,
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "CodeVibe-Vercel-Function",
+    },
+  });
+
+  if (!githubRes.ok) {
+    if (githubRes.status === 401) {
+      return sendJson(res, 200, { status: "expired" });
+    }
+    return sendJson(res, 200, { status: "error" });
+  }
+
+  const githubUser = await githubRes.json();
+  return sendJson(res, 200, { status: "connected", username: githubUser.login });
+}
+
+async function handleDisconnectGithub(req: any, res: any, admin: any) {
+  const auth = await authenticateRequest(req, res, admin);
+  if (!auth) return;
+  const { user } = auth;
+
+  const { error: deleteError } = await (admin as any)
+    .from("oauth_connections")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("provider", "github");
+
+  if (deleteError) {
+    console.error("[disconnect-github] Delete failed:", deleteError.message);
+    return sendJson(res, 500, { error: "Failed to disconnect GitHub" });
+  }
+
+  return sendJson(res, 200, { success: true });
+}
+
 // -----------------------------------------------------------------------------
 // Dynamic Dispatcher Router
 // -----------------------------------------------------------------------------
@@ -761,6 +816,12 @@ export default async function handler(req: any, res: any) {
 
       case "fetch-azure-prs":
         return await handleFetchAzurePrs(req, res, admin);
+
+      case "check-github-connection":
+        return await handleCheckGithubConnection(req, res, admin);
+
+      case "disconnect-github":
+        return await handleDisconnectGithub(req, res, admin);
 
       default:
         console.warn(`[api/functions] Unknown operation requested: "${operation}"`);
