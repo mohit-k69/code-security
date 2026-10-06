@@ -84,64 +84,46 @@ export function GithubWorkflow({
     setIsConnectingGithub(true);
     setLinkError('');
     try {
-      console.log('[GITHUB_OAUTH] BUTTON_CLICKED');
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUser = userData?.user;
-      console.log('[GITHUB_OAUTH] CURRENT_USER', {
-        id: currentUser?.id,
-        email: currentUser?.email,
-        identities: currentUser?.identities,
-        app_metadata: currentUser?.app_metadata
-      });
-
-      const redirectUrl = new URL(window.location.origin);
-      redirectUrl.pathname = window.location.pathname;
-      redirectUrl.searchParams.set('workflow', 'github');
-
-      console.log('[GITHUB_OAUTH] LINK_IDENTITY_START', {
-        provider: 'github',
-        redirectTo: redirectUrl.toString(),
-        scopes: 'repo read:user user:email',
-        queryParams: { prompt: 'select_account' }
-      });
-
-      try {
-        window.sessionStorage?.setItem('cody_oauth_flow_provider', 'github');
-        window.localStorage?.setItem('cody_oauth_flow_provider', 'github');
-      } catch {}
-
-      const { data, error } = await supabase.auth.linkIdentity({
-        provider: 'github',
-        options: {
-          redirectTo: redirectUrl.toString(),
-          scopes: 'repo read:user user:email',
-          skipBrowserRedirect: true,
-          queryParams: {
-            prompt: 'select_account'
-          }
-        }
-      });
-      console.log('[GITHUB_OAUTH] LINK_IDENTITY_RESULT', { data, error });
-
-      if (error) {
+      console.log('[GITHUB_OAUTH] BUTTON_CLICKED (Custom Integration Flow)');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setLinkError('You must be logged in to connect GitHub.');
         setIsConnectingGithub(false);
-        if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
-          setLinkError('This GitHub account is already connected to another Cody account. Please disconnect it from the other account or use a different GitHub account.');
-        } else {
-          setLinkError(error.message || 'Failed to connect GitHub. Please try again.');
-        }
         return;
       }
-      if (data?.url) {
-        console.log('[GITHUB_OAUTH] OAUTH_REDIRECT_URL', data.url);
+
+      const res = await fetch('/api/auth/github/init', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) {
+        let errorMsg = 'Failed to initiate GitHub connection.';
+        try {
+          const body = await res.json();
+          if (body.error) errorMsg = body.error;
+        } catch {}
+        setLinkError(errorMsg);
+        setIsConnectingGithub(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        console.log('[GITHUB_OAUTH] INTEGRATION_REDIRECT_URL', data.url);
         window.location.assign(data.url);
       } else {
+        setLinkError('Invalid response from server.');
         setIsConnectingGithub(false);
       }
     } catch (err: any) {
-      console.error('[GITHUB_OAUTH] LINK_IDENTITY_ERROR', err);
+      console.error('[GITHUB_OAUTH] Error:', err);
       setIsConnectingGithub(false);
-      setLinkError('An unexpected error occurred while connecting GitHub.');
+      setLinkError(err.message || 'An unexpected error occurred.');
     }
   };
 

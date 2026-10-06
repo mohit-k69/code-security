@@ -35,42 +35,6 @@ export function SyncCodeWorkflow({
       icon: <Github className="w-6 h-6 text-gray-900" />,
       badge: isGithubConnected ? 'Connected' : 'Available',
     },
-    {
-      id: 'gitlab',
-      name: 'GitLab',
-      description: 'GitLab projects and merge request inspection',
-      isAvailable: true,
-      icon: (
-        <svg className="w-6 h-6 text-[#E24329]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.65 14.39L20.6 8.08c-.14-.42-.5-.73-.94-.78-.44-.06-.88.13-1.12.49L16.2 11.4 12 5.09a1.002 1.002 0 00-1.7 0L6.1 11.4 3.76 7.79c-.24-.36-.68-.55-1.12-.49-.44.05-.8.36-.94.78L-.35 14.39c-.19.58-.02 1.22.43 1.63l11.45 8.35c.28.2.65.2.94 0l11.45-8.35c.45-.41.62-1.05.43-1.63z" />
-        </svg>
-      ),
-      badge: isGitlabConnected ? 'Connected' : 'Available',
-    },
-    {
-      id: 'bitbucket',
-      name: 'Bitbucket',
-      description: 'Bitbucket Cloud repositories and pull requests',
-      isAvailable: true,
-      icon: (
-        <svg className="w-6 h-6 text-[#0052CC]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M1.38 2.05a1.18 1.18 0 00-.97.59 1.16 1.16 0 00-.09 1.14l4.24 16.63c.12.48.56.81 1.05.81h12.78c.46 0 .87-.29 1.01-.73l4.28-16.71a1.16 1.16 0 00-.09-1.14 1.18 1.18 0 00-.97-.59H1.38zm12.35 13.56H9.37l-1.39-6.33h7.13l-1.38 6.33z" />
-        </svg>
-      ),
-      badge: isBitbucketConnected ? 'Connected' : 'Available',
-    },
-    {
-      id: 'azure',
-      name: 'Azure DevOps',
-      description: 'Azure Repos, branching policies and pull request reviews',
-      isAvailable: true,
-      icon: (
-        <svg className="w-6 h-6 text-[#0078D4]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.5 4.5L14.25.75v5.25L4.5 9v6l9.75 3v5.25l8.25-3.75V4.5zM14.25 15L6.75 12.38V10.5l7.5-2.62v7.12z" />
-        </svg>
-      ),
-      badge: isAzureConnected ? 'Connected' : 'Available',
-    },
   ];
 
   return (
