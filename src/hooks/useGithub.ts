@@ -49,12 +49,20 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
          return;
       }
       
-      const { data, error } = await supabase.functions.invoke('check-github-connection', {
-         headers: { Authorization: `Bearer ${session.access_token}` }
+      const res = await fetch('/api/functions/check-github-connection', {
+         method: 'POST',
+         headers: {
+           'Authorization': `Bearer ${session.access_token}`,
+           'Content-Type': 'application/json'
+         }
       });
       
       if (connectionInstanceRef.current !== currentInstance) return;
-      if (error) throw error;
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
       setGithubConnectionStatus(data.status || 'disconnected');
       if (data.username) {
         setGithubUsername(data.username);
@@ -128,30 +136,30 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
         ? { Authorization: `Bearer ${session.access_token}` }
         : undefined;
 
-      const { data, error } = await supabase.functions.invoke('fetch-github-repositories', {
-        headers
+      const res = await fetch('/api/functions/fetch-github-repositories', {
+        method: 'POST',
+        headers: headers ? { ...headers, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
       });
       
       if (connectionInstanceRef.current !== currentInstance) return;
-
-      console.log('[GITHUB_OAUTH] REPOSITORY_FETCH_RESULT', {
-        success: !error && !data?.error,
-        count: Array.isArray(data) ? data.length : undefined,
-        data,
-        error
-      });
-      if (error) {
-        let errorMsg = error.message;
-        if (error.context) {
-          try {
-            const body = await error.context.json();
-            if (body?.error) {
-              errorMsg = body.error;
-            }
-          } catch {}
+      
+      if (!res.ok) {
+        let errorMsg = `HTTP Error: ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body?.error) {
+            errorMsg = body.error;
+          }
+        } catch {}
+        
+        if (res.status === 401 || errorMsg.includes('expired')) {
+          setGithubConnectionStatus('expired');
         }
+        
         throw new Error(errorMsg);
       }
+      
+      const data = await res.json();
       if (data?.error) {
          if (data.error.includes('expired')) {
            setGithubConnectionStatus('expired');

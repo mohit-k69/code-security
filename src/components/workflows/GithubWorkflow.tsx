@@ -240,8 +240,6 @@ export function GithubWorkflow({
         onRefresh={fetchGithubRepositories}
         isAnalysisMode={selectedRepoId !== null || isAnalyzing || Boolean(analysisResult?.verdict)}
         githubUsername={githubUsername}
-        showSwitchAccount={Boolean(isGithubConnected && user?.authProvider !== 'github')}
-        onSwitchAccount={handleConnectGithub}
         isConnectingGithub={isConnectingGithub}
         disconnectGithub={disconnectGithub}
         isDisconnecting={isDisconnecting}
