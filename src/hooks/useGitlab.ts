@@ -81,12 +81,20 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
          return;
       }
       
-      const { data, error } = await supabase.functions.invoke('check-gitlab-connection', {
-         headers: { Authorization: `Bearer ${session.access_token}` }
+      const res = await fetch('/api/functions/check-gitlab-connection', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (connectionInstanceRef.current !== currentInstance) return;
-      if (error) throw error;
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
       setGitlabConnectionStatus(data.status || 'disconnected');
       if (data.username) {
         setGitlabUsername(data.username);
