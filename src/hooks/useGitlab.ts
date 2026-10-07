@@ -234,13 +234,13 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       setGitlabSearchQuery('');
       setGitlabProjectsError('');
       checkConnection();
-      if (activeWorkflow === 'gitlab') {
-        fetchGitlabProjects();
-      }
     };
     
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('gitlab_connected') === 'true') {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('gitlab_connected');
+      window.history.replaceState({}, '', newUrl.toString());
       handleConnected();
     }
     
@@ -248,7 +248,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     return () => {
       window.removeEventListener('codevibe_gitlab_connected', handleConnected);
     };
-  }, [activeWorkflow, checkConnection, fetchGitlabProjects]);
+  }, [checkConnection]);
 
   const clearGitlabSelection = useCallback(() => {
     setGitlabSearchQuery('');

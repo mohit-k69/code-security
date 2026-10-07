@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { Loader2 } from 'lucide-react';
 import { useGitlab, GitlabProject, GitlabMergeRequest } from '../../hooks/useGitlab';
 import { User } from '../../hooks/useAuth';
 import { GitlabHeader } from './gitlab/GitlabHeader';
@@ -54,6 +55,7 @@ export function GitlabWorkflow({
     selectMergeRequest,
     fetchGitlabProjects,
     isGitlabConnected,
+    gitlabConnectionStatus,
     clearGitlabSelection,
   } = useGitlab('gitlab', user);
 
@@ -186,7 +188,12 @@ export function GitlabWorkflow({
       )}
 
       {/* Flow View Switch */}
-      {!isGitlabConnected && gitlabProjects.length === 0 ? (
+      {gitlabConnectionStatus === 'checking' ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />
+          <p className="text-[14px]">Connecting to GitLab...</p>
+        </div>
+      ) : !isGitlabConnected && gitlabProjects.length === 0 ? (
         <GitlabConnectCard
           linkError={linkError}
           setLinkError={setLinkError}
