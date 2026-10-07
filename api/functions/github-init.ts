@@ -62,14 +62,39 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    // 1. Determine and validate the initiating origin
+    const originHeader = req.headers.origin || req.headers.referer || "";
+    let validatedOrigin = "https://code-security-review.vercel.app"; // Secure fallback
+
+    if (originHeader) {
+      try {
+        const url = new URL(originHeader);
+        const origin = url.origin;
+        
+        // Strict allowlist validation
+        const isLocal = origin === "http://localhost:5173" || origin === "http://localhost:4173";
+        const isProduction = origin === "https://code-security-review.vercel.app";
+        const isPreview = /^https:\/\/code-security[a-zA-Z0-9-]*\.vercel\.app$/.test(origin);
+        
+        if (isLocal || isProduction || isPreview) {
+          validatedOrigin = origin;
+        } else {
+          console.warn(`[github-init] Unapproved origin rejected: ${origin}`);
+        }
+      } catch (e) {
+        console.warn(`[github-init] Failed to parse origin: ${originHeader}`);
+      }
+    }
+
     // We rely on the gen_random_uuid() default in the database for the state
-    // We just insert the user_id and returning state to get the generated UUID
+    // We just insert the user_id, origin, and return state to get the generated UUID
     const { data: stateRecord, error: dbError } = await admin
       .from("oauth_states")
       .insert({
         user_id: user.id,
         provider: "github",
         expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 mins
+        origin: validatedOrigin
       })
       .select("id")
       .single();
