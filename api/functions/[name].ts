@@ -177,14 +177,14 @@ async function handleDisconnectGitlab(req: any, res: any, admin: any) {
         const revokeRes = await fetch('https://gitlab.com/oauth/revoke', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({
+          body: new URLSearchParams({
             client_id: clientId,
             client_secret: clientSecret,
             token: connection.access_token
-          })
+          }).toString()
         });
         
         if (!revokeRes.ok) {

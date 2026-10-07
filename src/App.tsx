@@ -9,6 +9,7 @@ import { useAuth } from './hooks/useAuth';
 import { useWorkflow } from './hooks/useWorkflow';
 import { useAnalysis } from './hooks/useAnalysis';
 import { useGithub } from './hooks/useGithub';
+import { useGitlab } from './hooks/useGitlab';
 
 // Core Layout & Home Components (Direct Imports)
 import { Sidebar } from './components/layout/Sidebar';
@@ -97,6 +98,11 @@ export default function App() {
     clearGithubSelection,
     clearGithubCache
   } = useGithub(activeWorkflow, user);
+
+  const {
+    gitlabConnectionStatus
+  } = useGitlab(activeWorkflow, user);
+
 
   // Automatically switch to the correct workflow if redirected back from OAuth Linking
   useEffect(() => {
@@ -578,7 +584,7 @@ export default function App() {
                               <SyncCodeWorkflow 
                                 setActiveWorkflow={setActiveWorkflow}
                                 githubConnectionStatus={githubConnectionStatus}
-                                isGitlabConnected={Boolean(user?.isGitlabLinked)}
+                                gitlabConnectionStatus={gitlabConnectionStatus}
                                 isBitbucketConnected={Boolean(user?.isBitbucketLinked)}
                                 isAzureConnected={Boolean(user?.isAzureLinked)}
                               />

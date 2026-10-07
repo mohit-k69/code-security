@@ -5,7 +5,7 @@ import { ChevronLeft, Github, GitBranch, Terminal, Shield, ArrowRight } from 'lu
 interface SyncCodeWorkflowProps {
   setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'bitbucket' | 'azure' | 'sync') => void;
   githubConnectionStatus?: string;
-  isGitlabConnected?: boolean;
+  gitlabConnectionStatus?: string;
   isBitbucketConnected?: boolean;
   isAzureConnected?: boolean;
 }
@@ -22,17 +22,25 @@ interface ProviderItem {
 export function SyncCodeWorkflow({
   setActiveWorkflow,
   githubConnectionStatus = 'disconnected',
-  isGitlabConnected = false,
+  gitlabConnectionStatus = 'disconnected',
   isBitbucketConnected = false,
   isAzureConnected = false,
 }: SyncCodeWorkflowProps) {
   const isGithubConnected = githubConnectionStatus === 'connected';
   const isGithubExpired = githubConnectionStatus === 'expired';
   
+  const isGitlabConnected = gitlabConnectionStatus === 'connected';
+  const isGitlabExpired = gitlabConnectionStatus === 'expired';
+  
   let githubBadge = 'Available';
   if (githubConnectionStatus === 'checking') githubBadge = 'Checking...';
   if (isGithubConnected) githubBadge = 'Connected';
   if (isGithubExpired) githubBadge = 'Connection expired';
+
+  let gitlabBadge = 'Available';
+  if (gitlabConnectionStatus === 'checking') gitlabBadge = 'Checking...';
+  if (isGitlabConnected) gitlabBadge = 'Connected';
+  if (isGitlabExpired) gitlabBadge = 'Connection expired';
 
   const providers: ProviderItem[] = [
     {
@@ -53,7 +61,7 @@ export function SyncCodeWorkflow({
           <path d="M22.65 14.39L20.6 8.08c-.14-.42-.5-.73-.94-.78-.44-.06-.88.13-1.12.49L16.2 11.4 12 5.09a1.002 1.002 0 00-1.7 0L6.1 11.4 3.76 7.79c-.24-.36-.68-.55-1.12-.49-.44.05-.8.36-.94.78L-.35 14.39c-.19.58-.02 1.22.43 1.63l11.45 8.35c.28.2.65.2.94 0l11.45-8.35c.45-.41.62-1.05.43-1.63z" />
         </svg>
       ),
-      badge: isGitlabConnected ? 'Connected' : 'Available',
+      badge: gitlabBadge,
     },
     {
       id: 'bitbucket',
