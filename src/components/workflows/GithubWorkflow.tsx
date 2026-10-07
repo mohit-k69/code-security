@@ -99,11 +99,10 @@ export function GithubWorkflow({
         return;
       }
 
-      const res = await fetch('/api/auth/github/init', {
+      const res = await fetch('/api/functions/github-init', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
 
