@@ -67,6 +67,157 @@ async function authenticateRequest(req: any, res: any, admin: any): Promise<{ us
 // Operation Handlers
 // -----------------------------------------------------------------------------
 
+async function ensureValidGitlabToken(userId: string, admin: any): Promise<string | null> {
+  const { data: connection, error: dbError } = await admin
+    .from("oauth_connections")
+    .select("access_token, refresh_token, expires_at")
+    .eq("user_id", userId)
+    .eq("provider", "gitlab")
+    .single();
+
+  if (dbError || !connection || !connection.access_token) {
+    return null;
+  }
+
+  // If token doesn't expire within the next 5 minutes, use it
+  if (connection.expires_at) {
+    const expiresAt = new Date(connection.expires_at).getTime();
+    const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
+    if (expiresAt > fiveMinutesFromNow) {
+      return connection.access_token;
+    }
+  } else if (connection.access_token && !connection.refresh_token) {
+    // Legacy tokens might not have expires_at/refresh_token
+    return connection.access_token;
+  }
+
+  // If we don't have a refresh token, we can't refresh
+  if (!connection.refresh_token) {
+    return connection.access_token; // Hope for the best, it will just 401 later if truly expired
+  }
+
+  const clientId = process.env.GITLAB_CLIENT_ID || process.env.VITE_GITLAB_CLIENT_ID;
+  const clientSecret = process.env.GITLAB_CLIENT_SECRET || process.env.VITE_GITLAB_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.warn("[ensureValidGitlabToken] Missing GitLab credentials for refresh");
+    return connection.access_token; // Let it fail gracefully downstream
+  }
+
+  try {
+    const tokenRes = await fetch("https://gitlab.com/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: connection.refresh_token,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      console.warn(`[ensureValidGitlabToken] GitLab refresh failed: ${tokenRes.status}`);
+      return connection.access_token; // Downstream API calls will handle 401 correctly
+    }
+
+    const tokenData = await tokenRes.json();
+    if (tokenData.error || !tokenData.access_token) {
+      return connection.access_token;
+    }
+
+    let newExpiresAt = null;
+    if (tokenData.expires_in) {
+      newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+    }
+
+    const { error: updateError } = await admin
+      .from("oauth_connections")
+      .update({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token || connection.refresh_token,
+        expires_at: newExpiresAt,
+      })
+      .eq("user_id", userId)
+      .eq("provider", "gitlab");
+
+    if (updateError) {
+      console.error("[ensureValidGitlabToken] Failed to save refreshed token:", updateError.message);
+    }
+
+    return tokenData.access_token;
+  } catch (err: any) {
+    console.error("[ensureValidGitlabToken] Error during refresh:", err.message);
+    return connection.access_token;
+  }
+}
+
+async function handleDisconnectGitlab(req: any, res: any, admin: any) {
+  const auth = await authenticateRequest(req, res, admin);
+  if (!auth) return;
+  const { user } = auth;
+
+  // Retrieve the access token before deleting
+  const { data: connection } = await (admin as any)
+    .from("oauth_connections")
+    .select("access_token")
+    .eq("user_id", user.id)
+    .eq("provider", "gitlab")
+    .single();
+
+  if (connection && connection.access_token) {
+    const clientId = process.env.GITLAB_CLIENT_ID || process.env.VITE_GITLAB_CLIENT_ID;
+    const clientSecret = process.env.GITLAB_CLIENT_SECRET || process.env.VITE_GITLAB_CLIENT_SECRET;
+    
+    if (clientId && clientSecret) {
+      try {
+        const revokeRes = await fetch('https://gitlab.com/oauth/revoke', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            token: connection.access_token
+          })
+        });
+        
+        if (!revokeRes.ok) {
+          console.error('[disconnect-gitlab] GitLab revocation failed with status:', revokeRes.status);
+          return sendJson(res, 502, { error: "Failed to revoke GitLab token. Disconnect aborted." });
+        }
+      } catch (err: any) {
+        console.error('[disconnect-gitlab] GitLab revocation request error:', err.message);
+        return sendJson(res, 502, { error: "Failed to reach GitLab for revocation. Disconnect aborted." });
+      }
+    } else {
+      console.warn('[disconnect-gitlab] Missing GitLab Client ID/Secret. Skipping revocation.');
+    }
+  } else {
+    // If no connection is found, just return success
+    return sendJson(res, 200, { success: true });
+  }
+
+  // Only delete if revocation succeeded or was skipped (no credentials)
+  const { error: deleteError } = await (admin as any)
+    .from("oauth_connections")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("provider", "gitlab");
+
+  if (deleteError) {
+    console.error("[disconnect-gitlab] Delete failed:", deleteError.message);
+    return sendJson(res, 500, { error: "Failed to disconnect GitLab" });
+  }
+
+  return sendJson(res, 200, { success: true });
+}
+
 async function handleStoreProviderToken(req: any, res: any, admin: any) {
   // Diagnostic / Healthcheck
   if (req.method === "GET") {
@@ -324,18 +475,11 @@ async function handleFetchGitlabProjects(req: any, res: any, admin: any) {
   if (!auth) return;
   const { user } = auth;
 
-  const { data: connection, error: dbError } = await (admin as any)
-    .from("oauth_connections")
-    .select("access_token")
-    .eq("user_id", user.id)
-    .eq("provider", "gitlab")
-    .single();
+  const gitlabToken = await ensureValidGitlabToken(user.id, admin);
 
-  if (dbError || !connection || !(connection as any).access_token) {
-    return sendJson(res, 404, { error: "GitLab connection not found. Please connect your account." });
+  if (!gitlabToken) {
+    return sendJson(res, 404, { error: "GitLab connection not found or expired. Please connect your account." });
   }
-
-  const gitlabToken = (connection as any).access_token;
   const gitlabRes = await fetch(
     "https://gitlab.com/api/v4/projects?membership=true&order_by=updated_at&sort=desc&per_page=100",
     {
@@ -379,18 +523,11 @@ async function handleFetchGitlabMergeRequests(req: any, res: any, admin: any) {
   if (!auth) return;
   const { user } = auth;
 
-  const { data: connection, error: dbError } = await (admin as any)
-    .from("oauth_connections")
-    .select("access_token")
-    .eq("user_id", user.id)
-    .eq("provider", "gitlab")
-    .single();
+  const gitlabToken = await ensureValidGitlabToken(user.id, admin);
 
-  if (dbError || !connection || !(connection as any).access_token) {
-    return sendJson(res, 404, { error: "GitLab connection not found. Please connect your account." });
+  if (!gitlabToken) {
+    return sendJson(res, 404, { error: "GitLab connection not found or expired. Please connect your account." });
   }
-
-  const gitlabToken = (connection as any).access_token;
   const body = parseBody(req);
   const projectId = body?.projectId || req.query?.projectId;
   if (!projectId) {
@@ -748,18 +885,11 @@ async function handleCheckGitlabConnection(req: any, res: any, admin: any) {
   if (!auth) return;
   const { user } = auth;
 
-  const { data: connection, error: dbError } = await (admin as any)
-    .from("oauth_connections")
-    .select("access_token")
-    .eq("user_id", user.id)
-    .eq("provider", "gitlab")
-    .single();
+  const gitlabToken = await ensureValidGitlabToken(user.id, admin);
 
-  if (dbError || !connection || !(connection as any).access_token) {
+  if (!gitlabToken) {
     return sendJson(res, 200, { status: "disconnected" });
   }
-
-  const gitlabToken = (connection as any).access_token;
   const gitlabRes = await fetch("https://gitlab.com/api/v4/user", {
     headers: {
       Authorization: `Bearer ${gitlabToken}`,
@@ -912,6 +1042,9 @@ export default async function handler(req: any, res: any) {
 
       case "disconnect-github":
         return await handleDisconnectGithub(req, res, admin);
+
+      case "disconnect-gitlab":
+        return await handleDisconnectGitlab(req, res, admin);
 
       default:
         console.warn(`[api/functions] Unknown operation requested: "${operation}"`);

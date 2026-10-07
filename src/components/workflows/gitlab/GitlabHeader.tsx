@@ -15,6 +15,10 @@ interface GitlabHeaderProps {
   viewStyle: 'grid' | 'list';
   setViewStyle: (style: 'grid' | 'list') => void;
   showSearch?: boolean;
+  disconnectGitlab?: () => void;
+  isDisconnecting?: boolean;
+  isGitlabConnected?: boolean;
+  gitlabUsername?: string | null;
 }
 
 export function GitlabHeader({
@@ -30,6 +34,10 @@ export function GitlabHeader({
   viewStyle,
   setViewStyle,
   showSearch = true,
+  disconnectGitlab,
+  isDisconnecting = false,
+  isGitlabConnected = false,
+  gitlabUsername,
 }: GitlabHeaderProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +83,11 @@ export function GitlabHeader({
             </button>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 tracking-tight">{title}</h2>
-              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+              {gitlabUsername ? (
+                <p className="text-xs text-gray-500">Connected as <span className="font-medium">@{gitlabUsername}</span></p>
+              ) : (
+                subtitle && <p className="text-xs text-gray-500">{subtitle}</p>
+              )}
             </div>
           </motion.div>
         )}
@@ -114,6 +126,19 @@ export function GitlabHeader({
               </button>
             )}
           </div>
+        )}
+
+        {isGitlabConnected && disconnectGitlab && (
+          <button
+            type="button"
+            onClick={disconnectGitlab}
+            disabled={isDisconnecting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 text-[13px] font-medium transition-colors shadow-xs h-9 disabled:opacity-50"
+            title="Disconnect GitLab"
+          >
+            <span className="hidden sm:inline">{isDisconnecting ? 'Disconnecting...' : 'Disconnect'}</span>
+            <span className="sm:hidden">{isDisconnecting ? '...' : 'Disconnect'}</span>
+          </button>
         )}
 
         <div className="hidden sm:flex items-center bg-gray-100 p-0.5 rounded-xl">

@@ -57,6 +57,9 @@ export function GitlabWorkflow({
     isGitlabConnected,
     gitlabConnectionStatus,
     clearGitlabSelection,
+    disconnectGitlab,
+    isDisconnectingGitlab,
+    gitlabUsername,
   } = useGitlab('gitlab', user);
 
   const handleAnalyzeMR = async (project: GitlabProject, mr: GitlabMergeRequest) => {
@@ -168,6 +171,10 @@ export function GitlabWorkflow({
         viewStyle={viewStyle}
         setViewStyle={setViewStyle}
         showSearch={!selectedProjectId}
+        disconnectGitlab={disconnectGitlab}
+        isDisconnecting={isDisconnectingGitlab}
+        isGitlabConnected={isGitlabConnected}
+        gitlabUsername={gitlabUsername}
       />
 
       {/* Error state */}

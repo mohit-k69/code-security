@@ -62,6 +62,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
 
   const [gitlabConnectionStatus, setGitlabConnectionStatus] = useState<GitlabConnectionStatus>('checking');
   const [gitlabUsername, setGitlabUsername] = useState<string | null>(null);
+  const [isDisconnectingGitlab, setIsDisconnectingGitlab] = useState(false);
   const connectionInstanceRef = useRef(0);
 
   const checkConnection = useCallback(async () => {
@@ -275,6 +276,30 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     setGitlabMergeRequests([]);
   }, []);
 
+  const disconnectGitlab = useCallback(async () => {
+    setIsDisconnectingGitlab(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token 
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : undefined;
+
+      const { data, error } = await supabase.functions.invoke('disconnect-gitlab', { headers });
+
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || 'Failed to disconnect GitLab');
+      }
+
+      setGitlabConnectionStatus('disconnected');
+      clearGitlabCache();
+      trackEvent('gitlab_disconnected');
+    } catch (err) {
+      console.error('Failed to disconnect GitLab:', err);
+    } finally {
+      setIsDisconnectingGitlab(false);
+    }
+  }, [clearGitlabCache]);
+
   return {
     gitlabProjects,
     isFetchingProjects,
@@ -296,6 +321,8 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     isGitlabConnected,
     gitlabUsername,
     clearGitlabSelection,
-    clearGitlabCache
+    clearGitlabCache,
+    disconnectGitlab,
+    isDisconnectingGitlab
   };
 }
