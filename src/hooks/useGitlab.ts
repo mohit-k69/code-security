@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { type User } from './useAuth';
 import { trackEvent } from '../lib/posthog';
@@ -46,7 +46,7 @@ export interface GitlabMergeRequest {
   sha: string;
 }
 
-export type GitlabConnectionStatus = 'checking' | 'disconnected' | 'connected';
+export type GitlabConnectionStatus = 'checking' | 'disconnected' | 'connected' | 'expired';
 
 export function useGitlab(activeWorkflow: string, user?: User | null) {
   const [gitlabProjects, setGitlabProjects] = useState<GitlabProject[]>([]);
@@ -60,10 +60,54 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
   const [gitlabMRsError, setGitlabMRsError] = useState('');
   const [selectedMR, setSelectedMR] = useState<GitlabMergeRequest | null>(null);
 
-  const isGitlabConnected = Boolean(user?.isGitlabLinked);
-  const gitlabConnectionStatus: GitlabConnectionStatus = isGitlabConnected ? 'connected' : 'disconnected';
+  const [gitlabConnectionStatus, setGitlabConnectionStatus] = useState<GitlabConnectionStatus>('checking');
+  const [gitlabUsername, setGitlabUsername] = useState<string | null>(null);
+  const connectionInstanceRef = useRef(0);
+
+  const checkConnection = useCallback(async () => {
+    if (!user?.id) {
+      setGitlabConnectionStatus('disconnected');
+      return;
+    }
+    
+    const currentInstance = connectionInstanceRef.current;
+    setGitlabConnectionStatus('checking');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+         if (connectionInstanceRef.current === currentInstance) {
+           setGitlabConnectionStatus('disconnected');
+         }
+         return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('check-gitlab-connection', {
+         headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      
+      if (connectionInstanceRef.current !== currentInstance) return;
+      if (error) throw error;
+      setGitlabConnectionStatus(data.status || 'disconnected');
+      if (data.username) {
+        setGitlabUsername(data.username);
+      }
+    } catch (err) {
+      if (connectionInstanceRef.current !== currentInstance) return;
+      console.warn('Failed to check gitlab connection:', err);
+      setGitlabConnectionStatus('disconnected');
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    checkConnection();
+  }, [checkConnection]);
+
+  const isGitlabConnected = gitlabConnectionStatus === 'connected';
 
   const fetchGitlabProjects = useCallback(async () => {
+    if (gitlabConnectionStatus === 'disconnected' || gitlabConnectionStatus === 'expired') return;
+
+    const currentInstance = connectionInstanceRef.current;
     setIsFetchingProjects(true);
     setGitlabProjectsError('');
     console.log('[GITLAB_OAUTH] PROJECT_FETCH_START', {
@@ -80,6 +124,8 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       const { data, error } = await supabase.functions.invoke('fetch-gitlab-projects', {
         headers
       });
+
+      if (connectionInstanceRef.current !== currentInstance) return;
 
       console.log('[GITLAB_OAUTH] PROJECT_FETCH_RESULT', {
         success: !error && !data?.error,
@@ -100,17 +146,28 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
         }
         throw new Error(errorMsg);
       }
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) {
+         if (data.error.includes('expired')) {
+           setGitlabConnectionStatus('expired');
+         }
+         throw new Error(data.error);
+      }
       setGitlabProjects(data || []);
       setGitlabProjectsError('');
       window.dispatchEvent(new CustomEvent('codevibe_gitlab_projects_loaded'));
     } catch (err: any) {
-      console.error('Fetch GitLab Projects Error:', err);
-      setGitlabProjectsError(err.message || 'Failed to fetch GitLab projects.');
+      if (connectionInstanceRef.current !== currentInstance) return;
+      const msg = err.message || 'Failed to fetch GitLab projects.';
+      setGitlabProjectsError(msg);
+      if (msg.includes('expired')) {
+         setGitlabConnectionStatus('expired');
+      }
     } finally {
-      setIsFetchingProjects(false);
+      if (connectionInstanceRef.current === currentInstance) {
+        setIsFetchingProjects(false);
+      }
     }
-  }, [isGitlabConnected, user?.id, user?.email]);
+  }, [gitlabConnectionStatus]);
 
   const fetchGitlabMergeRequests = useCallback(async (projectId: number) => {
     setIsFetchingMRs(true);
@@ -160,12 +217,12 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
   }, []);
 
   useEffect(() => {
-    if (activeWorkflow === 'gitlab' && isGitlabConnected) {
+    if (activeWorkflow === 'gitlab' && gitlabConnectionStatus === 'connected') {
       if (gitlabProjects.length === 0 && !isFetchingProjects && !gitlabProjectsError) {
         fetchGitlabProjects();
       }
     }
-  }, [activeWorkflow, isGitlabConnected, gitlabProjects.length, isFetchingProjects, gitlabProjectsError, fetchGitlabProjects]);
+  }, [activeWorkflow, gitlabConnectionStatus, gitlabProjects.length, isFetchingProjects, gitlabProjectsError, fetchGitlabProjects]);
 
   // Listen for connection completion event from OAuth linking
   useEffect(() => {
@@ -176,15 +233,22 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       setSelectedMR(null);
       setGitlabSearchQuery('');
       setGitlabProjectsError('');
+      checkConnection();
       if (activeWorkflow === 'gitlab') {
         fetchGitlabProjects();
       }
     };
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('gitlab_connected') === 'true') {
+      handleConnected();
+    }
+    
     window.addEventListener('codevibe_gitlab_connected', handleConnected);
     return () => {
       window.removeEventListener('codevibe_gitlab_connected', handleConnected);
     };
-  }, [activeWorkflow, fetchGitlabProjects]);
+  }, [activeWorkflow, checkConnection, fetchGitlabProjects]);
 
   const clearGitlabSelection = useCallback(() => {
     setGitlabSearchQuery('');
@@ -222,6 +286,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     fetchGitlabMergeRequests,
     gitlabConnectionStatus,
     isGitlabConnected,
+    gitlabUsername,
     clearGitlabSelection,
     clearGitlabCache
   };

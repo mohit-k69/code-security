@@ -743,6 +743,42 @@ async function handleCheckGithubConnection(req: any, res: any, admin: any) {
   return sendJson(res, 200, { status: "connected", username: githubUser.login });
 }
 
+async function handleCheckGitlabConnection(req: any, res: any, admin: any) {
+  const auth = await authenticateRequest(req, res, admin);
+  if (!auth) return;
+  const { user } = auth;
+
+  const { data: connection, error: dbError } = await (admin as any)
+    .from("oauth_connections")
+    .select("access_token")
+    .eq("user_id", user.id)
+    .eq("provider", "gitlab")
+    .single();
+
+  if (dbError || !connection || !(connection as any).access_token) {
+    return sendJson(res, 200, { status: "disconnected" });
+  }
+
+  const gitlabToken = (connection as any).access_token;
+  const gitlabRes = await fetch("https://gitlab.com/api/v4/user", {
+    headers: {
+      Authorization: `Bearer ${gitlabToken}`,
+      Accept: "application/json",
+      "User-Agent": "CodeVibe-Vercel-Function",
+    },
+  });
+
+  if (!gitlabRes.ok) {
+    if (gitlabRes.status === 401) {
+      return sendJson(res, 200, { status: "expired" });
+    }
+    return sendJson(res, 200, { status: "error" });
+  }
+
+  const gitlabUser = await gitlabRes.json();
+  return sendJson(res, 200, { status: "connected", username: gitlabUser.username });
+}
+
 async function handleDisconnectGithub(req: any, res: any, admin: any) {
   const auth = await authenticateRequest(req, res, admin);
   if (!auth) return;
@@ -855,6 +891,9 @@ export default async function handler(req: any, res: any) {
 
       case "fetch-gitlab-merge-requests":
         return await handleFetchGitlabMergeRequests(req, res, admin);
+
+      case "check-gitlab-connection":
+        return await handleCheckGitlabConnection(req, res, admin);
 
       case "fetch-bitbucket-repos":
         return await handleFetchBitbucketRepos(req, res, admin);

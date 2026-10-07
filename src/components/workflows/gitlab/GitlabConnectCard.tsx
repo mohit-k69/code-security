@@ -24,46 +24,46 @@ export function GitlabConnectCard({
       redirectUrl.pathname = window.location.pathname;
       redirectUrl.searchParams.set('workflow', 'gitlab');
 
-      console.log('[GITLAB_OAUTH] LINK_IDENTITY_START', {
-        provider: 'gitlab',
-        redirectTo: redirectUrl.toString(),
-        scopes: 'read_user read_api read_repository',
-      });
-
       try {
-        window.sessionStorage?.setItem('cody_oauth_flow_provider', 'gitlab');
-        window.localStorage?.setItem('cody_oauth_flow_provider', 'gitlab');
-      } catch {}
-
-      const { data, error } = await supabase.auth.linkIdentity({
-        provider: 'gitlab',
-        options: {
-          redirectTo: redirectUrl.toString(),
-          scopes: 'read_user read_api read_repository',
-          queryParams: {
-            scope: 'read_user read_api read_repository',
-          },
-          skipBrowserRedirect: true,
-        },
-      });
-
-      console.log('[GITLAB_OAUTH] LINK_IDENTITY_RESULT', { data, error });
-
-      if (error) {
-        setIsConnecting(false);
-        if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
-          setLinkError('This GitLab account is already connected to another Cody account. Please disconnect it or use a different GitLab account.');
-        } else {
-          setLinkError(error.message || 'Failed to connect GitLab. Please check your OAuth configuration.');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setLinkError('You must be logged in to connect GitLab.');
+          setIsConnecting(false);
+          return;
         }
-        return;
-      }
 
-      if (data?.url) {
-        console.log('[GITLAB_OAUTH] OAUTH_REDIRECT_URL', data.url);
-        window.location.assign(data.url);
-      } else {
+        const res = await fetch('/api/auth/gitlab/init', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!res.ok) {
+          let errorMsg = 'Failed to initiate GitLab connection.';
+          try {
+            const body = await res.json();
+            if (body.error) errorMsg = body.error;
+          } catch {}
+          setLinkError(errorMsg);
+          setIsConnecting(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (data.url) {
+          console.log('[GITLAB_OAUTH] OAUTH_REDIRECT_URL', data.url);
+          window.location.assign(data.url);
+        } else {
+          setLinkError('Invalid response from server.');
+          setIsConnecting(false);
+        }
+      } catch (err: any) {
+        console.error('[GITLAB_OAUTH] INIT_ERROR', err);
         setIsConnecting(false);
+        setLinkError('An unexpected error occurred while connecting GitLab.');
       }
     } catch (err: any) {
       console.error('[GITLAB_OAUTH] LINK_IDENTITY_ERROR', err);
