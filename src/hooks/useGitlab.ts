@@ -280,14 +280,28 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     setIsDisconnectingGitlab(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const headers = session?.access_token 
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : undefined;
+      const res = await fetch('/api/functions/disconnect-gitlab', {
+        method: 'POST',
+        headers: session?.access_token 
+          ? { 
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          : { 'Content-Type': 'application/json' }
+      });
 
-      const { data, error } = await supabase.functions.invoke('disconnect-gitlab', { headers });
+      if (!res.ok) {
+        let errorMsg = `HTTP Error: ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body?.error) errorMsg = body.error;
+        } catch {}
+        throw new Error(errorMsg);
+      }
 
-      if (error || data?.error) {
-        throw new Error(data?.error || error?.message || 'Failed to disconnect GitLab');
+      const data = await res.json();
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       setGitlabConnectionStatus('disconnected');
