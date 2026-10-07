@@ -100,6 +100,9 @@ export function GitlabConnectCard({
             'Connect GitLab'
           )}
         </button>
+        <p className="text-[12px] text-gray-400 mt-1 mb-2">
+          Already signed in to GitLab? To connect a different account, sign out of GitLab.com first.
+        </p>
         {linkError && (
           <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-600 text-left w-full mt-2">
             <div className="flex items-start gap-2">

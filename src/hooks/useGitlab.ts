@@ -233,7 +233,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     }
   }, [activeWorkflow, gitlabConnectionStatus, gitlabProjects.length, isFetchingProjects, gitlabProjectsError, fetchGitlabProjects]);
 
-  // Listen for connection completion event from OAuth linking
+  // Listen for connection completion and disconnection events from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
       trackEvent('gitlab_connected');
@@ -245,6 +245,17 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       checkConnection();
     };
     
+    const handleDisconnected = () => {
+      setGitlabConnectionStatus('disconnected');
+      setGitlabProjects([]);
+      setIsFetchingProjects(false);
+      setGitlabProjectsError('');
+      setGitlabSearchQuery('');
+      setSelectedProjectId(null);
+      setSelectedMR(null);
+      setGitlabMergeRequests([]);
+    };
+    
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('gitlab_connected') === 'true') {
       const newUrl = new URL(window.location.href);
@@ -254,8 +265,10 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     }
     
     window.addEventListener('codevibe_gitlab_connected', handleConnected);
+    window.addEventListener('codevibe_gitlab_disconnected', handleDisconnected);
     return () => {
       window.removeEventListener('codevibe_gitlab_connected', handleConnected);
+      window.removeEventListener('codevibe_gitlab_disconnected', handleDisconnected);
     };
   }, [checkConnection]);
 
@@ -307,6 +320,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       setGitlabConnectionStatus('disconnected');
       clearGitlabCache();
       trackEvent('gitlab_disconnected');
+      window.dispatchEvent(new CustomEvent('codevibe_gitlab_disconnected'));
     } catch (err) {
       console.error('Failed to disconnect GitLab:', err);
     } finally {
