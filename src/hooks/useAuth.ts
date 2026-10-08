@@ -257,14 +257,32 @@ export function useAuth() {
       // 1. First test if a valid connection is ALREADY stored and working in the database
       if (accessToken) {
         try {
+          const isVercelProvider = provider === 'bitbucket' || provider === 'azure';
           const testFn = provider === 'gitlab' ? 'fetch-gitlab-projects'
             : provider === 'bitbucket' ? 'fetch-bitbucket-repos'
             : provider === 'azure' ? 'fetch-azure-repos'
             : 'fetch-github-repositories';
 
-          const { data: repos, error: testErr } = await supabase.functions.invoke(testFn, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-          });
+          let repos: any = null;
+          let testErr: any = null;
+          
+          if (isVercelProvider) {
+            const res = await fetch(`/api/functions/${testFn}`, {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            if (res.ok) {
+              repos = await res.json();
+            } else {
+              testErr = new Error('Vercel provider fetch failed');
+            }
+          } else {
+            const result = await supabase.functions.invoke(testFn, {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            repos = result.data;
+            testErr = result.error;
+          }
+
           if (!testErr && Array.isArray(repos)) {
             // Connection is already active and healthy! Clear error and trigger UI update
             setProviderTokenSetupError(null);
@@ -301,7 +319,8 @@ export function useAuth() {
 
       // 2. If session has provider_token, invoke store-provider-token with explicit Authorization header & provider
       if (session?.provider_token && accessToken) {
-        const { error, data } = await supabase.functions.invoke('store-provider-token', {
+        if (provider === 'github' || provider === 'gitlab') {
+          const { error, data } = await supabase.functions.invoke('store-provider-token', {
           headers: { Authorization: `Bearer ${accessToken}` },
           body: { 
             providerToken: session.provider_token,
@@ -318,8 +337,9 @@ export function useAuth() {
             } catch {}
           }
           throw new Error(errorMsg);
+          }
+          if (data?.error) throw new Error(data.error);
         }
-        if (data?.error) throw new Error(data.error);
 
         // Success: refresh authoritative identities, clear error and dispatch connected event
         try {
@@ -430,32 +450,34 @@ export function useAuth() {
         console.warn('[AUTH] Provider token present but flow provider could not be resolved. Skipping token persistence to prevent misattribution.');
         return;
       }
-
+      
       console.log(`[OAUTH_DEBUG] provider=${provider} event=store_token_start has_session=${Boolean(session)} has_provider_token=true has_provider_refresh_token=${Boolean(session.provider_refresh_token)}`);
 
       isStoringTokenRef.current = true;
       lastStoredTokenRef.current = session.provider_token;
 
       try {
-        const { error, data } = await supabase.functions.invoke('store-provider-token', {
-          headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
-          body: { 
-            providerToken: session.provider_token,
-            providerRefreshToken: session.provider_refresh_token,
-            provider
+        if (provider === 'github' || provider === 'gitlab') {
+          const { error, data } = await supabase.functions.invoke('store-provider-token', {
+            headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+            body: { 
+              providerToken: session.provider_token,
+              providerRefreshToken: session.provider_refresh_token,
+              provider
+            }
+          });
+          if (error) {
+            let errorMsg = error.message;
+            if (error.context) {
+              try {
+                const body = await error.context.json();
+                if (body?.error) errorMsg = body.error;
+              } catch {}
+            }
+            throw new Error(errorMsg);
           }
-        });
-        if (error) {
-          let errorMsg = error.message;
-          if (error.context) {
-            try {
-              const body = await error.context.json();
-              if (body?.error) errorMsg = body.error;
-            } catch {}
-          }
-          throw new Error(errorMsg);
+          if (data?.error) throw new Error(data.error);
         }
-        if (data?.error) throw new Error(data.error);
 
         console.log(`[OAUTH_DEBUG] provider=${provider} store_provider_token=success oauth_connection_exists=true`);
 
@@ -785,7 +807,7 @@ export function useAuth() {
         if (session?.provider_token) {
           try {
             const provider = resolveFlowProvider();
-            if (provider) {
+            if (provider && provider !== 'bitbucket' && provider !== 'azure') {
               await supabase.functions.invoke('store-provider-token', {
                 headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
                 body: { 
