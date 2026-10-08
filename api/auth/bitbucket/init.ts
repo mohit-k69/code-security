@@ -86,8 +86,8 @@ export default async function handler(req: any, res: any) {
     // but some apps need exactly matching redirect URI. 
     // We will supply the redirect URI and the state parameter.
     // Bitbucket actually treats redirect_uri strictly.
-    const origin = req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "localhost:5173"}`;
-    bbAuthUrl.searchParams.set("redirect_uri", `${origin}/api/auth/bitbucket/callback`);
+    // The Bitbucket authorization request MUST use exactly this URL
+    bbAuthUrl.searchParams.set("redirect_uri", "https://code-security-review.vercel.app/api/auth/bitbucket/callback");
     bbAuthUrl.searchParams.set("state", state);
     
     // According to Bitbucket OAuth requirements: scope can be requested as space separated string.

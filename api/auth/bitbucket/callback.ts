@@ -76,8 +76,7 @@ export default async function handler(req: any, res: any) {
       }
     };
 
-    const origin = req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "localhost:5173"}`;
-    const redirectUri = `${origin}/api/auth/bitbucket/callback`;
+    const redirectUri = "https://code-security-review.vercel.app/api/auth/bitbucket/callback";
 
     let tokenRes;
     try {
