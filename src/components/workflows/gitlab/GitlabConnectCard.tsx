@@ -13,8 +13,10 @@ export function GitlabConnectCard({
   setLinkError,
 }: GitlabConnectCardProps) {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
 
-  const handleConnectGitlab = async () => {
+  const executeConnectGitlab = async () => {
+    setShowAccountModal(false);
     if (isConnecting) return;
     setIsConnecting(true);
     setLinkError('');
@@ -85,7 +87,7 @@ export function GitlabConnectCard({
         <button
           id="connect-gitlab-btn"
           type="button"
-          onClick={handleConnectGitlab}
+          onClick={() => setShowAccountModal(true)}
           disabled={isConnecting}
           className={`px-6 py-2.5 bg-gray-900 text-white rounded-full text-[14px] font-medium transition-colors shadow-sm mb-4 flex items-center justify-center gap-2 cursor-pointer ${
             isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-800'
@@ -112,6 +114,37 @@ export function GitlabConnectCard({
           </div>
         )}
       </div>
+
+      {showAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-left border border-gray-100">
+            <h3 className="text-[18px] font-semibold text-gray-900 mb-3">Connect a GitLab account</h3>
+            <div className="text-[14px] text-gray-600 space-y-3 mb-6">
+              <p>GitLab will automatically use the account currently signed in to GitLab in this browser.</p>
+              <p>To connect a different GitLab account, sign out of GitLab.com first or use an incognito/private window.</p>
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAccountModal(false)}
+                className="px-4 py-2 text-[14px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeConnectGitlab}
+                disabled={isConnecting}
+                className={`px-4 py-2 text-[14px] font-medium text-white bg-gray-900 border border-transparent rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 ${
+                  isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-800 cursor-pointer'
+                }`}
+              >
+                {isConnecting ? 'Connecting...' : 'Continue to GitLab'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
