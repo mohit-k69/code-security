@@ -55,7 +55,7 @@ async function runAllTests() {
     // A: Email user
     assert(useAuthCode.includes("resolveAuthProvider"), 'resolveAuthProvider handles email logins');
     // D & E: getUserIdentities returns GitHub identity and isGithubLinked becomes true
-    assert(useAuthCode.includes("isGithubLinked: freshLinked.isGithubLinked || prev.isGithubLinked"), 'authoritative sync sets isGithubLinked');
+    assert(useAuthCode.includes("isGithubLinked: Boolean(linked.isGithubLinked"), 'authoritative sync sets isGithubLinked via helper');
     // F: GitHub workflow loads repositories
     assert(useGithubCode.includes("const isGithubConnected = githubConnectionStatus === 'connected'"), 'useGithub derives isGithubConnected from githubConnectionStatus');
     assert(useGithubCode.includes("if (activeWorkflow === 'github' && githubConnectionStatus === 'connected')"), 'useGithub triggers repository fetching when githubConnectionStatus is connected');
@@ -64,29 +64,29 @@ async function runAllTests() {
 
   // 3. Scenario: User links GitLab -> isGitlabLinked becomes true
   await runTest('3. User links GitLab -> isGitlabLinked becomes true', () => {
-    assert(useAuthCode.includes("isGitlabLinked: freshLinked.isGitlabLinked || prev.isGitlabLinked"), 'authoritative sync sets isGitlabLinked');
-    assert(useAuthCode.includes("gitlabUsername: freshLinked.gitlabUsername || prev.gitlabUsername"), 'authoritative sync sets gitlabUsername');
+    assert(useAuthCode.includes("isGitlabLinked: Boolean(linked.isGitlabLinked"), 'authoritative sync sets isGitlabLinked via helper');
+    assert(useAuthCode.includes("gitlabUsername: linked.gitlabUsername"), 'authoritative sync sets gitlabUsername via helper');
   });
 
   // 4. Scenario: User links Bitbucket -> isBitbucketLinked becomes true
   await runTest('4. User links Bitbucket -> isBitbucketLinked becomes true', () => {
-    assert(useAuthCode.includes("isBitbucketLinked: freshLinked.isBitbucketLinked || prev.isBitbucketLinked"), 'authoritative sync sets isBitbucketLinked');
-    assert(useAuthCode.includes("bitbucketUsername: freshLinked.bitbucketUsername || prev.bitbucketUsername"), 'authoritative sync sets bitbucketUsername');
+    assert(useAuthCode.includes("isBitbucketLinked: Boolean(linked.isBitbucketLinked"), 'authoritative sync sets isBitbucketLinked via helper');
+    assert(useAuthCode.includes("bitbucketUsername: linked.bitbucketUsername"), 'authoritative sync sets bitbucketUsername via helper');
   });
 
   // 5. Scenario: User links Azure DevOps -> isAzureLinked becomes true
   await runTest('5. User links Azure DevOps -> isAzureLinked becomes true', () => {
-    assert(useAuthCode.includes("isAzureLinked: freshLinked.isAzureLinked || prev.isAzureLinked"), 'authoritative sync sets isAzureLinked');
-    assert(useAuthCode.includes("azureUsername: freshLinked.azureUsername || prev.azureUsername"), 'authoritative sync sets azureUsername');
+    assert(useAuthCode.includes("isAzureLinked: Boolean(linked.isAzureLinked"), 'authoritative sync sets isAzureLinked via helper');
+    assert(useAuthCode.includes("azureUsername: linked.azureUsername"), 'authoritative sync sets azureUsername via helper');
   });
 
   // 6. Stale session.identities array cannot force a false disconnected state
   await runTest('6. Stale session.identities array cannot force a false disconnected state', () => {
     // In handleSession, setUser preserves prev?.isGithubLinked
-    assert(useAuthCode.includes("isGithubLinked: Boolean(isGithubLinked || prev?.isGithubLinked)"), 'handleSession preserves existing isGithubLinked');
-    assert(useAuthCode.includes("isGitlabLinked: Boolean(isGitlabLinked || prev?.isGitlabLinked)"), 'handleSession preserves existing isGitlabLinked');
-    assert(useAuthCode.includes("isBitbucketLinked: Boolean(isBitbucketLinked || prev?.isBitbucketLinked)"), 'handleSession preserves existing isBitbucketLinked');
-    assert(useAuthCode.includes("isAzureLinked: Boolean(isAzureLinked || prev?.isAzureLinked)"), 'handleSession preserves existing isAzureLinked');
+    assert(useAuthCode.includes("|| baseUser.isGithubLinked"), 'helper preserves existing isGithubLinked');
+    assert(useAuthCode.includes("|| baseUser.isGitlabLinked"), 'helper preserves existing isGitlabLinked');
+    assert(useAuthCode.includes("|| baseUser.isBitbucketLinked"), 'helper preserves existing isBitbucketLinked');
+    assert(useAuthCode.includes("|| baseUser.isAzureLinked"), 'helper preserves existing isAzureLinked');
   });
 
   // 7. Successful provider-connected event cannot immediately be overwritten with false

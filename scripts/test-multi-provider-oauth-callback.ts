@@ -47,8 +47,8 @@ async function runAllTests() {
   await runTest('1. GitHub OAuth callback establishes/restores the session', () => {
     assert(appCode.includes("targetWorkflow === 'github'"), 'App.tsx handles targetWorkflow github');
     assert(appCode.includes("setActiveWorkflow('github')"), 'App.tsx sets active workflow to github');
-    assert(useAuthCode.includes("isGithubLinked: freshLinked.isGithubLinked || prev.isGithubLinked"), 'useAuth sets authoritative isGithubLinked');
-    assert(useAuthCode.includes("flowProvider === 'github'"), 'useAuth binds provider_token with flowProvider github');
+    assert(useAuthCode.includes("updateUserWithIdentities("), 'useAuth uses updateUserWithIdentities helper');
+    assert(useAuthCode.includes("explicitProvider === 'github'"), 'useAuth binds explicit provider_token with github');
   });
 
   // 2. GitLab OAuth callback establishes/restores the session
@@ -62,8 +62,8 @@ async function runAllTests() {
   await runTest('3. Bitbucket OAuth callback establishes/restores the session', () => {
     assert(appCode.includes("targetWorkflow === 'bitbucket'"), 'App.tsx handles targetWorkflow bitbucket');
     assert(appCode.includes("setActiveWorkflow('bitbucket')"), 'App.tsx sets active workflow to bitbucket');
-    assert(useAuthCode.includes("isBitbucketLinked: freshLinked.isBitbucketLinked || prev.isBitbucketLinked"), 'useAuth sets authoritative isBitbucketLinked');
-    assert(useAuthCode.includes("flowProvider === 'bitbucket'"), 'useAuth binds provider_token with flowProvider bitbucket');
+    assert(useAuthCode.includes("updateUserWithIdentities("), 'useAuth uses updateUserWithIdentities helper for Bitbucket');
+    assert(useAuthCode.includes("explicitProvider === 'bitbucket'"), 'useAuth binds explicit provider_token with bitbucket');
   });
 
   // 4. Azure OAuth callback establishes/restores the session
