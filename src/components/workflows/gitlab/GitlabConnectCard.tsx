@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface GitlabConnectCardProps {
   onConnectSuccess?: () => void;
   linkError?: string;
   setLinkError: (error: string) => void;
+  gitlabUsername?: string | null;
 }
 
 export function GitlabConnectCard({
   linkError,
   setLinkError,
+  gitlabUsername,
 }: GitlabConnectCardProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [modalStep, setModalStep] = useState<0 | 1 | 2>(0);
@@ -117,39 +119,36 @@ export function GitlabConnectCard({
 
       {modalStep === 1 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-left border border-gray-100">
-            <h3 className="text-[18px] font-semibold text-gray-900 mb-3">Connect a GitLab account</h3>
-            <div className="text-[14px] text-gray-600 mb-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-left border border-gray-100 relative">
+            <button
+              type="button"
+              onClick={() => setModalStep(0)}
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            
+            <h3 className="text-[17px] font-semibold text-gray-900 mb-2">Connect a GitLab account</h3>
+            <div className="text-[14px] text-gray-500 mb-6">
               <p>GitLab will use the account currently signed in to GitLab.com.</p>
             </div>
             
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2">
               <button 
                 type="button"
                 onClick={executeConnectGitlab}
-                className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer text-center"
               >
-                <div className="font-medium text-gray-900">Continue with current account</div>
-                <div className="text-[13px] text-gray-500 mt-1">Reconnect the GitLab account you previously used.</div>
+                {gitlabUsername ? `Continue as @${gitlabUsername}` : 'Continue with current account'}
               </button>
               
               <button 
                 type="button"
                 onClick={() => setModalStep(2)}
-                className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="w-full py-2.5 px-4 bg-white text-gray-700 border border-gray-200 rounded-full text-[14px] font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer text-center"
               >
-                <div className="font-medium text-gray-900">Switch GitLab account</div>
-                <div className="text-[13px] text-gray-500 mt-1">Sign out of the current GitLab account and connect a different one.</div>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setModalStep(0)}
-                className="px-4 py-2 text-[14px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
-              >
-                Cancel
+                Switch GitLab account
               </button>
             </div>
           </div>

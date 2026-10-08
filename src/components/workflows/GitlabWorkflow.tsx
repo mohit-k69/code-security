@@ -56,10 +56,10 @@ export function GitlabWorkflow({
     fetchGitlabProjects,
     isGitlabConnected,
     gitlabConnectionStatus,
+    gitlabUsername,
     clearGitlabSelection,
     disconnectGitlab,
     isDisconnectingGitlab,
-    gitlabUsername,
   } = useGitlab('gitlab', user);
 
   const handleAnalyzeMR = async (project: GitlabProject, mr: GitlabMergeRequest) => {
@@ -204,6 +204,7 @@ export function GitlabWorkflow({
         <GitlabConnectCard
           linkError={linkError}
           setLinkError={setLinkError}
+          gitlabUsername={gitlabUsername}
         />
       ) : selectedProject ? (
         <GitlabMergeRequestList
