@@ -85,8 +85,6 @@ export default async function handler(req: any, res: any) {
       params.append('grant_type', 'authorization_code');
       params.append('code', code);
       params.append('redirect_uri', redirectUri);
-      params.append('client_id', clientId);
-      params.append('client_secret', clientSecret);
 
       tokenRes = await fetch("https://bitbucket.org/site/oauth2/access_token", {
         method: "POST",
@@ -104,12 +102,14 @@ export default async function handler(req: any, res: any) {
 
     if (!tokenRes.ok) {
       const isTransient = tokenRes.status >= 500;
+      console.error(`[bitbucket-callback] Token exchange HTTP error: ${tokenRes.status}`);
       await cleanupState(isTransient);
       return redirectError("Failed to exchange authorization code");
     }
 
     const tokenData = await tokenRes.json();
     if (tokenData.error) {
+      console.error(`[bitbucket-callback] Token exchange returned error object: ${tokenData.error}`);
       await cleanupState(false);
       return redirectError(tokenData.error_description || "Invalid authorization code");
     }
@@ -117,6 +117,8 @@ export default async function handler(req: any, res: any) {
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token;
     const expiresIn = tokenData.expires_in;
+    
+    console.log(`[bitbucket-callback] Token exchange success. Has access_token: ${!!accessToken}, Has refresh_token: ${!!refreshToken}`);
 
     if (!accessToken) {
       await cleanupState(false);
@@ -138,8 +140,10 @@ export default async function handler(req: any, res: any) {
     }
 
     if (!userRes.ok) {
+      const errorText = await userRes.text().catch(() => "No error body");
+      console.error(`[bitbucket-callback] User validation failed: ${userRes.status} ${errorText}`);
       await cleanupState(false);
-      return redirectError("Failed to validate Bitbucket token");
+      return redirectError(`Failed to validate Bitbucket token: ${userRes.status} ${errorText}`.substring(0, 150));
     }
 
     const bbUser = await userRes.json();
@@ -170,6 +174,8 @@ export default async function handler(req: any, res: any) {
       return redirectError("Failed to store Bitbucket connection");
     }
 
+    console.log(`[bitbucket-callback] Database upsert success for user ${userId} with provider_user_id ${providerUserId}`);
+    
     await cleanupState(false);
 
     res.statusCode = 302;
