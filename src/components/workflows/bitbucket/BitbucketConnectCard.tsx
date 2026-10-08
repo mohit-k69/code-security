@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface BitbucketConnectCardProps {
   onConnectSuccess?: () => void;
   linkError?: string;
   setLinkError: (error: string) => void;
+  bitbucketUsername?: string | null;
 }
 
 export function BitbucketConnectCard({
   linkError,
   setLinkError,
+  bitbucketUsername,
 }: BitbucketConnectCardProps) {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [modalStep, setModalStep] = useState<0 | 1 | 2>(0);
 
-  const handleConnectBitbucket = async () => {
+  const executeConnectBitbucket = async () => {
+    setModalStep(0);
     if (isConnecting) return;
     setIsConnecting(true);
     setLinkError('');
@@ -75,7 +79,7 @@ export function BitbucketConnectCard({
         <button
           id="connect-bitbucket-btn"
           type="button"
-          onClick={handleConnectBitbucket}
+          onClick={() => setModalStep(1)}
           disabled={isConnecting}
           className={`px-6 py-2.5 bg-gray-900 text-white rounded-full text-[14px] font-medium transition-colors shadow-sm mb-4 flex items-center justify-center gap-2 cursor-pointer ${
             isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-800'
@@ -90,6 +94,9 @@ export function BitbucketConnectCard({
             'Connect Bitbucket'
           )}
         </button>
+        <p className="text-[12px] text-gray-400 mt-1 mb-2">
+          Already signed in to Bitbucket? To connect a different account, sign out of Bitbucket first.
+        </p>
         {linkError && (
           <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-600 text-left w-full mt-2">
             <div className="flex items-start gap-2">
@@ -99,6 +106,90 @@ export function BitbucketConnectCard({
           </div>
         )}
       </div>
+
+      {modalStep === 1 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-[480px] w-full p-8 text-left border border-gray-100 relative">
+            <button
+              type="button"
+              onClick={() => setModalStep(0)}
+              className="absolute top-5 right-5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            
+            <h3 className="text-[18px] font-semibold text-gray-900 mb-3">Connect a Bitbucket account</h3>
+            <div className="text-[14px] text-gray-500 mb-8">
+              <p>Bitbucket will use the account currently signed in to Bitbucket.</p>
+            </div>
+            
+            <div className="space-y-3">
+              <button 
+                type="button"
+                onClick={executeConnectBitbucket}
+                className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer text-center"
+              >
+                {bitbucketUsername ? `Continue as @${bitbucketUsername}` : 'Continue with current account'}
+              </button>
+              
+              <button 
+                type="button"
+                onClick={() => setModalStep(2)}
+                className="w-full py-2.5 px-4 bg-white text-gray-700 border border-gray-200 rounded-full text-[14px] font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer text-center"
+              >
+                Switch Bitbucket account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalStep === 2 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-[480px] w-full p-8 text-left border border-gray-100 relative">
+            <button
+              type="button"
+              onClick={() => setModalStep(0)}
+              className="absolute top-5 right-5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="text-[18px] font-semibold text-gray-900 mb-3">Switch your Bitbucket account</h3>
+            <div className="text-[14px] text-gray-600 mb-8">
+              <p className="mb-4">We'll open Bitbucket in a new tab so you can switch accounts.</p>
+              <ol className="list-decimal pl-5 space-y-2 mb-4">
+                <li>Sign out of your current Bitbucket account.</li>
+                <li>Sign in to the Bitbucket account you want to connect.</li>
+                <li>Return to Cody and click Connect Bitbucket again.</li>
+              </ol>
+              <p className="text-gray-500">Cody will connect the Bitbucket account you're currently signed in to.</p>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  window.open('https://bitbucket.org/', '_blank');
+                  setModalStep(0);
+                }}
+                className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer text-center"
+              >
+                Open Bitbucket
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalStep(1)}
+                className="w-full py-2.5 px-4 bg-white text-gray-700 border border-gray-200 rounded-full text-[14px] font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer text-center"
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

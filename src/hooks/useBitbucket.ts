@@ -130,6 +130,8 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     setSelectedPR(pr);
   }, []);
 
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
   useEffect(() => {
     if (activeWorkflow === 'bitbucket' && isBitbucketConnected) {
       if (bitbucketRepos.length === 0 && !isFetchingRepos && !bitbucketReposError) {
@@ -151,9 +153,21 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
         fetchBitbucketRepos();
       }
     };
+    
+    const handleDisconnected = () => {
+      setBitbucketRepos([]);
+      setSelectedRepoFullName(null);
+      setSelectedPR(null);
+      setBitbucketSearchQuery('');
+      setBitbucketReposError('');
+      setBitbucketPRs([]);
+    };
+    
     window.addEventListener('codevibe_bitbucket_connected', handleConnected);
+    window.addEventListener('codevibe_bitbucket_disconnected', handleDisconnected);
     return () => {
       window.removeEventListener('codevibe_bitbucket_connected', handleConnected);
+      window.removeEventListener('codevibe_bitbucket_disconnected', handleDisconnected);
     };
   }, [activeWorkflow, fetchBitbucketRepos]);
 
@@ -163,6 +177,31 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     setSelectedPR(null);
     setBitbucketPRs([]);
   }, []);
+
+  const disconnectBitbucket = useCallback(async () => {
+    if (isDisconnecting) return;
+    setIsDisconnecting(true);
+    
+    try {
+      const { data: { identities } } = await supabase.auth.getUserIdentities();
+      const bitbucketIdentity = identities?.find(id => id.provider === 'bitbucket');
+      
+      if (bitbucketIdentity) {
+        const { error } = await supabase.auth.unlinkIdentity(bitbucketIdentity);
+        if (error) {
+          throw new Error(error.message);
+        }
+      }
+      
+      // Update UI
+      window.dispatchEvent(new CustomEvent('codevibe_bitbucket_disconnected'));
+      trackEvent('bitbucket_disconnected');
+    } catch (err) {
+      console.error('Failed to disconnect bitbucket:', err);
+    } finally {
+      setIsDisconnecting(false);
+    }
+  }, [isDisconnecting]);
 
   return {
     bitbucketRepos,
@@ -182,6 +221,8 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     fetchBitbucketRepos,
     fetchBitbucketPRs,
     isBitbucketConnected,
-    clearBitbucketSelection
+    clearBitbucketSelection,
+    disconnectBitbucket,
+    isDisconnecting,
   };
 }

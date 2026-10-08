@@ -55,6 +55,8 @@ export function BitbucketWorkflow({
     fetchBitbucketRepos,
     isBitbucketConnected,
     clearBitbucketSelection,
+    disconnectBitbucket,
+    isDisconnecting,
   } = useBitbucket('bitbucket', user);
 
   const handleAnalyzePR = async (repo: BitbucketRepo, pr: BitbucketPullRequest) => {
@@ -167,6 +169,10 @@ export function BitbucketWorkflow({
         viewStyle={viewStyle}
         setViewStyle={setViewStyle}
         showSearch={!selectedRepoFullName}
+        disconnectBitbucket={disconnectBitbucket}
+        isDisconnecting={isDisconnecting}
+        isBitbucketConnected={isBitbucketConnected}
+        bitbucketUsername={user?.bitbucketUsername || null}
       />
 
       {/* Error state */}
@@ -191,6 +197,7 @@ export function BitbucketWorkflow({
         <BitbucketConnectCard
           linkError={linkError}
           setLinkError={setLinkError}
+          bitbucketUsername={user?.bitbucketUsername || null}
         />
       ) : selectedRepo ? (
         <BitbucketPRList
