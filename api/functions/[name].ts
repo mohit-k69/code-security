@@ -722,41 +722,76 @@ async function handleFetchBitbucketRepos(req: any, res: any, admin: any) {
     return sendJson(res, 404, { error: "Bitbucket is not connected. Please connect your account." });
   }
 
-  const bbRes = await fetch(
-    "https://api.bitbucket.org/2.0/repositories?role=contributor&sort=-updated_on&pagelen=100",
-    {
-      headers: {
-        Authorization: `Bearer ${bbToken}`,
-        Accept: "application/json",
-        "User-Agent": "CodeVibe-Vercel-Function",
-      },
-    }
-  );
+  const wsRes = await fetch("https://api.bitbucket.org/2.0/user/workspaces", {
+    headers: {
+      Authorization: `Bearer ${bbToken}`,
+      Accept: "application/json",
+      "User-Agent": "CodeVibe-Vercel-Function",
+    },
+  });
 
-  if (!bbRes.ok) {
-    if (bbRes.status === 401) {
+  if (!wsRes.ok) {
+    if (wsRes.status === 401) {
       return sendJson(res, 401, { error: "Bitbucket connection expired. Please reconnect." });
     }
-    return sendJson(res, bbRes.status, { error: "Failed to fetch repositories from Bitbucket." });
+    return sendJson(res, wsRes.status, { error: "Failed to fetch workspaces from Bitbucket." });
   }
 
-  const bbData = await bbRes.json();
-  const repos = (bbData.values || []).map((repo: any) => ({
-    id: repo.uuid || repo.full_name,
-    uuid: repo.uuid,
-    name: repo.name,
-    full_name: repo.full_name,
-    owner: repo.owner?.nickname || repo.owner?.display_name || repo.workspace?.slug || "",
-    workspace: repo.workspace?.slug || repo.workspace?.name || "",
-    description: repo.description || "",
-    is_private: Boolean(repo.is_private),
-    default_branch: repo.mainbranch?.name || "main",
-    updated_on: repo.updated_on,
-    avatar_url: repo.links?.avatar?.href || "",
-    html_url: repo.links?.html?.href || `https://bitbucket.org/${repo.full_name}`,
+  const wsData = await wsRes.json();
+  const workspaces = (wsData.values || []).map((w: any) => w.slug).filter(Boolean);
+
+  const allRepos: any[] = [];
+  const errors: string[] = [];
+
+  await Promise.all(workspaces.map(async (slug: string) => {
+    try {
+      const repoRes = await fetch(
+        `https://api.bitbucket.org/2.0/repositories/${encodeURIComponent(slug)}?sort=-updated_on&pagelen=100`,
+        {
+          headers: {
+            Authorization: `Bearer ${bbToken}`,
+            Accept: "application/json",
+            "User-Agent": "CodeVibe-Vercel-Function",
+          },
+        }
+      );
+
+      if (!repoRes.ok) {
+        console.error(`[fetchBitbucketRepos] Failed workspace ${slug}: ${repoRes.status}`);
+        errors.push(`Workspace ${slug}: HTTP ${repoRes.status}`);
+        return;
+      }
+
+      const repoData = await repoRes.json();
+      const mapped = (repoData.values || []).map((repo: any) => ({
+        id: repo.uuid || repo.full_name,
+        uuid: repo.uuid,
+        name: repo.name,
+        full_name: repo.full_name,
+        owner: repo.owner?.nickname || repo.owner?.display_name || repo.workspace?.slug || "",
+        workspace: repo.workspace?.slug || repo.workspace?.name || "",
+        description: repo.description || "",
+        is_private: Boolean(repo.is_private),
+        default_branch: repo.mainbranch?.name || "main",
+        updated_on: repo.updated_on,
+        avatar_url: repo.links?.avatar?.href || "",
+        html_url: repo.links?.html?.href || `https://bitbucket.org/${repo.full_name}`,
+      }));
+      
+      allRepos.push(...mapped);
+    } catch (e: any) {
+      console.error(`[fetchBitbucketRepos] Error for workspace ${slug}:`, e.message);
+      errors.push(`Workspace ${slug}: ${e.message}`);
+    }
   }));
 
-  return sendJson(res, 200, repos);
+  allRepos.sort((a, b) => new Date(b.updated_on).getTime() - new Date(a.updated_on).getTime());
+
+  if (allRepos.length === 0 && errors.length > 0) {
+    return sendJson(res, 502, { error: "Failed to fetch repositories from any Bitbucket workspace." });
+  }
+
+  return sendJson(res, 200, allRepos);
 }
 
 async function handleFetchBitbucketPrs(req: any, res: any, admin: any) {
