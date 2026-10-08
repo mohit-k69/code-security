@@ -216,6 +216,8 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     };
     
     const handleDisconnected = () => {
+      setIsBitbucketConnected(false);
+      setIsBitbucketExpired(false);
       setBitbucketRepos([]);
       setHasFetchedRepos(false);
       setSelectedRepoFullName(null);
