@@ -743,47 +743,58 @@ async function handleFetchBitbucketRepos(req: any, res: any, admin: any) {
   const allRepos: any[] = [];
   const errors: string[] = [];
 
-  await Promise.all(workspaces.map(async (slug: string) => {
-    try {
-      const repoRes = await fetch(
-        `https://api.bitbucket.org/2.0/repositories/${encodeURIComponent(slug)}?sort=-updated_on&pagelen=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${bbToken}`,
-            Accept: "application/json",
-            "User-Agent": "CodeVibe-Vercel-Function",
-          },
+  const concurrencyLimit = 5;
+  const queue = [...workspaces];
+
+  const worker = async () => {
+    while (queue.length > 0) {
+      const slug = queue.shift();
+      if (!slug) continue;
+
+      try {
+        const repoRes = await fetch(
+          `https://api.bitbucket.org/2.0/repositories/${encodeURIComponent(slug)}?sort=-updated_on&pagelen=100`,
+          {
+            headers: {
+              Authorization: `Bearer ${bbToken}`,
+              Accept: "application/json",
+              "User-Agent": "CodeVibe-Vercel-Function",
+            },
+          }
+        );
+
+        if (!repoRes.ok) {
+          console.error(`[fetchBitbucketRepos] Failed workspace ${slug}: ${repoRes.status}`);
+          errors.push(`Workspace ${slug}: HTTP ${repoRes.status}`);
+          continue;
         }
-      );
 
-      if (!repoRes.ok) {
-        console.error(`[fetchBitbucketRepos] Failed workspace ${slug}: ${repoRes.status}`);
-        errors.push(`Workspace ${slug}: HTTP ${repoRes.status}`);
-        return;
+        const repoData = await repoRes.json();
+        const mapped = (repoData.values || []).map((repo: any) => ({
+          id: repo.uuid || repo.full_name,
+          uuid: repo.uuid,
+          name: repo.name,
+          full_name: repo.full_name,
+          owner: repo.owner?.nickname || repo.owner?.display_name || repo.workspace?.slug || "",
+          workspace: repo.workspace?.slug || repo.workspace?.name || "",
+          description: repo.description || "",
+          is_private: Boolean(repo.is_private),
+          default_branch: repo.mainbranch?.name || "main",
+          updated_on: repo.updated_on,
+          avatar_url: repo.links?.avatar?.href || "",
+          html_url: repo.links?.html?.href || `https://bitbucket.org/${repo.full_name}`,
+        }));
+        
+        allRepos.push(...mapped);
+      } catch (e: any) {
+        console.error(`[fetchBitbucketRepos] Error for workspace ${slug}:`, e.message);
+        errors.push(`Workspace ${slug}: ${e.message}`);
       }
-
-      const repoData = await repoRes.json();
-      const mapped = (repoData.values || []).map((repo: any) => ({
-        id: repo.uuid || repo.full_name,
-        uuid: repo.uuid,
-        name: repo.name,
-        full_name: repo.full_name,
-        owner: repo.owner?.nickname || repo.owner?.display_name || repo.workspace?.slug || "",
-        workspace: repo.workspace?.slug || repo.workspace?.name || "",
-        description: repo.description || "",
-        is_private: Boolean(repo.is_private),
-        default_branch: repo.mainbranch?.name || "main",
-        updated_on: repo.updated_on,
-        avatar_url: repo.links?.avatar?.href || "",
-        html_url: repo.links?.html?.href || `https://bitbucket.org/${repo.full_name}`,
-      }));
-      
-      allRepos.push(...mapped);
-    } catch (e: any) {
-      console.error(`[fetchBitbucketRepos] Error for workspace ${slug}:`, e.message);
-      errors.push(`Workspace ${slug}: ${e.message}`);
     }
-  }));
+  };
+
+  const workers = Array.from({ length: Math.min(concurrencyLimit, workspaces.length) }, () => worker());
+  await Promise.all(workers);
 
   allRepos.sort((a, b) => new Date(b.updated_on).getTime() - new Date(a.updated_on).getTime());
 

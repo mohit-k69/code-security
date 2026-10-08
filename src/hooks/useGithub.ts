@@ -23,6 +23,7 @@ export type GithubConnectionStatus = 'checking' | 'disconnected' | 'connected' |
 export function useGithub(activeWorkflow: string, user?: User | null) {
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
+  const [hasFetchedRepos, setHasFetchedRepos] = useState(false);
   const [githubReposError, setGithubReposError] = useState('');
   const [githubSearchQuery, setGithubSearchQuery] = useState('');
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
@@ -107,6 +108,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       connectionInstanceRef.current += 1;
       setGithubConnectionStatus('disconnected');
       setGithubRepos([]);
+      setHasFetchedRepos(false);
       setGithubUsername(null);
       setSelectedRepoId(null);
       setGithubReposError('');
@@ -178,6 +180,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       }
     } finally {
       if (connectionInstanceRef.current === currentInstance) {
+        setHasFetchedRepos(true);
         setIsFetchingRepos(false);
       }
     }
@@ -185,17 +188,18 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
 
   useEffect(() => {
     if (activeWorkflow === 'github' && githubConnectionStatus === 'connected') {
-      if (githubRepos.length === 0 && !isFetchingRepos && !githubReposError) {
+      if (!hasFetchedRepos && !isFetchingRepos && !githubReposError) {
         fetchGithubRepositories();
       }
     }
-  }, [activeWorkflow, githubConnectionStatus, githubRepos.length, isFetchingRepos, githubReposError, fetchGithubRepositories]);
+  }, [activeWorkflow, githubConnectionStatus, hasFetchedRepos, isFetchingRepos, githubReposError, fetchGithubRepositories]);
 
   // Listen for connection completion event from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
       trackEvent('github_connected');
       setGithubRepos([]);
+      setHasFetchedRepos(false);
       setSelectedRepoId(null);
       setGithubSearchQuery('');
       setGithubReposError('');
@@ -220,6 +224,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const clearGithubCache = useCallback(() => {
     setGithubRepos([]);
     setIsFetchingRepos(false);
+    setHasFetchedRepos(false);
     setGithubReposError('');
     setGithubSearchQuery('');
     setSelectedRepoId(null);

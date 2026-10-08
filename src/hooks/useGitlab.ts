@@ -51,6 +51,7 @@ export type GitlabConnectionStatus = 'checking' | 'disconnected' | 'connected' |
 export function useGitlab(activeWorkflow: string, user?: User | null) {
   const [gitlabProjects, setGitlabProjects] = useState<GitlabProject[]>([]);
   const [isFetchingProjects, setIsFetchingProjects] = useState(false);
+  const [hasFetchedRepos, setHasFetchedRepos] = useState(false);
   const [gitlabProjectsError, setGitlabProjectsError] = useState('');
   const [gitlabSearchQuery, setGitlabSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -173,6 +174,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       }
     } finally {
       if (connectionInstanceRef.current === currentInstance) {
+        setHasFetchedRepos(true);
         setIsFetchingProjects(false);
       }
     }
@@ -227,17 +229,18 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
 
   useEffect(() => {
     if (activeWorkflow === 'gitlab' && gitlabConnectionStatus === 'connected') {
-      if (gitlabProjects.length === 0 && !isFetchingProjects && !gitlabProjectsError) {
+      if (!hasFetchedRepos && !isFetchingProjects && !gitlabProjectsError) {
         fetchGitlabProjects();
       }
     }
-  }, [activeWorkflow, gitlabConnectionStatus, gitlabProjects.length, isFetchingProjects, gitlabProjectsError, fetchGitlabProjects]);
+  }, [activeWorkflow, gitlabConnectionStatus, hasFetchedRepos, isFetchingProjects, gitlabProjectsError, fetchGitlabProjects]);
 
   // Listen for connection completion and disconnection events from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
       trackEvent('gitlab_connected');
       setGitlabProjects([]);
+      setHasFetchedRepos(false);
       setSelectedProjectId(null);
       setSelectedMR(null);
       setGitlabSearchQuery('');
@@ -248,6 +251,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     const handleDisconnected = () => {
       setGitlabConnectionStatus('disconnected');
       setGitlabProjects([]);
+      setHasFetchedRepos(false);
       setIsFetchingProjects(false);
       setGitlabProjectsError('');
       setGitlabSearchQuery('');
@@ -282,6 +286,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
   const clearGitlabCache = useCallback(() => {
     setGitlabProjects([]);
     setIsFetchingProjects(false);
+    setHasFetchedRepos(false);
     setGitlabProjectsError('');
     setGitlabSearchQuery('');
     setSelectedProjectId(null);
