@@ -63,7 +63,7 @@ export async function extractCodeFromImage(
 
   // Attempt server OCR endpoint
   try {
-    const response = await fetch('/api/upload/ocr', {
+    const response = await fetch('/api/functions/upload-ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
