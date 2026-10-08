@@ -107,6 +107,8 @@ async function ensureValidBitbucketToken(userId: string, admin: any): Promise<st
     const params = new URLSearchParams();
     params.append('grant_type', 'refresh_token');
     params.append('refresh_token', connection.refresh_token);
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
 
     const tokenRes = await fetch("https://bitbucket.org/site/oauth2/access_token", {
       method: "POST",

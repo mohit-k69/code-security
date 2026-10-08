@@ -85,6 +85,8 @@ export default async function handler(req: any, res: any) {
       params.append('grant_type', 'authorization_code');
       params.append('code', code);
       params.append('redirect_uri', redirectUri);
+      params.append('client_id', clientId);
+      params.append('client_secret', clientSecret);
 
       tokenRes = await fetch("https://bitbucket.org/site/oauth2/access_token", {
         method: "POST",

@@ -319,6 +319,10 @@ export function useAuth() {
 
       // 2. If session has provider_token, invoke store-provider-token with explicit Authorization header & provider
       if (session?.provider_token && accessToken) {
+        if (provider === 'bitbucket' || provider === 'azure') {
+          return;
+        }
+        
         if (provider === 'github' || provider === 'gitlab') {
           const { error, data } = await supabase.functions.invoke('store-provider-token', {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -452,6 +456,10 @@ export function useAuth() {
       }
       
       console.log(`[OAUTH_DEBUG] provider=${provider} event=store_token_start has_session=${Boolean(session)} has_provider_token=true has_provider_refresh_token=${Boolean(session.provider_refresh_token)}`);
+
+      if (provider === 'bitbucket' || provider === 'azure') {
+        return;
+      }
 
       isStoringTokenRef.current = true;
       lastStoredTokenRef.current = session.provider_token;
