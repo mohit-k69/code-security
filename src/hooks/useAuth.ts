@@ -457,12 +457,13 @@ export function useAuth() {
       
       console.log(`[OAUTH_DEBUG] provider=${provider} event=store_token_start has_session=${Boolean(session)} has_provider_token=true has_provider_refresh_token=${Boolean(session.provider_refresh_token)}`);
 
-      if (provider === 'bitbucket' || provider === 'azure') {
-        return;
-      }
-
       isStoringTokenRef.current = true;
       lastStoredTokenRef.current = session.provider_token;
+
+      if (provider === 'bitbucket' || provider === 'azure') {
+        isStoringTokenRef.current = false;
+        return;
+      }
 
       try {
         if (provider === 'github' || provider === 'gitlab') {
@@ -609,8 +610,9 @@ export function useAuth() {
           return;
         }
 
+        const wasPendingOAuthCallback = hasPendingOAuthCallback();
         // Clean callback parameters from the URL safely now that session is successfully established
-        if (hasPendingOAuthCallback()) {
+        if (wasPendingOAuthCallback) {
           cleanOAuthCallbackUrl();
         }
         isOAuthCallbackPendingRef.current = false;
@@ -729,6 +731,14 @@ export function useAuth() {
         }).catch(e => {
           console.warn('[AUTH] Background getUserIdentities sync error:', e);
         });
+
+        // Vercel providers (Bitbucket/Azure) use a server-side OAuth callback and write directly to the DB,
+        // so their connection state won't appear in getUserIdentities.
+        // We must automatically verify them if we just returned from their OAuth flow.
+        if (wasPendingOAuthCallback && flowProvider && (flowProvider === 'bitbucket' || flowProvider === 'azure')) {
+          console.log(`[OAUTH_DEBUG] Automatically verifying Vercel provider: ${flowProvider}`);
+          retryProviderTokenSetup(flowProvider);
+        }
       } catch (err) {
         console.error('Session handling error:', err);
         setIsInitializing(false);
