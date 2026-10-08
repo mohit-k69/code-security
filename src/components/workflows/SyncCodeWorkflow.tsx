@@ -42,6 +42,9 @@ export function SyncCodeWorkflow({
   if (isGitlabConnected) gitlabBadge = 'Connected';
   if (isGitlabExpired) gitlabBadge = 'Connection expired';
 
+  let bitbucketBadge = 'Available';
+  if (isBitbucketConnected) bitbucketBadge = 'Connected';
+
   const providers: ProviderItem[] = [
     {
       id: 'github',
@@ -67,13 +70,13 @@ export function SyncCodeWorkflow({
       id: 'bitbucket',
       name: 'Bitbucket',
       description: 'Bitbucket Cloud & Data Center repositories and pull requests',
-      isAvailable: false,
+      isAvailable: true,
       icon: (
         <svg className="w-6 h-6 text-[#0052CC]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M1.38 2.05a1.18 1.18 0 00-.97.59 1.16 1.16 0 00-.09 1.14l4.24 16.63c.12.48.56.81 1.05.81h12.78c.46 0 .87-.29 1.01-.73l4.28-16.71a1.16 1.16 0 00-.09-1.14 1.18 1.18 0 00-.97-.59H1.38zm12.35 13.56H9.37l-1.39-6.33h7.13l-1.38 6.33z" />
         </svg>
       ),
-      badge: 'Coming soon',
+      badge: bitbucketBadge,
     },
     {
       id: 'azure',
@@ -185,7 +188,9 @@ export function SyncCodeWorkflow({
                   <span>
                     {provider.id === 'github'
                       ? (isGithubExpired ? 'Reconnect GitHub account' : isGithubConnected ? 'Open connected repositories' : 'Connect GitHub account')
-                      : (isGitlabConnected ? 'Open connected projects' : 'Connect GitLab account')}
+                      : provider.id === 'gitlab'
+                      ? (isGitlabConnected ? 'Open connected projects' : 'Connect GitLab account')
+                      : (isBitbucketConnected ? 'Open connected repositories' : 'Connect Bitbucket account')}
                   </span>
                   <span className="text-gray-400 group-hover:text-gray-600">→</span>
                 </div>
