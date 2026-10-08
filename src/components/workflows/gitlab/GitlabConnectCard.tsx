@@ -119,22 +119,22 @@ export function GitlabConnectCard({
 
       {modalStep === 1 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-left border border-gray-100 relative">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-[480px] w-full p-8 text-left border border-gray-100 relative">
             <button
               type="button"
               onClick={() => setModalStep(0)}
-              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+              className="absolute top-5 right-5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
             
-            <h3 className="text-[17px] font-semibold text-gray-900 mb-2">Connect a GitLab account</h3>
-            <div className="text-[14px] text-gray-500 mb-6">
+            <h3 className="text-[18px] font-semibold text-gray-900 mb-3">Connect a GitLab account</h3>
+            <div className="text-[14px] text-gray-500 mb-8">
               <p>GitLab will use the account currently signed in to GitLab.com.</p>
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button 
                 type="button"
                 onClick={executeConnectGitlab}
@@ -157,35 +157,44 @@ export function GitlabConnectCard({
 
       {modalStep === 2 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-left border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-[480px] w-full p-8 text-left border border-gray-100 relative">
+            <button
+              type="button"
+              onClick={() => setModalStep(0)}
+              className="absolute top-5 right-5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <h3 className="text-[18px] font-semibold text-gray-900 mb-3">Switch your GitLab account</h3>
-            <div className="text-[14px] text-gray-600 space-y-4 mb-6">
-              <p>We'll open GitLab.com in a new tab.</p>
-              <ol className="list-decimal pl-5 space-y-2">
+            <div className="text-[14px] text-gray-600 mb-8">
+              <p className="mb-4">We'll open GitLab.com in a new tab so you can switch accounts.</p>
+              <ol className="list-decimal pl-5 space-y-2 mb-4">
                 <li>Sign out of your current GitLab account.</li>
-                <li>Sign in to the GitLab account you want to use.</li>
+                <li>Sign in to the GitLab account you want to connect.</li>
                 <li>Return to Cody and click Connect GitLab again.</li>
               </ol>
-              <p>Cody will then connect the GitLab account you're currently signed in to.</p>
+              <p className="text-gray-500">Cody will connect the GitLab account you're currently signed in to.</p>
             </div>
             
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setModalStep(1)}
-                className="px-4 py-2 text-[14px] font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer"
-              >
-                Back
-              </button>
+            <div className="space-y-3">
               <button
                 type="button"
                 onClick={() => {
                   window.open('https://gitlab.com/', '_blank');
                   setModalStep(0);
                 }}
-                className="px-4 py-2 text-[14px] font-medium text-white bg-gray-900 border border-transparent rounded-lg hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer"
+                className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer text-center"
               >
                 Open GitLab.com
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalStep(1)}
+                className="w-full py-2.5 px-4 bg-white text-gray-700 border border-gray-200 rounded-full text-[14px] font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer text-center"
+              >
+                Back
               </button>
             </div>
           </div>
