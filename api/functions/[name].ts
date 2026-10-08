@@ -218,6 +218,30 @@ async function handleDisconnectGitlab(req: any, res: any, admin: any) {
   return sendJson(res, 200, { success: true });
 }
 
+async function handleDisconnectBitbucket(req: any, res: any, admin: any) {
+  const auth = await authenticateRequest(req, res, admin);
+  if (!auth) return;
+  const { user } = auth;
+
+  // The prompt explicitly states:
+  // "Do NOT invent or call an undocumented Bitbucket OAuth revocation endpoint."
+  // "For this implementation, deleting Cody's stored OAuth credentials is the required minimum."
+  // So we just delete the oauth_connections row.
+
+  const { error: deleteError } = await (admin as any)
+    .from("oauth_connections")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("provider", "bitbucket");
+
+  if (deleteError) {
+    console.error("[disconnect-bitbucket] Delete failed:", deleteError.message);
+    return sendJson(res, 500, { error: "Failed to disconnect Bitbucket from database" });
+  }
+
+  return sendJson(res, 200, { success: true });
+}
+
 async function handleStoreProviderToken(req: any, res: any, admin: any) {
   // Diagnostic / Healthcheck
   if (req.method === "GET") {
@@ -1045,6 +1069,9 @@ export default async function handler(req: any, res: any) {
 
       case "disconnect-gitlab":
         return await handleDisconnectGitlab(req, res, admin);
+
+      case "disconnect-bitbucket":
+        return await handleDisconnectBitbucket(req, res, admin);
 
       default:
         console.warn(`[api/functions] Unknown operation requested: "${operation}"`);

@@ -183,17 +183,43 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     setIsDisconnecting(true);
     
     try {
-      const { data: { identities } } = await supabase.auth.getUserIdentities();
-      const bitbucketIdentity = identities?.find(id => id.provider === 'bitbucket');
-      
-      if (bitbucketIdentity) {
-        const { error } = await supabase.auth.unlinkIdentity(bitbucketIdentity);
-        if (error) {
-          throw new Error(error.message);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // 1. Delete credentials from the backend oauth_connections table
+      const res = await fetch('/api/functions/disconnect-bitbucket', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
         }
+      });
+
+      if (!res.ok) {
+        let errorMsg = 'Failed to disconnect Bitbucket from backend.';
+        try {
+          const body = await res.json();
+          if (body.error) errorMsg = body.error;
+        } catch {}
+        throw new Error(errorMsg);
       }
       
-      // Update UI
+      // 2. ONLY if backend deletion succeeds, remove the local Supabase identity
+      try {
+        const { data: { identities } } = await supabase.auth.getUserIdentities();
+        const bitbucketIdentity = identities?.find(id => id.provider === 'bitbucket');
+        
+        if (bitbucketIdentity) {
+          const { error } = await supabase.auth.unlinkIdentity(bitbucketIdentity);
+          if (error) {
+            console.warn('[disconnectBitbucket] unlinkIdentity failed:', error.message);
+          }
+        }
+      } catch (err) {
+         console.warn('[disconnectBitbucket] Failed to get or unlink identity:', err);
+      }
+      
+      // 3. Clear the frontend UI
       window.dispatchEvent(new CustomEvent('codevibe_bitbucket_disconnected'));
       trackEvent('bitbucket_disconnected');
     } catch (err) {
