@@ -40,6 +40,9 @@ async function runAllTests() {
   const appPath = path.resolve('src/App.tsx');
   const appCode = fs.readFileSync(appPath, 'utf8');
 
+  const gitlabCallbackPath = path.resolve('api/auth/gitlab/callback.ts');
+  const gitlabCallbackCode = fs.readFileSync(gitlabCallbackPath, 'utf8');
+
   // 1. GitHub OAuth callback establishes/restores the session
   await runTest('1. GitHub OAuth callback establishes/restores the session', () => {
     assert(appCode.includes("targetWorkflow === 'github'"), 'App.tsx handles targetWorkflow github');
@@ -49,11 +52,10 @@ async function runAllTests() {
   });
 
   // 2. GitLab OAuth callback establishes/restores the session
-  await runTest('2. GitLab OAuth callback establishes/restores the session', () => {
+  await runTest('2. GitLab OAuth callback establishes/restores the session (Server-side)', () => {
     assert(appCode.includes("targetWorkflow === 'gitlab'"), 'App.tsx handles targetWorkflow gitlab');
     assert(appCode.includes("setActiveWorkflow('gitlab')"), 'App.tsx sets active workflow to gitlab');
-    assert(useAuthCode.includes("isGitlabLinked: freshLinked.isGitlabLinked || prev.isGitlabLinked"), 'useAuth sets authoritative isGitlabLinked');
-    assert(useAuthCode.includes("flowProvider === 'gitlab'"), 'useAuth binds provider_token with flowProvider gitlab');
+    assert(gitlabCallbackCode.includes("workflow\", \"gitlab\""), 'Vercel backend correctly restores gitlab workflow param');
   });
 
   // 3. Bitbucket OAuth callback establishes/restores the session
@@ -65,11 +67,9 @@ async function runAllTests() {
   });
 
   // 4. Azure OAuth callback establishes/restores the session
-  await runTest('4. Azure OAuth callback establishes/restores the session', () => {
-    assert(appCode.includes("targetWorkflow === 'azure'"), 'App.tsx handles targetWorkflow azure');
-    assert(appCode.includes("setActiveWorkflow('azure')"), 'App.tsx sets active workflow to azure');
-    assert(useAuthCode.includes("isAzureLinked: freshLinked.isAzureLinked || prev.isAzureLinked"), 'useAuth sets authoritative isAzureLinked');
-    assert(useAuthCode.includes("flowProvider === 'azure'"), 'useAuth binds provider_token with flowProvider azure');
+  await runTest('4. Azure OAuth callback establishes/restores the session (Isolated)', () => {
+    assert(!appCode.includes("targetWorkflow === 'azure'"), 'App.tsx does NOT handle targetWorkflow azure (Isolated)');
+    assert(!appCode.includes("setActiveWorkflow('azure')"), 'App.tsx does NOT set active workflow to azure');
   });
 
   // 5. OAuth callback parameters are not removed before Supabase processes them
@@ -100,8 +100,8 @@ async function runAllTests() {
     assert(useAuthCode.includes("provider\n          }"), 'store-provider-token receives explicit provider in body');
     assert(useAuthCode.includes("retryProviderTokenSetup"), 'retryProviderTokenSetup exists');
     assert(useAuthCode.includes("provider === 'gitlab' ? 'fetch-gitlab-projects'"), 'retryProviderTokenSetup checks appropriate provider test endpoint');
-    assert(useAuthCode.includes("provider === 'bitbucket' ? 'fetch-bitbucket-repos'"), 'retryProviderTokenSetup handles bitbucket');
-    assert(useAuthCode.includes("provider === 'azure' ? 'fetch-azure-repos'"), 'retryProviderTokenSetup handles azure');
+    assert(useAuthCode.includes("=== 'bitbucket' ? 'fetch-bitbucket-repos'"), 'retryProviderTokenSetup handles bitbucket');
+    assert(useAuthCode.includes("=== 'azure' ? 'fetch-azure-repos'"), 'retryProviderTokenSetup handles azure');
   });
 
   // 9. Email/password authentication remains unchanged

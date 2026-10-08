@@ -78,18 +78,6 @@ export function SyncCodeWorkflow({
       ),
       badge: bitbucketBadge,
     },
-    {
-      id: 'azure',
-      name: 'Azure DevOps',
-      description: 'Azure Repos, branching policies and pull request reviews',
-      isAvailable: false,
-      icon: (
-        <svg className="w-6 h-6 text-[#0078D4]" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.5 4.5L14.25.75v5.25L4.5 9v6l9.75 3v5.25l8.25-3.75V4.5zM14.25 15L6.75 12.38V10.5l7.5-2.62v7.12z" />
-        </svg>
-      ),
-      badge: 'Coming soon',
-    },
   ];
 
   return (

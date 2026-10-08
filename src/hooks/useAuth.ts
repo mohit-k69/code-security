@@ -246,8 +246,8 @@ export function useAuth() {
       return;
     }
     const providerName = provider === 'gitlab' ? 'GitLab'
-      : provider === 'bitbucket' ? 'Bitbucket'
-      : provider === 'azure' ? 'Azure DevOps'
+      : (provider as string) === 'bitbucket' ? 'Bitbucket'
+      : (provider as string) === 'azure' ? 'Azure DevOps'
       : 'GitHub';
 
     try {
@@ -257,10 +257,10 @@ export function useAuth() {
       // 1. First test if a valid connection is ALREADY stored and working in the database
       if (accessToken) {
         try {
-          const isVercelProvider = provider === 'bitbucket' || provider === 'azure';
+          const isVercelProvider = (provider as string) === 'bitbucket' || (provider as string) === 'azure';
           const testFn = provider === 'gitlab' ? 'fetch-gitlab-projects'
-            : provider === 'bitbucket' ? 'fetch-bitbucket-repos'
-            : provider === 'azure' ? 'fetch-azure-repos'
+            : (provider as string) === 'bitbucket' ? 'fetch-bitbucket-repos'
+            : (provider as string) === 'azure' ? 'fetch-azure-repos'
             : 'fetch-github-repositories';
 
           let repos: any = null;
@@ -296,9 +296,9 @@ export function useAuth() {
                   githubUsername: linked.githubUsername || prev.githubUsername,
                   isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
                   gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
-                  isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+                  isBitbucketLinked: linked.isBitbucketLinked || ((provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked),
                   bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
-                  isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+                  isAzureLinked: linked.isAzureLinked || ((provider as string) === 'azure' ? true : prev.isAzureLinked),
                   azureUsername: linked.azureUsername || prev.azureUsername,
                 } : null);
               } else {
@@ -306,8 +306,8 @@ export function useAuth() {
                   ...prev,
                   isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
                   isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
-                  isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
-                  isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+                  isBitbucketLinked: (provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked,
+                  isAzureLinked: (provider as string) === 'azure' ? true : prev.isAzureLinked,
                 } : null);
               }
             } catch {}
@@ -319,7 +319,7 @@ export function useAuth() {
 
       // 2. If session has provider_token, invoke store-provider-token with explicit Authorization header & provider
       if (session?.provider_token && accessToken) {
-        if (provider === 'bitbucket' || provider === 'azure') {
+        if ((provider as string) === 'bitbucket' || (provider as string) === 'azure') {
           return;
         }
         
@@ -356,9 +356,9 @@ export function useAuth() {
               githubUsername: linked.githubUsername || prev.githubUsername,
               isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
               gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
-              isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+              isBitbucketLinked: linked.isBitbucketLinked || ((provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked),
               bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
-              isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+              isAzureLinked: linked.isAzureLinked || ((provider as string) === 'azure' ? true : prev.isAzureLinked),
               azureUsername: linked.azureUsername || prev.azureUsername,
             } : null);
           } else {
@@ -366,8 +366,8 @@ export function useAuth() {
               ...prev,
               isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
               isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
-              isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
-              isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+              isBitbucketLinked: (provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked,
+              isAzureLinked: (provider as string) === 'azure' ? true : prev.isAzureLinked,
             } : null);
           }
         } catch {}
@@ -460,7 +460,7 @@ export function useAuth() {
       isStoringTokenRef.current = true;
       lastStoredTokenRef.current = session.provider_token;
 
-      if (provider === 'bitbucket' || provider === 'azure') {
+      if ((provider as string) === 'bitbucket' || (provider as string) === 'azure') {
         isStoringTokenRef.current = false;
         return;
       }
@@ -502,9 +502,9 @@ export function useAuth() {
               githubUsername: linked.githubUsername || prev.githubUsername,
               isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
               gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
-              isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+              isBitbucketLinked: linked.isBitbucketLinked || ((provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked),
               bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
-              isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+              isAzureLinked: linked.isAzureLinked || ((provider as string) === 'azure' ? true : prev.isAzureLinked),
               azureUsername: linked.azureUsername || prev.azureUsername,
             } : null);
           } else {
@@ -512,8 +512,8 @@ export function useAuth() {
               ...prev,
               isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
               isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
-              isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
-              isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+              isBitbucketLinked: (provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked,
+              isAzureLinked: (provider as string) === 'azure' ? true : prev.isAzureLinked,
             } : null);
           }
         } catch {}
@@ -521,9 +521,9 @@ export function useAuth() {
         setProviderTokenSetupError(null);
         if (provider === 'gitlab') {
           window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
-        } else if (provider === 'bitbucket') {
+        } else if ((provider as string) === 'bitbucket') {
           window.dispatchEvent(new CustomEvent('codevibe_bitbucket_connected'));
-        } else if (provider === 'azure') {
+        } else if ((provider as string) === 'azure') {
           window.dispatchEvent(new CustomEvent('codevibe_azure_connected'));
         } else {
           window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
@@ -538,8 +538,8 @@ export function useAuth() {
         if (session.access_token) {
           try {
             const testFn = provider === 'gitlab' ? 'fetch-gitlab-projects'
-              : provider === 'bitbucket' ? 'fetch-bitbucket-repos'
-              : provider === 'azure' ? 'fetch-azure-repos'
+              : (provider as string) === 'bitbucket' ? 'fetch-bitbucket-repos'
+              : (provider as string) === 'azure' ? 'fetch-azure-repos'
               : 'fetch-github-repositories';
             const { data: testRepos, error: testErr } = await supabase.functions.invoke(testFn, {
               headers: { Authorization: `Bearer ${session.access_token}` }
@@ -556,9 +556,9 @@ export function useAuth() {
                     githubUsername: linked.githubUsername || prev.githubUsername,
                     isGitlabLinked: linked.isGitlabLinked || (provider === 'gitlab' ? true : prev.isGitlabLinked),
                     gitlabUsername: linked.gitlabUsername || prev.gitlabUsername,
-                    isBitbucketLinked: linked.isBitbucketLinked || (provider === 'bitbucket' ? true : prev.isBitbucketLinked),
+                    isBitbucketLinked: linked.isBitbucketLinked || ((provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked),
                     bitbucketUsername: linked.bitbucketUsername || prev.bitbucketUsername,
-                    isAzureLinked: linked.isAzureLinked || (provider === 'azure' ? true : prev.isAzureLinked),
+                    isAzureLinked: linked.isAzureLinked || ((provider as string) === 'azure' ? true : prev.isAzureLinked),
                     azureUsername: linked.azureUsername || prev.azureUsername,
                   } : null);
                 } else {
@@ -566,16 +566,16 @@ export function useAuth() {
                     ...prev,
                     isGithubLinked: provider === 'github' ? true : prev.isGithubLinked,
                     isGitlabLinked: provider === 'gitlab' ? true : prev.isGitlabLinked,
-                    isBitbucketLinked: provider === 'bitbucket' ? true : prev.isBitbucketLinked,
-                    isAzureLinked: provider === 'azure' ? true : prev.isAzureLinked,
+                    isBitbucketLinked: (provider as string) === 'bitbucket' ? true : prev.isBitbucketLinked,
+                    isAzureLinked: (provider as string) === 'azure' ? true : prev.isAzureLinked,
                   } : null);
                 }
               } catch {}
               if (provider === 'gitlab') {
                 window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
-              } else if (provider === 'bitbucket') {
+              } else if ((provider as string) === 'bitbucket') {
                 window.dispatchEvent(new CustomEvent('codevibe_bitbucket_connected'));
-              } else if (provider === 'azure') {
+              } else if ((provider as string) === 'azure') {
                 window.dispatchEvent(new CustomEvent('codevibe_azure_connected'));
               } else {
                 window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
@@ -585,8 +585,8 @@ export function useAuth() {
           } catch {}
         }
         const providerName = provider === 'gitlab' ? 'GitLab'
-          : provider === 'bitbucket' ? 'Bitbucket'
-          : provider === 'azure' ? 'Azure DevOps'
+          : (provider as string) === 'bitbucket' ? 'Bitbucket'
+          : (provider as string) === 'azure' ? 'Azure DevOps'
           : 'GitHub';
         setProviderTokenSetupError(err.message || `${providerName} was connected, but token storage failed. Please try again.`);
       } finally {

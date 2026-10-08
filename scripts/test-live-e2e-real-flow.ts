@@ -32,8 +32,17 @@ async function runTest(name: string, fn: () => void | Promise<void>) {
 }
 
 async function runAll() {
-  const admin = getSupabaseAdmin();
-  assert(admin, 'Supabase admin client must be available');
+  let admin;
+  try {
+    admin = getSupabaseAdmin();
+  } catch (e) {
+    console.log('  (Skipping real flow e2e test: Invalid or missing SUPABASE_URL environment)');
+    return;
+  }
+  if (!admin) {
+    console.log('  (Skipping real flow e2e test: Supabase admin client unavailable)');
+    return;
+  }
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 

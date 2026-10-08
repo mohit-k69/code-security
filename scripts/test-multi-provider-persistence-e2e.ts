@@ -62,15 +62,15 @@ async function runAllTests() {
   const storeTokenEdgeCode = fs.readFileSync(storeTokenEdgePath, 'utf8');
 
   // Stage 1 & 2: Provider Connect buttons and linkIdentity provider parameter
-  await runTest('1 & 2. Verify linkIdentity() called with correct provider and scopes for GitLab & Bitbucket', () => {
-    assert(gitlabCardCode.includes("provider: 'gitlab'"), 'GitLab connect calls linkIdentity with provider: gitlab');
-    assert(bitbucketCardCode.includes("provider: 'bitbucket'"), 'Bitbucket connect calls linkIdentity with provider: bitbucket');
+  await runTest('1 & 2. Verify linkIdentity/Vercel OAuth called with correct provider for GitLab & Bitbucket', () => {
+    assert(gitlabCardCode.includes("/api/auth/gitlab/init"), 'GitLab connect uses Vercel /api/auth/gitlab/init');
+    assert(bitbucketCardCode.includes("/api/auth/bitbucket/init"), 'Bitbucket connect uses Vercel /api/auth/bitbucket/init');
     assert(azureCardCode.includes("provider: 'azure'"), 'Azure connect calls linkIdentity with provider: azure');
   });
 
   // Stage 10 & 11: Provider context survival and resolveFlowProvider never falling back to github
   await runTest('10 & 11. Provider context survives redirect via localStorage/sessionStorage and resolveFlowProvider never falls back to github', () => {
-    assert(gitlabCardCode.includes("localStorage?.setItem('cody_oauth_flow_provider', 'gitlab')"), 'GitLab stored in localStorage');
+    assert(!gitlabCardCode.includes("localStorage?.setItem('cody_oauth_flow_provider'"), 'GitLab migrated to backend oauth states');
     assert(bitbucketCardCode.includes("localStorage?.setItem('cody_oauth_flow_provider', 'bitbucket')"), 'Bitbucket stored in localStorage');
     assert(azureCardCode.includes("localStorage?.setItem('cody_oauth_flow_provider', 'azure')"), 'Azure stored in localStorage');
     assert(useAuthCode.includes("return null"), 'resolveFlowProvider returns null if unresolved, not github');

@@ -153,8 +153,6 @@ export default function App() {
       setActiveWorkflow('gitlab');
     } else if (targetWorkflow === 'bitbucket' || urlParams.get('workflow') === 'bitbucket') {
       setActiveWorkflow('bitbucket');
-    } else if (targetWorkflow === 'azure' || urlParams.get('workflow') === 'azure') {
-      setActiveWorkflow('azure');
     } else if (urlParams.get('tab') === 'reviewed' || urlParams.get('reviewId')) {
       setActiveTab('reviewed');
     }
@@ -503,9 +501,8 @@ export default function App() {
                 const isGithubAnalysisActive = activeWorkflow === 'github' && selectedRepoId !== null && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isGitlabAnalysisActive = activeWorkflow === 'gitlab' && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isBitbucketAnalysisActive = activeWorkflow === 'bitbucket' && (isAnalyzing || Boolean(analysisResult?.verdict));
-                const isAzureAnalysisActive = activeWorkflow === 'azure' && (isAnalyzing || Boolean(analysisResult?.verdict));
                 const isStandardAnalysisActive = activeWorkflow === 'upload' || activeWorkflow === 'paste';
-                const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive || isGitlabAnalysisActive || isBitbucketAnalysisActive || isAzureAnalysisActive;
+                const shouldShowResultsPanel = isStandardAnalysisActive || isGithubAnalysisActive || isGitlabAnalysisActive || isBitbucketAnalysisActive;
 
                 const leftContainerClass = isFullWorkspaceMode
                   ? `${isPasteCodeMode && mobilePasteView === 'results' ? 'hidden' : 'w-full'} lg:flex lg:w-[45%] lg:h-full lg:flex-col shrink-0 border-r border-gray-200`
@@ -611,20 +608,6 @@ export default function App() {
 
                             {activeWorkflow === 'bitbucket' && (
                               <BitbucketWorkflow 
-                                user={user}
-                                setActiveWorkflow={setActiveWorkflow}
-                                analysisResult={analysisResult}
-                                setAnalysisResult={setAnalysisResult}
-                                isAnalyzing={isAnalyzing}
-                                setIsAnalyzing={setIsAnalyzing}
-                                reviewedItems={reviewedItems}
-                                setReviewedItems={setReviewedItems}
-                                isLimitReached={isLimitReached}
-                              />
-                            )}
-
-                            {activeWorkflow === 'azure' && (
-                              <AzureWorkflow 
                                 user={user}
                                 setActiveWorkflow={setActiveWorkflow}
                                 analysisResult={analysisResult}

@@ -67,14 +67,13 @@ async function runAllTests() {
     assert(useWorkflow.includes("'sync'"), 'WorkflowState type must include "sync"');
   });
 
-  // 4. Provider-selection screen contains all 4 providers
-  await runTest('4. Provider selection screen displays Title, Subtitle, and 4 Providers', () => {
+  // 4. Provider-selection screen contains all 3 providers
+  await runTest('4. Provider selection screen displays Title, Subtitle, and 3 Providers', () => {
     assert(syncCodeWorkflow.includes('Sync Code'), 'Title must be Sync Code');
     assert(syncCodeWorkflow.includes('Connect your code repository'), 'Subtitle must be Connect your code repository');
     assert(syncCodeWorkflow.includes('GitHub'), 'GitHub provider must be present');
     assert(syncCodeWorkflow.includes('GitLab'), 'GitLab provider must be present');
     assert(syncCodeWorkflow.includes('Bitbucket'), 'Bitbucket provider must be present');
-    assert(syncCodeWorkflow.includes('Azure DevOps'), 'Azure DevOps provider must be present');
   });
 
   // 5. GitHub provider opens existing GitHub workflow
@@ -85,11 +84,10 @@ async function runAllTests() {
       'App.tsx must mount GithubWorkflow when activeWorkflow is github');
   });
 
-  // 6. Bitbucket and Azure DevOps are active alongside GitHub and GitLab
-  await runTest('6. All four providers (GitHub, GitLab, Bitbucket, Azure DevOps) are functional in Sync Code', () => {
+  // 6. Bitbucket is active alongside GitHub and GitLab
+  await runTest('6. All three providers (GitHub, GitLab, Bitbucket) are functional in Sync Code', () => {
     assert(syncCodeWorkflow.includes("id: 'gitlab'"), 'GitLab entry configured');
     assert(syncCodeWorkflow.includes("id: 'bitbucket'"), 'Bitbucket entry configured');
-    assert(syncCodeWorkflow.includes("id: 'azure'"), 'Azure DevOps entry configured');
     assert(syncCodeWorkflow.includes("setActiveWorkflow(provider.id)"),
       'Provider cards trigger active workflow');
   });

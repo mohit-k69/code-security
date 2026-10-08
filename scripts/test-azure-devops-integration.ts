@@ -138,10 +138,10 @@ async function runAllTests() {
     assert(checkpointsCode.includes('CHECKPOINT_REGISTRY'), 'CHECKPOINT_REGISTRY is defined');
   });
 
-  // 8. UI workflow and review trigger
-  await runTest('8. Azure DevOps UI workflow and review trigger integration', () => {
-    assert(syncCodeWorkflowCode.includes("id: 'azure'"), 'Sync Code offers Azure DevOps provider card');
-    assert(appTsxCode.includes('AzureWorkflow'), 'App.tsx imports and renders AzureWorkflow');
+  // 8. UI workflow and review trigger (Isolated)
+  await runTest('8. Azure DevOps UI workflow and review trigger integration (Isolated)', () => {
+    assert(!syncCodeWorkflowCode.includes("id: 'azure'"), 'Sync Code does NOT offer Azure DevOps provider card');
+    assert(!appTsxCode.includes('<AzureWorkflow'), 'App.tsx does NOT render AzureWorkflow');
     assert(azurePrListCode.includes('start-azure-review-btn'), 'Azure PR list contains review button');
   });
 

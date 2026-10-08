@@ -58,11 +58,13 @@ async function runAllTests() {
   const supabaseLibPath = path.resolve('src/lib/supabase.ts');
   const supabaseLibCode = fs.readFileSync(supabaseLibPath, 'utf8');
 
+  const gitlabCallbackPath = path.resolve('api/auth/gitlab/callback.ts');
+  const gitlabCallbackCode = fs.readFileSync(gitlabCallbackPath, 'utf8');
+
   // 1. GitLab OAuth token storage sends provider='gitlab'
   await runTest('1. GitLab OAuth token storage explicitly sends provider="gitlab"', () => {
-    assert(gitlabConnectCode.includes("cody_oauth_flow_provider', 'gitlab'"), 'GitlabConnectCard marks session provider as gitlab');
-    assert(useAuthCode.includes("resolveFlowProvider"), 'useAuth contains resolveFlowProvider helper');
-    assert(useAuthCode.includes("provider\n          }"), 'useAuth passes provider field in store-provider-token body');
+    assert(gitlabCallbackCode.includes("provider: \"gitlab\""), 'GitLab callback marks session provider as gitlab');
+    assert(useAuthCode.includes("resolveFlowProvider"), 'useAuth contains resolveFlowProvider helper for remaining clientside flows');
   });
 
   // 2. GitHub token storage still sends provider='github'

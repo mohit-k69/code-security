@@ -49,6 +49,9 @@ async function runAllTests() {
   const connectCardPath = path.resolve('src/components/workflows/gitlab/GitlabConnectCard.tsx');
   const connectCardCode = fs.readFileSync(connectCardPath, 'utf8');
 
+  const gitlabInitPath = path.resolve('api/auth/gitlab/init.ts');
+  const gitlabInitCode = fs.readFileSync(gitlabInitPath, 'utf8');
+
   const syncCodePath = path.resolve('src/components/workflows/SyncCodeWorkflow.tsx');
   const syncCodeCode = fs.readFileSync(syncCodePath, 'utf8');
 
@@ -63,11 +66,10 @@ async function runAllTests() {
 
   // 1. GitLab OAuth initiation with minimum read-only scopes
   await runTest('1. GitLab OAuth initiation requests minimum read-only scopes', () => {
-    assert(connectCardCode.includes("provider: 'gitlab'"), 'OAuth provider must be gitlab');
-    assert(connectCardCode.includes("scopes: 'read_user read_api read_repository'"), 'Must request read-only scopes');
-    assert(!connectCardCode.includes("write_repository"), 'Must NOT request write_repository');
-    assert(!connectCardCode.includes("api'"), 'Must NOT request full api write scope');
-    assert(!connectCardCode.includes("sudo"), 'Must NOT request administrative/sudo scopes');
+    assert(gitlabInitCode.includes("scope\", \"read_user read_api read_repository\""), 'Must request read-only scopes');
+    assert(!gitlabInitCode.includes("write_repository"), 'Must NOT request write_repository');
+    assert(!gitlabInitCode.includes("api'"), 'Must NOT request full api write scope');
+    assert(!gitlabInitCode.includes("sudo"), 'Must NOT request administrative/sudo scopes');
   });
 
   // 2. Successful GitLab authentication callback & session handling
