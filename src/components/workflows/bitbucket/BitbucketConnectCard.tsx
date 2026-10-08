@@ -32,32 +32,32 @@ export function BitbucketConnectCard({
         window.localStorage?.setItem('cody_oauth_flow_provider', 'bitbucket');
       } catch {}
 
-      const { data, error } = await supabase.auth.linkIdentity({
-        provider: 'bitbucket',
-        options: {
-          redirectTo: redirectUrl.toString(),
-          scopes: 'account repository pullrequest',
-          queryParams: {
-            scope: 'account repository pullrequest',
-          },
-          skipBrowserRedirect: true,
-        },
-      });
-
-      if (error) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
         setIsConnecting(false);
-        if (error.message.toLowerCase().includes('already exists') || error.message.toLowerCase().includes('identity')) {
-          setLinkError('This Bitbucket account is already connected to another Cody account. Please disconnect it or use a different Bitbucket account.');
-        } else {
-          setLinkError(error.message || 'Failed to connect Bitbucket. Please check your OAuth configuration.');
-        }
+        setLinkError('You must be signed in to connect Bitbucket.');
         return;
       }
 
+      const res = await fetch('/api/auth/bitbucket/init', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!res.ok) {
+        setIsConnecting(false);
+        setLinkError('Failed to initialize Bitbucket connection.');
+        return;
+      }
+
+      const data = await res.json();
       if (data?.url) {
         window.location.assign(data.url);
       } else {
         setIsConnecting(false);
+        setLinkError('Invalid response from server.');
       }
     } catch (err: any) {
       console.error('Bitbucket Connect Error:', err);

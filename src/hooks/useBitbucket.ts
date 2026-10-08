@@ -49,7 +49,61 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
   const [bitbucketPRsError, setBitbucketPRsError] = useState('');
   const [selectedPR, setSelectedPR] = useState<BitbucketPullRequest | null>(null);
 
-  const isBitbucketConnected = Boolean(user?.isBitbucketLinked);
+  const [isBitbucketConnected, setIsBitbucketConnected] = useState(false);
+  const [isBitbucketExpired, setIsBitbucketExpired] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+
+  const checkConnection = useCallback(async () => {
+    setIsCheckingConnection(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setIsBitbucketConnected(false);
+        setIsBitbucketExpired(false);
+        return;
+      }
+
+      const res = await fetch('/api/functions/check-bitbucket-connection', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!res.ok) {
+        setIsBitbucketConnected(false);
+        setIsBitbucketExpired(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.status === 'connected') {
+        setIsBitbucketConnected(true);
+        setIsBitbucketExpired(false);
+      } else if (data.status === 'expired') {
+        setIsBitbucketConnected(false);
+        setIsBitbucketExpired(true);
+      } else {
+        setIsBitbucketConnected(false);
+        setIsBitbucketExpired(false);
+      }
+    } catch (err) {
+      console.error('Check Bitbucket connection error:', err);
+      setIsBitbucketConnected(false);
+      setIsBitbucketExpired(false);
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkConnection();
+  }, [checkConnection, user?.isBitbucketLinked, activeWorkflow]);
+
+  useEffect(() => {
+    const handleConnected = () => checkConnection();
+    window.addEventListener('codevibe_bitbucket_connected', handleConnected);
+    return () => window.removeEventListener('codevibe_bitbucket_connected', handleConnected);
+  }, [checkConnection]);
 
   const fetchBitbucketRepos = useCallback(async () => {
     setIsFetchingRepos(true);
@@ -60,21 +114,21 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
         ? { Authorization: `Bearer ${session.access_token}` }
         : undefined;
 
-      const { data, error } = await supabase.functions.invoke('fetch-bitbucket-repos', {
+      const res = await fetch('/api/functions/fetch-bitbucket-repos', {
         headers
       });
 
-      if (error) {
-        let errorMsg = error.message;
-        if (error.context) {
-          try {
-            const body = await error.context.json();
-            if (body?.error) errorMsg = body.error;
-          } catch {}
-        }
-        throw new Error(errorMsg);
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Failed to parse response from server');
       }
-      if (data?.error) throw new Error(data.error);
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to fetch Bitbucket repositories');
+      }
+
       setBitbucketRepos(data || []);
       setBitbucketReposError('');
     } catch (err: any) {
@@ -95,22 +149,26 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
         ? { Authorization: `Bearer ${session.access_token}` }
         : undefined;
 
-      const { data, error } = await supabase.functions.invoke('fetch-bitbucket-prs', {
-        headers,
-        body: { repoFullName }
+      const res = await fetch('/api/functions/fetch-bitbucket-prs', {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ repoFullName })
       });
 
-      if (error) {
-        let errorMsg = error.message;
-        if (error.context) {
-          try {
-            const body = await error.context.json();
-            if (body?.error) errorMsg = body.error;
-          } catch {}
-        }
-        throw new Error(errorMsg);
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Failed to parse response from server');
       }
-      if (data?.error) throw new Error(data.error);
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to fetch pull requests');
+      }
+
       setBitbucketPRs(data || []);
       setBitbucketPRsError('');
     } catch (err: any) {
@@ -247,6 +305,9 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     fetchBitbucketRepos,
     fetchBitbucketPRs,
     isBitbucketConnected,
+    isBitbucketExpired,
+    isCheckingConnection,
+    checkConnection,
     clearBitbucketSelection,
     disconnectBitbucket,
     isDisconnecting,

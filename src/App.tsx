@@ -10,6 +10,7 @@ import { useWorkflow } from './hooks/useWorkflow';
 import { useAnalysis } from './hooks/useAnalysis';
 import { useGithub } from './hooks/useGithub';
 import { useGitlab } from './hooks/useGitlab';
+import { useBitbucket } from './hooks/useBitbucket';
 
 // Core Layout & Home Components (Direct Imports)
 import { Sidebar } from './components/layout/Sidebar';
@@ -102,6 +103,10 @@ export default function App() {
   const {
     gitlabConnectionStatus
   } = useGitlab(activeWorkflow, user);
+
+  const {
+    isBitbucketConnected
+  } = useBitbucket(activeWorkflow, user);
 
 
   // Automatically switch to the correct workflow if redirected back from OAuth Linking
@@ -585,7 +590,7 @@ export default function App() {
                                 setActiveWorkflow={setActiveWorkflow}
                                 githubConnectionStatus={githubConnectionStatus}
                                 gitlabConnectionStatus={gitlabConnectionStatus}
-                                isBitbucketConnected={Boolean(user?.isBitbucketLinked)}
+                                isBitbucketConnected={isBitbucketConnected}
                                 isAzureConnected={Boolean(user?.isAzureLinked)}
                               />
                             )}

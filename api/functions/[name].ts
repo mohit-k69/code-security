@@ -67,6 +67,92 @@ async function authenticateRequest(req: any, res: any, admin: any): Promise<{ us
 // Operation Handlers
 // -----------------------------------------------------------------------------
 
+async function ensureValidBitbucketToken(userId: string, admin: any): Promise<string | null> {
+  const { data: connection, error: dbError } = await admin
+    .from("oauth_connections")
+    .select("access_token, refresh_token, expires_at")
+    .eq("user_id", userId)
+    .eq("provider", "bitbucket")
+    .single();
+
+  if (dbError || !connection || !connection.access_token) {
+    return null;
+  }
+
+  if (connection.expires_at) {
+    const expiresAt = new Date(connection.expires_at).getTime();
+    const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
+    if (expiresAt > fiveMinutesFromNow) {
+      return connection.access_token;
+    }
+  } else if (connection.access_token && !connection.refresh_token) {
+    return connection.access_token;
+  }
+
+  if (!connection.refresh_token) {
+    return connection.access_token;
+  }
+
+  const clientId = process.env.BITBUCKET_CLIENT_ID || process.env.VITE_BITBUCKET_CLIENT_ID;
+  const clientSecret = process.env.BITBUCKET_CLIENT_SECRET || process.env.VITE_BITBUCKET_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.warn("[ensureValidBitbucketToken] Missing Bitbucket credentials for refresh");
+    return connection.access_token;
+  }
+
+  try {
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', connection.refresh_token);
+
+    const tokenRes = await fetch("https://bitbucket.org/site/oauth2/access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "Authorization": `Basic ${basicAuth}`,
+      },
+      body: params.toString(),
+    });
+
+    if (!tokenRes.ok) {
+      console.warn(`[ensureValidBitbucketToken] Bitbucket refresh failed: ${tokenRes.status}`);
+      return connection.access_token;
+    }
+
+    const tokenData = await tokenRes.json();
+    if (tokenData.error || !tokenData.access_token) {
+      return connection.access_token;
+    }
+
+    let newExpiresAt = null;
+    if (tokenData.expires_in) {
+      newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+    }
+
+    const { error: updateError } = await admin
+      .from("oauth_connections")
+      .update({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token || connection.refresh_token,
+        expires_at: newExpiresAt,
+      })
+      .eq("user_id", userId)
+      .eq("provider", "bitbucket");
+
+    if (updateError) {
+      console.error("[ensureValidBitbucketToken] Failed to save refreshed token:", updateError.message);
+    }
+
+    return tokenData.access_token;
+  } catch (err: any) {
+    console.error("[ensureValidBitbucketToken] Error during refresh:", err.message);
+    return connection.access_token;
+  }
+}
+
 async function ensureValidGitlabToken(userId: string, admin: any): Promise<string | null> {
   const { data: connection, error: dbError } = await admin
     .from("oauth_connections")
@@ -277,7 +363,7 @@ async function handleStoreProviderToken(req: any, res: any, admin: any) {
     return sendJson(res, 400, { error: "Missing provider token" });
   }
 
-  const validProviders = ["github", "gitlab", "bitbucket", "azure"];
+  const validProviders = ["github", "gitlab", "azure"];
   if (!requestedProvider || !validProviders.includes(requestedProvider)) {
     return sendJson(res, 400, { error: "Missing or invalid provider" });
   }
@@ -298,19 +384,7 @@ async function handleStoreProviderToken(req: any, res: any, admin: any) {
     }
     const gitlabUser = await gitlabUserRes.json();
     providerUserId = String(gitlabUser.id);
-  } else if (provider === "bitbucket") {
-    const bbUserRes = await fetch("https://api.bitbucket.org/2.0/user", {
-      headers: {
-        Authorization: `Bearer ${providerToken}`,
-        Accept: "application/json",
-        "User-Agent": "CodeVibe-Vercel-Function",
-      },
-    });
-    if (!bbUserRes.ok) {
-      return sendJson(res, 400, { error: "Failed to validate Bitbucket token with provider" });
-    }
-    const bbUser = await bbUserRes.json();
-    providerUserId = String(bbUser.account_id || bbUser.uuid || bbUser.username || "bitbucket_user");
+
   } else if (provider === "azure") {
     const azureUserRes = await fetch(
       "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=6.0",
@@ -603,23 +677,48 @@ async function handleFetchGitlabMergeRequests(req: any, res: any, admin: any) {
   return sendJson(res, 200, mapped);
 }
 
+async function handleCheckBitbucketConnection(req: any, res: any, admin: any) {
+  const auth = await authenticateRequest(req, res, admin);
+  if (!auth) return;
+  const { user } = auth;
+
+  const bbToken = await ensureValidBitbucketToken(user.id, admin);
+
+  if (!bbToken) {
+    return sendJson(res, 200, { status: "disconnected" });
+  }
+
+  const bbRes = await fetch("https://api.bitbucket.org/2.0/user", {
+    headers: {
+      Authorization: `Bearer ${bbToken}`,
+      Accept: "application/json",
+      "User-Agent": "CodeVibe-Vercel-Function",
+    },
+  });
+
+  if (!bbRes.ok) {
+    if (bbRes.status === 401) {
+      return sendJson(res, 200, { status: "expired" });
+    }
+    return sendJson(res, 200, { status: "error" });
+  }
+
+  const bbUser = await bbRes.json();
+  const username = bbUser.display_name || bbUser.nickname || bbUser.username || "Bitbucket User";
+  return sendJson(res, 200, { status: "connected", username });
+}
+
 async function handleFetchBitbucketRepos(req: any, res: any, admin: any) {
   const auth = await authenticateRequest(req, res, admin);
   if (!auth) return;
   const { user } = auth;
 
-  const { data: connection, error: dbError } = await (admin as any)
-    .from("oauth_connections")
-    .select("access_token")
-    .eq("user_id", user.id)
-    .eq("provider", "bitbucket")
-    .single();
+  const bbToken = await ensureValidBitbucketToken(user.id, admin);
 
-  if (dbError || !connection || !(connection as any).access_token) {
+  if (!bbToken) {
     return sendJson(res, 404, { error: "Bitbucket is not connected. Please connect your account." });
   }
 
-  const bbToken = (connection as any).access_token;
   const bbRes = await fetch(
     "https://api.bitbucket.org/2.0/repositories?role=contributor&sort=-updated_on&pagelen=100",
     {
@@ -662,18 +761,12 @@ async function handleFetchBitbucketPrs(req: any, res: any, admin: any) {
   if (!auth) return;
   const { user } = auth;
 
-  const { data: connection, error: dbError } = await (admin as any)
-    .from("oauth_connections")
-    .select("access_token")
-    .eq("user_id", user.id)
-    .eq("provider", "bitbucket")
-    .single();
+  const bbToken = await ensureValidBitbucketToken(user.id, admin);
 
-  if (dbError || !connection || !(connection as any).access_token) {
+  if (!bbToken) {
     return sendJson(res, 404, { error: "Bitbucket connection not found. Please connect your account." });
   }
 
-  const bbToken = (connection as any).access_token;
   const body = parseBody(req);
   const repoFullName = body?.repoFullName || req.query?.repoFullName;
   if (!repoFullName) {
@@ -1048,6 +1141,9 @@ export default async function handler(req: any, res: any) {
 
       case "check-gitlab-connection":
         return await handleCheckGitlabConnection(req, res, admin);
+
+      case "check-bitbucket-connection":
+        return await handleCheckBitbucketConnection(req, res, admin);
 
       case "fetch-bitbucket-repos":
         return await handleFetchBitbucketRepos(req, res, admin);
