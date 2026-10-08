@@ -141,7 +141,11 @@ export default async function handler(req: any, res: any) {
 
     if (!userRes.ok) {
       const errorText = await userRes.text().catch(() => "No error body");
-      console.error(`[bitbucket-callback] User validation failed: ${userRes.status} ${errorText}`);
+      console.error("[BITBUCKET_OAUTH_DEBUG] /2.0/user", {
+        status: userRes.status,
+        statusText: userRes.statusText,
+        body: errorText.substring(0, 500),
+      });
       await cleanupState(false);
       return redirectError(`Failed to validate Bitbucket token: ${userRes.status} ${errorText}`.substring(0, 150));
     }
