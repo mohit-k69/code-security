@@ -40,6 +40,7 @@ export interface BitbucketPullRequest {
 export function useBitbucket(activeWorkflow: string, user?: User | null) {
   const [bitbucketRepos, setBitbucketRepos] = useState<BitbucketRepo[]>([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
+  const [hasFetchedRepos, setHasFetchedRepos] = useState(false);
   const [bitbucketReposError, setBitbucketReposError] = useState('');
   const [bitbucketSearchQuery, setBitbucketSearchQuery] = useState('');
   const [selectedRepoFullName, setSelectedRepoFullName] = useState<string | null>(null);
@@ -135,6 +136,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
       console.error('Fetch Bitbucket Repos Error:', err);
       setBitbucketReposError(err.message || 'Failed to fetch Bitbucket repositories.');
     } finally {
+      setHasFetchedRepos(true);
       setIsFetchingRepos(false);
     }
   }, []);
@@ -192,17 +194,18 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
 
   useEffect(() => {
     if (activeWorkflow === 'bitbucket' && isBitbucketConnected) {
-      if (bitbucketRepos.length === 0 && !isFetchingRepos && !bitbucketReposError) {
+      if (!hasFetchedRepos && !isFetchingRepos && !bitbucketReposError) {
         fetchBitbucketRepos();
       }
     }
-  }, [activeWorkflow, isBitbucketConnected, bitbucketRepos.length, isFetchingRepos, bitbucketReposError, fetchBitbucketRepos]);
+  }, [activeWorkflow, isBitbucketConnected, hasFetchedRepos, isFetchingRepos, bitbucketReposError, fetchBitbucketRepos]);
 
   // Listen for connection completion event from OAuth linking
   useEffect(() => {
     const handleConnected = () => {
       trackEvent('bitbucket_connected');
       setBitbucketRepos([]);
+      setHasFetchedRepos(false);
       setSelectedRepoFullName(null);
       setSelectedPR(null);
       setBitbucketSearchQuery('');
@@ -214,6 +217,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     
     const handleDisconnected = () => {
       setBitbucketRepos([]);
+      setHasFetchedRepos(false);
       setSelectedRepoFullName(null);
       setSelectedPR(null);
       setBitbucketSearchQuery('');
