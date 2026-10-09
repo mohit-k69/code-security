@@ -180,7 +180,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     }
   }, [gitlabConnectionStatus]);
 
-  const fetchGitlabMergeRequests = useCallback(async (projectId: number) => {
+  const fetchGitlabMergeRequests = useCallback(async (projectId: string | number) => {
     setIsFetchingMRs(true);
     setGitlabMRsError('');
     setSelectedMR(null);
@@ -220,7 +220,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
 
   const selectProject = useCallback((project: GitlabProject) => {
     setSelectedProjectId(project.id);
-    fetchGitlabMergeRequests(project.id);
+    fetchGitlabMergeRequests(project.path_with_namespace || project.id);
   }, [fetchGitlabMergeRequests]);
 
   const selectMergeRequest = useCallback((mr: GitlabMergeRequest) => {

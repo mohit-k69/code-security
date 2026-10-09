@@ -309,6 +309,7 @@ export function GitlabWorkflow({
           selectedMR={selectedMR}
           onAnalyzeMR={handleAnalyzeMR}
           isAnalyzing={isAnalyzing}
+          error={gitlabMRsError}
         />
       ) : gitlabProjectsError && gitlabProjects.length === 0 ? (
         null

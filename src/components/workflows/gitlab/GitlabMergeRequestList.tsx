@@ -12,6 +12,7 @@ interface GitlabMergeRequestListProps {
   selectedMR: GitlabMergeRequest | null;
   onAnalyzeMR: (project: GitlabProject, mr: GitlabMergeRequest) => void;
   isAnalyzing: boolean;
+  error?: string;
 }
 
 export function GitlabMergeRequestList({
@@ -23,6 +24,7 @@ export function GitlabMergeRequestList({
   selectedMR,
   onAnalyzeMR,
   isAnalyzing,
+  error,
 }: GitlabMergeRequestListProps) {
   return (
     <div className="w-full space-y-6">
@@ -123,6 +125,16 @@ export function GitlabMergeRequestList({
           <div className="py-16 flex flex-col items-center justify-center text-gray-400 gap-3">
             <Loader2 className="w-7 h-7 animate-spin text-[#E24329]" />
             <p className="text-xs font-medium text-gray-600">Loading merge requests...</p>
+          </div>
+        ) : error ? (
+          <div className="py-14 text-center bg-rose-50 border border-rose-200 rounded-2xl p-6">
+            <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-3">
+              <Shield className="w-5 h-5 text-rose-600" />
+            </div>
+            <h5 className="text-sm font-semibold text-rose-900">Failed to load merge requests</h5>
+            <p className="text-xs text-rose-600 mt-1 max-w-sm mx-auto">
+              {error}
+            </p>
           </div>
         ) : mergeRequests.length === 0 ? (
           <div className="py-14 text-center bg-white border border-gray-200 rounded-2xl p-6">
