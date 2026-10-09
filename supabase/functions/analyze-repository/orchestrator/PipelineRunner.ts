@@ -18,7 +18,8 @@ export interface PipelineConfig {
   supabaseAdmin: SupabaseClient;
   githubToken?: string;
   providerService?: ProviderService;
-  prNumber?: number;
+  prNumber: number;
+  commitSha: string;
   openRouterKey: string;
   standardModel: string;
   majorModel: string;
@@ -36,24 +37,8 @@ export class PipelineRunner {
     // 1. Instantiate Provider Service
     const providerService = config.providerService || new GithubService(config.githubToken || '');
 
-    // 2. Select PR
-    let selectionResult: { prNumber: number; commitSha: string };
-    if (config.prNumber) {
-      try {
-        const pr = await providerService.getPullRequestDetails(owner, repo, config.prNumber);
-        selectionResult = { prNumber: pr.number, commitSha: pr.head.sha };
-      } catch (err: any) {
-        return { type: 'error', message: `Failed to fetch PR details: ${err.message}`, status: 400 };
-      }
-    } else {
-      const selector = new PRSelector(supabaseAdmin, providerService);
-      const sel = await selector.selectNextReview(owner, repo);
-
-      if (sel.status !== 'pr_selected') {
-        return { type: 'error', message: sel.message || 'PR selection failed', status: 400 };
-      }
-      selectionResult = { prNumber: sel.prNumber!, commitSha: sel.commitSha! };
-    }
+    // 2. Select PR (Done externally now)
+    const selectionResult = { prNumber: config.prNumber, commitSha: config.commitSha };
 
     // 3. Build Context
     const resolver = new DependencyResolver();

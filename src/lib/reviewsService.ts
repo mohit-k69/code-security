@@ -23,7 +23,7 @@ export interface ReviewedItem {
 export interface SaveReviewInput {
   userId: string;
   name: string;
-  reviewType: 'github' | 'paste' | 'upload';
+  reviewType: 'github' | 'gitlab' | 'bitbucket' | 'paste' | 'upload';
   repositoryOwner?: string | null;
   repositoryName?: string | null;
   prNumber?: number | null;

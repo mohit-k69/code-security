@@ -10,6 +10,8 @@ interface GitlabProjectListProps {
   viewStyle: 'grid' | 'list';
   onSelectProject: (project: GitlabProject) => void;
   selectedProjectId: number | null;
+  handleAnalyzeProject: (project: GitlabProject) => void;
+  isLimitReached?: boolean;
 }
 
 export function GitlabProjectList({
@@ -19,6 +21,8 @@ export function GitlabProjectList({
   viewStyle,
   onSelectProject,
   selectedProjectId,
+  handleAnalyzeProject,
+  isLimitReached = false,
 }: GitlabProjectListProps) {
   const shouldReduceMotion = useReducedMotion();
   const transitionConfig = shouldReduceMotion 
@@ -160,11 +164,26 @@ export function GitlabProjectList({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          handleAnalyzeProject(project);
+                        }}
+                        className={`px-4 py-1 rounded-full text-[12px] font-medium transition-colors cursor-pointer ${
+                          isLimitReached
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                        }`}
+                        title={isLimitReached ? "Free review limit reached" : "Analyze"}
+                      >
+                        {isLimitReached ? "Limit Reached" : "Analyze"}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onSelectProject(project);
                         }}
                         className={`px-4 py-1 rounded-full text-[12px] font-medium transition-colors cursor-pointer ${
                           isSelected 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100' 
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                         title="Select Project"
@@ -199,7 +218,22 @@ export function GitlabProjectList({
                     </div>
                   </div>
 
-                  <div className="flex items-center flex-shrink-0 ml-4">
+                  <div className="flex items-center flex-shrink-0 ml-4 gap-2">
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAnalyzeProject(project);
+                      }}
+                      className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                        isLimitReached
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                      title={isLimitReached ? "Free review limit reached" : "Analyze"}
+                    >
+                      {isLimitReached ? "Limit Reached" : "Analyze"}
+                    </button>
                     <button 
                       type="button"
                       onClick={(e) => {

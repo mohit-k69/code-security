@@ -12,10 +12,12 @@ export interface PRSelectorResult {
 export class PRSelector {
   private db: SupabaseClient;
   private provider: ProviderService;
+  private providerName: string;
 
-  constructor(db: SupabaseClient, provider: ProviderService) {
+  constructor(db: SupabaseClient, provider: ProviderService, providerName: string) {
     this.db = db;
     this.provider = provider;
+    this.providerName = providerName;
   }
 
   /**
@@ -45,6 +47,7 @@ export class PRSelector {
       const { data: reviews, error } = await this.db
         .from('pr_reviews')
         .select('pr_number, commit_sha')
+        .eq('provider', this.providerName)
         .eq('repository_owner', owner)
         .eq('repository_name', repo)
         .in('pr_number', prNumbers)

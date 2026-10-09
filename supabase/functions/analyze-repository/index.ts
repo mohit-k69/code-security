@@ -4,6 +4,7 @@ import { GithubService } from "./services/GithubService.ts";
 import { GitlabService } from "./services/GitlabService.ts";
 import { BitbucketService } from "./services/BitbucketService.ts";
 import { AzureDevOpsService } from "./services/AzureDevOpsService.ts";
+import { PRSelector } from "./services/PRSelector.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -98,31 +99,128 @@ Deno.serve(async (req) => {
       providerService = new GithubService(connection.access_token);
     }
 
-    const runner = new PipelineRunner();
-    const result = await runner.run({
-      owner,
-      repo,
-      supabaseAdmin,
-      providerService,
-      prNumber: typeof prNumber === 'number' ? prNumber : undefined,
-      openRouterKey,
-      standardModel,
-      majorModel
+    let prNumberToReview = typeof prNumber === 'number' ? prNumber : null;
+    let commitShaToReview = null;
+
+    if (prNumberToReview) {
+      try {
+        const prDetails = await providerService.getPullRequestDetails(owner, repo, prNumberToReview);
+        commitShaToReview = prDetails.head.sha;
+      } catch (err: any) {
+        return jsonResponse({ error: `Failed to fetch PR details: ${err.message}` }, 400);
+      }
+    } else {
+      const selector = new PRSelector(supabaseAdmin, providerService, provider);
+      const sel = await selector.selectNextReview(owner, repo);
+      if (sel.status !== 'pr_selected') {
+        if (sel.status === 'no_prs' || sel.status === 'all_reviewed') {
+          return jsonResponse({ status: 'no_prs', message: sel.message });
+        }
+        return jsonResponse({ error: sel.message || 'No open Pull Requests available.' }, 400);
+      }
+      prNumberToReview = sel.prNumber!;
+      commitShaToReview = sel.commitSha!;
+    }
+
+    // Attempt to reserve the limit (throws if limit exceeded or idempotency conflict)
+    const repoFullName = `${owner}/${repo}`;
+    const { data: reservationId, error: reserveError } = await supabaseAdmin.rpc('reserve_review_slot', {
+      p_user_id: user.id,
+      p_limit: 5,
+      p_name: repoFullName,
+      p_review_type: provider,
+      p_repository_owner: owner,
+      p_repository_name: repo,
+      p_pr_number: prNumberToReview,
+      p_commit_sha: commitShaToReview
     });
+
+    if (reserveError) {
+      if (reserveError.message?.includes('Limit exceeded')) {
+        return jsonResponse({ error: 'You have completed all 5 free reviews. Additional repository scans cannot be started on this account.' }, 429);
+      }
+      if (reserveError.message?.includes('Idempotency conflict')) {
+        return jsonResponse({ error: 'This specific commit is already being scanned or was already scanned.' }, 409);
+      }
+      console.error('Reservation error:', reserveError);
+      return jsonResponse({ error: 'Failed to reserve scan slot.' }, 500);
+    }
+
+    let pipelineResult;
+    let heartbeatInterval: number | undefined;
+
+    try {
+      heartbeatInterval = setInterval(async () => {
+        try {
+          await supabaseAdmin.rpc('heartbeat_review_reservation', {
+            p_reservation_id: reservationId,
+            p_user_id: user.id
+          });
+        } catch (e) {
+          console.error('Heartbeat failed:', e);
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+
+      const runner = new PipelineRunner();
+      pipelineResult = await runner.run({
+        owner,
+        repo,
+        supabaseAdmin,
+        providerService,
+        prNumber: prNumberToReview,
+        commitSha: commitShaToReview,
+        openRouterKey,
+        standardModel,
+        majorModel
+      });
+    } catch (e: any) {
+      pipelineResult = { type: 'error', message: e.message, status: 500 };
+    } finally {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+    }
 
     const isDebug = Deno.env.get('DEBUG_INSTRUMENTATION') === 'true';
 
-    switch (result.type) {
-      case 'success':
+    if (pipelineResult.type === 'success') {
+      const reportData: any = pipelineResult.data;
+      const verdict = reportData.report?.verdict || 'NOT_VERIFIED';
+      
+      let totalFindings = 0;
+      if (Array.isArray(reportData.report?.findings)) {
+        totalFindings = reportData.report.findings.length;
+      } else if (reportData.report?.findings) {
+        const f = reportData.report.findings;
+        totalFindings = (f.critical?.length || 0) + (f.warning?.length || 0) + (f.info?.length || 0);
+      }
+
+      await supabaseAdmin.rpc('finalize_review', {
+        p_reservation_id: reservationId,
+        p_user_id: user.id,
+        p_verdict: verdict,
+        p_total_findings: totalFindings,
+        p_report: reportData.report || reportData
+      });
+
+      return isDebug 
+        ? jsonResponse(reportData) 
+        : jsonResponse({ report: reportData.report });
+    } else {
+      await supabaseAdmin.rpc('release_review_reservation', {
+        p_reservation_id: reservationId,
+        p_user_id: user.id
+      });
+
+      if (pipelineResult.type === 'empty') {
+        const emptyData: any = pipelineResult.data;
         return isDebug 
-          ? jsonResponse(result.data as unknown as Record<string, unknown>) 
-          : jsonResponse({ report: result.data.report } as unknown as Record<string, unknown>);
-      case 'empty':
-        return isDebug 
-          ? jsonResponse({ report: result.data, message: result.message }) 
-          : jsonResponse({ report: result.data });
-      case 'error':
-        return jsonResponse({ error: result.message }, result.status);
+          ? jsonResponse({ report: emptyData, message: pipelineResult.message }) 
+          : jsonResponse({ report: emptyData });
+      } else {
+        const errResult: any = pipelineResult;
+        return jsonResponse({ error: errResult.message }, errResult.status || 500);
+      }
     }
 
   } catch (error: any) {

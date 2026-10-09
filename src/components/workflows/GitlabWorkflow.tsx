@@ -7,7 +7,7 @@ import { GitlabHeader } from './gitlab/GitlabHeader';
 import { GitlabConnectCard } from './gitlab/GitlabConnectCard';
 import { GitlabProjectList } from './gitlab/GitlabProjectList';
 import { GitlabMergeRequestList } from './gitlab/GitlabMergeRequestList';
-import { ReviewedItem } from '../../lib/reviewsService';
+import { ReviewedItem, saveUserReview } from '../../lib/reviewsService';
 import { supabase } from '../../lib/supabase';
 import { trackEvent } from '../../lib/posthog';
 
@@ -115,6 +115,8 @@ export function GitlabWorkflow({
 
         const projectName = project.path_with_namespace || project.name;
         const verdict = data.report.verdict || 'NOT_VERIFIED';
+        const commitSha = data.commitSha || data.report?.commitSha || null;
+        
         const localItem: ReviewedItem = {
           name: projectName,
           verdict,
@@ -124,12 +126,100 @@ export function GitlabWorkflow({
           reviewType: 'gitlab',
           repoOwner: project.namespace?.path || '',
           repoName: project.name,
+          commitSha
         };
 
         setReviewedItems((prev) => [
           localItem,
           ...prev.filter(
             (p) => !(p.name === projectName && p.pr === mr.iid)
+          ),
+        ]);
+      } else {
+        throw new Error('No report was returned from analysis');
+      }
+    } catch (err: any) {
+      console.error('GitLab analysis error:', err);
+      const errMsg = err.message || 'Analysis failed. Please try again.';
+      setAnalysisError(errMsg);
+      setIsAnalyzing(false);
+      trackEvent('analysis_failed', { review_type: 'gitlab', error: errMsg });
+    }
+  };
+
+  const handleAnalyzeProject = async (project: GitlabProject) => {
+    if (isLimitReached) {
+      setAnalysisError('You have completed all 5 free reviews. Additional repository scans cannot be started on this account.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisError('');
+    setAnalysisResult(null);
+    trackEvent('analysis_started', { review_type: 'gitlab', project_id: project.id });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : undefined;
+
+      const { data, error } = await supabase.functions.invoke('analyze-repository', {
+        headers,
+        body: {
+          provider: 'gitlab',
+          projectId: project.id,
+          owner: project.namespace?.path || '',
+          repo: project.path_with_namespace || project.name
+        }
+      });
+
+      if (error) {
+        let msg = error.message;
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) msg = body.error;
+          } catch {}
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+
+      if (data.status === 'no_prs') {
+        setAnalysisError(data.message || 'No open Merge Requests available.');
+        setIsAnalyzing(false);
+      } else if (data.report) {
+        setAnalysisResult(data.report);
+        setIsAnalyzing(false);
+
+        const findingCount = Array.isArray(data.report.findings) ? data.report.findings.length : 0;
+        trackEvent('analysis_completed', {
+          review_type: 'gitlab',
+          verdict: data.report.verdict || 'NOT_VERIFIED',
+          finding_count: findingCount,
+        });
+
+        const projectName = project.path_with_namespace || project.name;
+        const verdict = data.report.verdict || 'NOT_VERIFIED';
+        const commitSha = data.commitSha || data.report?.commitSha || null;
+        
+        const localItem: ReviewedItem = {
+          name: projectName,
+          verdict,
+          pr: data.report.repository?.prNumber || null,
+          date: new Date(),
+          result: data.report,
+          reviewType: 'gitlab',
+          repoOwner: project.namespace?.path || '',
+          repoName: project.name,
+          commitSha
+        };
+
+        setReviewedItems((prev) => [
+          localItem,
+          ...prev.filter(
+            (p) => !(p.name === projectName && p.pr === localItem.pr)
           ),
         ]);
       } else {
@@ -230,6 +320,8 @@ export function GitlabWorkflow({
           viewStyle={viewStyle}
           onSelectProject={selectProject}
           selectedProjectId={selectedProjectId}
+          handleAnalyzeProject={handleAnalyzeProject}
+          isLimitReached={isLimitReached}
         />
       )}
     </motion.div>
