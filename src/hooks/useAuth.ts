@@ -641,13 +641,18 @@ export function useAuth() {
           return updateUserWithIdentities(baseUser, identities, explicitProv);
         });
 
-        // Unblock UI immediately so the user doesn't wait
-        setIsInitializing(false);
-
-        // Store provider token in background without blocking the UI
+        // When returning from an OAuth callback with a provider_token, persist it before unblocking UI
+        // so oauth_connections has the token before workflow hooks check connection status.
         if (session.provider_token) {
-          storeProviderTokenInBackground(session, flowProvider || undefined);
+          if (wasPendingOAuthCallback) {
+            await storeProviderTokenInBackground(session, flowProvider || undefined);
+          } else {
+            storeProviderTokenInBackground(session, flowProvider || undefined);
+          }
         }
+
+        // Unblock UI once session (and any callback token persistence) is ready
+        setIsInitializing(false);
 
         // Authoritative user identity refresh using getUserIdentities():
         // Always query the server for fresh linked identities, and update state without reverting connected flags

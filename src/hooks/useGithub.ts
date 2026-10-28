@@ -29,13 +29,15 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
 
   const [githubConnectionStatus, setGithubConnectionStatus] = useState<GithubConnectionStatus>('checking');
+  const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
   const [githubUsername, setGithubUsername] = useState<string | null>(user?.githubUsername || null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const connectionInstanceRef = useRef(0);
 
   const checkConnection = useCallback(async () => {
     if (!user?.id) {
-      setGithubConnectionStatus('disconnected');
+      setCheckedUserId(null);
+      setGithubConnectionStatus('checking');
       return;
     }
     
@@ -46,6 +48,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       if (!session) {
          if (connectionInstanceRef.current === currentInstance) {
            setGithubConnectionStatus('disconnected');
+           setCheckedUserId(user.id);
          }
          return;
       }
@@ -72,6 +75,10 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       if (connectionInstanceRef.current !== currentInstance) return;
       console.warn('Failed to check github connection:', err);
       setGithubConnectionStatus('disconnected');
+    } finally {
+      if (connectionInstanceRef.current === currentInstance && user?.id) {
+        setCheckedUserId(user.id);
+      }
     }
   }, [user?.id]);
 
@@ -204,17 +211,29 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       setGithubSearchQuery('');
       setGithubReposError('');
       checkConnection(); // Refresh the real connection status
-      if (activeWorkflow === 'github') {
-        fetchGithubRepositories();
-      }
     };
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (user?.id && searchParams.get('github_connected') === 'true') {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('github_connected');
+      window.history.replaceState({}, '', newUrl.toString());
+      handleConnected();
+    }
+
     window.addEventListener('codevibe_github_connected', handleConnected);
     return () => {
       window.removeEventListener('codevibe_github_connected', handleConnected);
     };
-  }, [activeWorkflow, checkConnection, fetchGithubRepositories]);
+  }, [user?.id, checkConnection]);
 
   const isGithubConnected = githubConnectionStatus === 'connected';
+  const effectiveConnectionStatus: GithubConnectionStatus =
+    !user?.id || checkedUserId !== user.id ? 'checking' : githubConnectionStatus;
+  const effectiveIsFetchingRepos =
+    isFetchingRepos ||
+    effectiveConnectionStatus === 'checking' ||
+    (activeWorkflow === 'github' && isGithubConnected && !hasFetchedRepos && githubRepos.length === 0 && !githubReposError);
 
   const clearGithubSelection = useCallback(() => {
     setGithubSearchQuery('');
@@ -232,14 +251,14 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
 
   return {
     githubRepos,
-    isFetchingRepos,
+    isFetchingRepos: effectiveIsFetchingRepos,
     githubReposError,
     githubSearchQuery,
     setGithubSearchQuery,
     selectedRepoId,
     setSelectedRepoId,
     fetchGithubRepositories,
-    githubConnectionStatus,
+    githubConnectionStatus: effectiveConnectionStatus,
     isGithubConnected,
     githubUsername,
     disconnectGithub,

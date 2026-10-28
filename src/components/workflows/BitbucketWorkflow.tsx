@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { Loader2 } from 'lucide-react';
 import { useBitbucket, BitbucketRepo, BitbucketPullRequest } from '../../hooks/useBitbucket';
 import { User } from '../../hooks/useAuth';
 import { BitbucketHeader } from './bitbucket/BitbucketHeader';
@@ -54,6 +55,7 @@ export function BitbucketWorkflow({
     selectPullRequest,
     fetchBitbucketRepos,
     isBitbucketConnected,
+    isCheckingConnection,
     clearBitbucketSelection,
     disconnectBitbucket,
     isDisconnecting,
@@ -193,7 +195,12 @@ export function BitbucketWorkflow({
       )}
 
       {/* Flow View Switch */}
-      {!isBitbucketConnected && bitbucketRepos.length === 0 ? (
+      {isCheckingConnection ? (
+        <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3 min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#0052CC]" />
+          <p className="text-sm font-medium text-gray-600">Loading your Bitbucket repositories...</p>
+        </div>
+      ) : !isBitbucketConnected && bitbucketRepos.length === 0 ? (
         <BitbucketConnectCard
           linkError={linkError}
           setLinkError={setLinkError}

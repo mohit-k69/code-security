@@ -44,7 +44,7 @@ export function GithubWorkflow({
   setActiveWorkflow,
   isFetchingRepos,
   githubReposError,
-  githubConnectionStatus = 'disconnected',
+  githubConnectionStatus = 'checking',
   isGithubConnected = false,
   githubUsername = null,
   disconnectGithub,
@@ -245,7 +245,12 @@ export function GithubWorkflow({
       />
       
       <div className={`flex-1 flex flex-col ${selectedRepoId !== null ? 'max-w-full' : 'max-w-6xl'} mx-auto w-full pt-4 h-[calc(100vh-200px)]`}>
-        {!isGithubConnected ? (
+        {githubConnectionStatus === 'checking' ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <Loader2 className="w-8 h-8 animate-spin mb-4 text-emerald-500" />
+            <p className="text-[14px]">Fetching your repositories...</p>
+          </div>
+        ) : !isGithubConnected ? (
           <ConnectionError 
             githubReposError={githubReposError} 
             handleConnectGithub={handleConnectGithub} 

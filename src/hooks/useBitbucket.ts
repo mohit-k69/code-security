@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { type User } from './useAuth';
 import { trackEvent } from '../lib/posthog';
@@ -52,12 +52,22 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
 
   const [isBitbucketConnected, setIsBitbucketConnected] = useState(false);
   const [isBitbucketExpired, setIsBitbucketExpired] = useState(false);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
+  const connectionInstanceRef = useRef(0);
 
   const checkConnection = useCallback(async () => {
+    if (!user?.id) {
+      setCheckedUserId(null);
+      setIsCheckingConnection(true);
+      return;
+    }
+
+    const currentInstance = connectionInstanceRef.current;
     setIsCheckingConnection(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (connectionInstanceRef.current !== currentInstance) return;
       if (!session?.access_token) {
         setIsBitbucketConnected(false);
         setIsBitbucketExpired(false);
@@ -70,6 +80,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
         }
       });
 
+      if (connectionInstanceRef.current !== currentInstance) return;
       if (!res.ok) {
         setIsBitbucketConnected(false);
         setIsBitbucketExpired(false);
@@ -77,6 +88,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
       }
 
       const data = await res.json();
+      if (connectionInstanceRef.current !== currentInstance) return;
       if (data.status === 'connected') {
         setIsBitbucketConnected(true);
         setIsBitbucketExpired(false);
@@ -88,23 +100,23 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
         setIsBitbucketExpired(false);
       }
     } catch (err) {
+      if (connectionInstanceRef.current !== currentInstance) return;
       console.error('Check Bitbucket connection error:', err);
       setIsBitbucketConnected(false);
       setIsBitbucketExpired(false);
     } finally {
-      setIsCheckingConnection(false);
+      if (connectionInstanceRef.current === currentInstance) {
+        setIsCheckingConnection(false);
+        if (user?.id) {
+          setCheckedUserId(user.id);
+        }
+      }
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     checkConnection();
   }, [checkConnection, user?.isBitbucketLinked, activeWorkflow]);
-
-  useEffect(() => {
-    const handleConnected = () => checkConnection();
-    window.addEventListener('codevibe_bitbucket_connected', handleConnected);
-    return () => window.removeEventListener('codevibe_bitbucket_connected', handleConnected);
-  }, [checkConnection]);
 
   const fetchBitbucketRepos = useCallback(async () => {
     setIsFetchingRepos(true);
@@ -210,14 +222,14 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
       setSelectedPR(null);
       setBitbucketSearchQuery('');
       setBitbucketReposError('');
-      if (activeWorkflow === 'bitbucket') {
-        fetchBitbucketRepos();
-      }
+      checkConnection();
     };
     
     const handleDisconnected = () => {
+      connectionInstanceRef.current += 1;
       setIsBitbucketConnected(false);
       setIsBitbucketExpired(false);
+      setIsCheckingConnection(false);
       setBitbucketRepos([]);
       setHasFetchedRepos(false);
       setSelectedRepoFullName(null);
@@ -226,6 +238,14 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
       setBitbucketReposError('');
       setBitbucketPRs([]);
     };
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (user?.id && searchParams.get('bitbucket_connected') === 'true') {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('bitbucket_connected');
+      window.history.replaceState({}, '', newUrl.toString());
+      handleConnected();
+    }
     
     window.addEventListener('codevibe_bitbucket_connected', handleConnected);
     window.addEventListener('codevibe_bitbucket_disconnected', handleDisconnected);
@@ -233,7 +253,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
       window.removeEventListener('codevibe_bitbucket_connected', handleConnected);
       window.removeEventListener('codevibe_bitbucket_disconnected', handleDisconnected);
     };
-  }, [activeWorkflow, fetchBitbucketRepos]);
+  }, [user?.id, checkConnection]);
 
   const clearBitbucketSelection = useCallback(() => {
     setBitbucketSearchQuery('');
@@ -293,9 +313,16 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     }
   }, [isDisconnecting]);
 
+  const effectiveIsCheckingConnection =
+    !user?.id || checkedUserId !== user.id || isCheckingConnection;
+  const effectiveIsFetchingRepos =
+    isFetchingRepos ||
+    effectiveIsCheckingConnection ||
+    (activeWorkflow === 'bitbucket' && isBitbucketConnected && !hasFetchedRepos && bitbucketRepos.length === 0 && !bitbucketReposError);
+
   return {
     bitbucketRepos,
-    isFetchingRepos,
+    isFetchingRepos: effectiveIsFetchingRepos,
     bitbucketReposError,
     bitbucketSearchQuery,
     setBitbucketSearchQuery,
@@ -312,7 +339,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     fetchBitbucketPRs,
     isBitbucketConnected,
     isBitbucketExpired,
-    isCheckingConnection,
+    isCheckingConnection: effectiveIsCheckingConnection,
     checkConnection,
     clearBitbucketSelection,
     disconnectBitbucket,
