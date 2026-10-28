@@ -17,6 +17,19 @@ export function GitlabConnectCard({
   const [isConnecting, setIsConnecting] = useState(false);
   const [modalStep, setModalStep] = useState<0 | 1 | 2>(0);
 
+  React.useEffect(() => {
+    const handleAuthError = (e: any) => {
+      setIsConnecting(false);
+      if (e.detail?.message) {
+        setLinkError(e.detail.message);
+      }
+    };
+    window.addEventListener('codevibe_auth_error', handleAuthError);
+    return () => {
+      window.removeEventListener('codevibe_auth_error', handleAuthError);
+    };
+  }, [setLinkError]);
+
   const executeConnectGitlab = async () => {
     setModalStep(0);
     if (isConnecting) return;

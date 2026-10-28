@@ -119,6 +119,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       setGithubUsername(null);
       setSelectedRepoId(null);
       setGithubReposError('');
+      window.dispatchEvent(new CustomEvent('codevibe_github_disconnected'));
       
       trackEvent('github_disconnected');
     } catch (err) {
@@ -218,7 +219,7 @@ export function useGithub(activeWorkflow: string, user?: User | null) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('github_connected');
       window.history.replaceState({}, '', newUrl.toString());
-      handleConnected();
+      window.dispatchEvent(new CustomEvent('codevibe_github_connected'));
     }
 
     window.addEventListener('codevibe_github_connected', handleConnected);

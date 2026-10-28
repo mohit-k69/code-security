@@ -55,6 +55,7 @@ export function BitbucketWorkflow({
     selectPullRequest,
     fetchBitbucketRepos,
     isBitbucketConnected,
+    bitbucketUsername,
     isCheckingConnection,
     clearBitbucketSelection,
     disconnectBitbucket,
@@ -174,7 +175,7 @@ export function BitbucketWorkflow({
         disconnectBitbucket={disconnectBitbucket}
         isDisconnecting={isDisconnecting}
         isBitbucketConnected={isBitbucketConnected}
-        bitbucketUsername={user?.bitbucketUsername || null}
+        bitbucketUsername={bitbucketUsername || user?.bitbucketUsername || null}
       />
 
       {/* Error state */}
@@ -204,7 +205,7 @@ export function BitbucketWorkflow({
         <BitbucketConnectCard
           linkError={linkError}
           setLinkError={setLinkError}
-          bitbucketUsername={user?.bitbucketUsername || null}
+          bitbucketUsername={bitbucketUsername || user?.bitbucketUsername || null}
         />
       ) : selectedRepo ? (
         <BitbucketPRList

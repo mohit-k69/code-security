@@ -6,6 +6,7 @@ interface SyncCodeWorkflowProps {
   setActiveWorkflow: (workflow: 'none' | 'upload' | 'paste' | 'github' | 'gitlab' | 'bitbucket' | 'azure' | 'sync') => void;
   githubConnectionStatus?: string;
   gitlabConnectionStatus?: string;
+  bitbucketConnectionStatus?: string;
   isBitbucketConnected?: boolean;
   isAzureConnected?: boolean;
 }
@@ -23,6 +24,7 @@ export function SyncCodeWorkflow({
   setActiveWorkflow,
   githubConnectionStatus = 'disconnected',
   gitlabConnectionStatus = 'disconnected',
+  bitbucketConnectionStatus,
   isBitbucketConnected = false,
   isAzureConnected = false,
 }: SyncCodeWorkflowProps) {
@@ -31,6 +33,9 @@ export function SyncCodeWorkflow({
   
   const isGitlabConnected = gitlabConnectionStatus === 'connected';
   const isGitlabExpired = gitlabConnectionStatus === 'expired';
+
+  const resolvedBitbucketConnected = bitbucketConnectionStatus ? bitbucketConnectionStatus === 'connected' : isBitbucketConnected;
+  const isBitbucketExpired = bitbucketConnectionStatus === 'expired';
   
   let githubBadge = 'Available';
   if (githubConnectionStatus === 'checking') githubBadge = 'Checking...';
@@ -43,7 +48,9 @@ export function SyncCodeWorkflow({
   if (isGitlabExpired) gitlabBadge = 'Connection expired';
 
   let bitbucketBadge = 'Available';
-  if (isBitbucketConnected) bitbucketBadge = 'Connected';
+  if (bitbucketConnectionStatus === 'checking') bitbucketBadge = 'Checking...';
+  if (resolvedBitbucketConnected) bitbucketBadge = 'Connected';
+  if (isBitbucketExpired) bitbucketBadge = 'Connection expired';
 
   const providers: ProviderItem[] = [
     {
@@ -177,8 +184,8 @@ export function SyncCodeWorkflow({
                     {provider.id === 'github'
                       ? (isGithubExpired ? 'Reconnect GitHub account' : isGithubConnected ? 'Open connected repositories' : 'Connect GitHub account')
                       : provider.id === 'gitlab'
-                      ? (isGitlabConnected ? 'Open connected projects' : 'Connect GitLab account')
-                      : (isBitbucketConnected ? 'Open connected repositories' : 'Connect Bitbucket account')}
+                      ? (isGitlabExpired ? 'Reconnect GitLab account' : isGitlabConnected ? 'Open connected projects' : 'Connect GitLab account')
+                      : (isBitbucketExpired ? 'Reconnect Bitbucket account' : resolvedBitbucketConnected ? 'Open connected repositories' : 'Connect Bitbucket account')}
                   </span>
                   <span className="text-gray-400 group-hover:text-gray-600">→</span>
                 </div>

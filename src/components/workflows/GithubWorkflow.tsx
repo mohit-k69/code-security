@@ -147,13 +147,28 @@ export function GithubWorkflow({
     setAnalysisState({ status: 'loading' });
     trackEvent('analysis_started', { review_type: 'github' });
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : undefined;
+
       const { data, error } = await supabase.functions.invoke('analyze-repository', {
+        headers,
         body: { owner: repo.owner.login, repo: repo.name, prNumber }
       });
       console.log("invoke result", data);
       console.log("JSON", JSON.stringify(data, null, 2));
       
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) msg = body.error;
+          } catch {}
+        }
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
 
       if (data.status === 'no_prs') {
@@ -272,6 +287,14 @@ export function GithubWorkflow({
               handleAnalyze={handleAnalyze}
               viewStyle={viewStyle}
               isLimitReached={isLimitReached}
+            />
+
+            <GithubAnalysisModals 
+              analysisState={analysisState}
+              setAnalysisState={setAnalysisState}
+              githubRepos={githubRepos}
+              selectedRepoId={selectedRepoId}
+              handleAnalyze={handleAnalyze}
             />
           </div>
         ) : providerTokenSetupError ? (

@@ -29,7 +29,7 @@ export default async function handler(req: any, res: any) {
     const redirectUrl = new URL(process.env.PUBLIC_SITE_URL || "https://code-security-review.vercel.app");
     redirectUrl.pathname = "/sync";
     redirectUrl.searchParams.set("workflow", "github");
-    redirectUrl.searchParams.set("error", encodeURIComponent(msg));
+    redirectUrl.searchParams.set("error", msg);
     res.setHeader("Location", redirectUrl.toString());
     return res.end();
   };

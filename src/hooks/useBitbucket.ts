@@ -37,6 +37,8 @@ export interface BitbucketPullRequest {
   sha: string;
 }
 
+export type BitbucketConnectionStatus = 'checking' | 'disconnected' | 'connected' | 'expired';
+
 export function useBitbucket(activeWorkflow: string, user?: User | null) {
   const [bitbucketRepos, setBitbucketRepos] = useState<BitbucketRepo[]>([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
@@ -52,6 +54,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
 
   const [isBitbucketConnected, setIsBitbucketConnected] = useState(false);
   const [isBitbucketExpired, setIsBitbucketExpired] = useState(false);
+  const [bitbucketUsername, setBitbucketUsername] = useState<string | null>(user?.bitbucketUsername || null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   const [checkedUserId, setCheckedUserId] = useState<string | null>(null);
   const connectionInstanceRef = useRef(0);
@@ -92,6 +95,9 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
       if (data.status === 'connected') {
         setIsBitbucketConnected(true);
         setIsBitbucketExpired(false);
+        if (data.username) {
+          setBitbucketUsername(data.username);
+        }
       } else if (data.status === 'expired') {
         setIsBitbucketConnected(false);
         setIsBitbucketExpired(true);
@@ -116,7 +122,7 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
 
   useEffect(() => {
     checkConnection();
-  }, [checkConnection, user?.isBitbucketLinked, activeWorkflow]);
+  }, [checkConnection, user?.isBitbucketLinked]);
 
   const fetchBitbucketRepos = useCallback(async () => {
     setIsFetchingRepos(true);
@@ -262,6 +268,17 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     setBitbucketPRs([]);
   }, []);
 
+  const clearBitbucketCache = useCallback(() => {
+    setBitbucketRepos([]);
+    setIsFetchingRepos(false);
+    setHasFetchedRepos(false);
+    setBitbucketReposError('');
+    setBitbucketSearchQuery('');
+    setSelectedRepoFullName(null);
+    setSelectedPR(null);
+    setBitbucketPRs([]);
+  }, []);
+
   const disconnectBitbucket = useCallback(async () => {
     if (isDisconnecting) return;
     setIsDisconnecting(true);
@@ -320,6 +337,14 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     effectiveIsCheckingConnection ||
     (activeWorkflow === 'bitbucket' && isBitbucketConnected && !hasFetchedRepos && bitbucketRepos.length === 0 && !bitbucketReposError);
 
+  const bitbucketConnectionStatus: BitbucketConnectionStatus = effectiveIsCheckingConnection
+    ? 'checking'
+    : isBitbucketConnected
+    ? 'connected'
+    : isBitbucketExpired
+    ? 'expired'
+    : 'disconnected';
+
   return {
     bitbucketRepos,
     isFetchingRepos: effectiveIsFetchingRepos,
@@ -337,11 +362,14 @@ export function useBitbucket(activeWorkflow: string, user?: User | null) {
     selectPullRequest,
     fetchBitbucketRepos,
     fetchBitbucketPRs,
+    bitbucketConnectionStatus,
     isBitbucketConnected,
     isBitbucketExpired,
+    bitbucketUsername,
     isCheckingConnection: effectiveIsCheckingConnection,
     checkConnection,
     clearBitbucketSelection,
+    clearBitbucketCache,
     disconnectBitbucket,
     isDisconnecting,
   };

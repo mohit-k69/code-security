@@ -404,7 +404,14 @@ export function useAuth() {
       isOAuthCallbackPendingRef.current = false;
       cleanOAuthCallbackUrl();
 
-      const isAccessDenied = oauthError.toLowerCase().includes('denied') || oauthError.toLowerCase().includes('access_denied');
+      let decodedError = oauthError;
+      if (oauthError.includes('%')) {
+        try {
+          decodedError = decodeURIComponent(oauthError);
+        } catch {}
+      }
+
+      const isAccessDenied = decodedError.toLowerCase().includes('denied') || decodedError.toLowerCase().includes('access_denied');
       const flowProv = resolveFlowProvider();
       const providerLabel = flowProv === 'gitlab' ? 'GitLab'
         : flowProv === 'bitbucket' ? 'Bitbucket'
@@ -413,7 +420,7 @@ export function useAuth() {
         : 'Provider';
       const userFriendlyError = isAccessDenied 
         ? (`${providerLabel} authorization was cancelled.`)
-        : (`${providerLabel} connection error: ${oauthError}`);
+        : (`${providerLabel} connection error: ${decodedError}`);
 
       if (flowProv === 'github') {
         window.dispatchEvent(new CustomEvent('codevibe_github_oauth_error', { detail: { message: userFriendlyError } }));
@@ -826,10 +833,24 @@ export function useAuth() {
       }
     };
 
+    const handleProviderDisconnected = (e: Event) => {
+      const type = e.type;
+      setUser(prev => {
+        if (!prev) return null;
+        if (type === 'codevibe_github_disconnected') return { ...prev, isGithubLinked: false, githubUsername: undefined };
+        if (type === 'codevibe_gitlab_disconnected') return { ...prev, isGitlabLinked: false, gitlabUsername: undefined };
+        if (type === 'codevibe_bitbucket_disconnected') return { ...prev, isBitbucketLinked: false, bitbucketUsername: undefined };
+        return prev;
+      });
+    };
+
     window.addEventListener('codevibe_github_connected', handleProviderConnected);
     window.addEventListener('codevibe_gitlab_connected', handleProviderConnected);
     window.addEventListener('codevibe_bitbucket_connected', handleProviderConnected);
     window.addEventListener('codevibe_azure_connected', handleProviderConnected);
+    window.addEventListener('codevibe_github_disconnected', handleProviderDisconnected);
+    window.addEventListener('codevibe_gitlab_disconnected', handleProviderDisconnected);
+    window.addEventListener('codevibe_bitbucket_disconnected', handleProviderDisconnected);
 
     const handleReposLoaded = () => {
       setProviderTokenSetupError(null);
@@ -844,6 +865,9 @@ export function useAuth() {
       window.removeEventListener('codevibe_gitlab_connected', handleProviderConnected);
       window.removeEventListener('codevibe_bitbucket_connected', handleProviderConnected);
       window.removeEventListener('codevibe_azure_connected', handleProviderConnected);
+      window.removeEventListener('codevibe_github_disconnected', handleProviderDisconnected);
+      window.removeEventListener('codevibe_gitlab_disconnected', handleProviderDisconnected);
+      window.removeEventListener('codevibe_bitbucket_disconnected', handleProviderDisconnected);
       window.removeEventListener('codevibe_github_repos_loaded', handleReposLoaded);
     };
   }, []);

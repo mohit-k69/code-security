@@ -101,12 +101,15 @@ export default function App() {
   } = useGithub(activeWorkflow, user);
 
   const {
-    gitlabConnectionStatus
-  } = useGitlab(activeWorkflow, user);
+    gitlabConnectionStatus,
+    clearGitlabCache
+  } = useGitlab('sync', user);
 
   const {
-    isBitbucketConnected
-  } = useBitbucket(activeWorkflow, user);
+    bitbucketConnectionStatus,
+    isBitbucketConnected,
+    clearBitbucketCache
+  } = useBitbucket('sync', user);
 
 
   // Automatically switch to the correct workflow if redirected back from OAuth Linking
@@ -280,6 +283,8 @@ export default function App() {
       resetUser();
       await supabase.auth.signOut();
       clearGithubCache();
+      clearGitlabCache();
+      clearBitbucketCache();
       handleReturnHome();
       setReviewedItems([]);
       setUser(null);
@@ -314,6 +319,8 @@ export default function App() {
       // 3. Clear all client-side authenticated-user state belonging to previous account
       resetUser();
       clearGithubCache();
+      clearGitlabCache();
+      clearBitbucketCache();
       handleReturnHome();
       setReviewedItems([]);
       setUser(null);
@@ -455,7 +462,7 @@ export default function App() {
           showRecoveryPrompt={showRecoveryPrompt}
           onDismissRecoveryPrompt={() => setShowRecoveryPrompt(false)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
-          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload' || activeWorkflow === 'github' || activeWorkflow === 'gitlab' || activeWorkflow === 'sync')}
+          showBackButton={activeTab === 'new' && (activeWorkflow === 'paste' || activeWorkflow === 'upload' || activeWorkflow === 'github' || activeWorkflow === 'gitlab' || activeWorkflow === 'bitbucket' || activeWorkflow === 'sync')}
           onBack={() => {
             if (activeWorkflow === 'paste') {
               if (mobilePasteView === 'results') {
@@ -467,7 +474,7 @@ export default function App() {
             } else if (activeWorkflow === 'github') {
               clearGithubSelection();
               setActiveWorkflow('sync');
-            } else if (activeWorkflow === 'gitlab') {
+            } else if (activeWorkflow === 'gitlab' || activeWorkflow === 'bitbucket') {
               setActiveWorkflow('sync');
             } else if (activeWorkflow === 'sync') {
               setActiveWorkflow('none');
@@ -587,6 +594,7 @@ export default function App() {
                                 setActiveWorkflow={setActiveWorkflow}
                                 githubConnectionStatus={githubConnectionStatus}
                                 gitlabConnectionStatus={gitlabConnectionStatus}
+                                bitbucketConnectionStatus={bitbucketConnectionStatus}
                                 isBitbucketConnected={isBitbucketConnected}
                                 isAzureConnected={Boolean(user?.isAzureLinked)}
                               />

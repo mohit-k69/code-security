@@ -62,12 +62,15 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const origin = req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "code-security-review.vercel.app"}`;
+
     const { data: stateRecord, error: dbError } = await admin
       .from("oauth_states")
       .insert({
         user_id: user.id,
         provider: "bitbucket",
         expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        origin,
       })
       .select("id")
       .single();

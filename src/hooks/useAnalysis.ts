@@ -86,7 +86,7 @@ export function useAnalysis(user?: User | null) {
     const MAX_SIZE = 2 * 1024 * 1024; // 2MB
     const validFiles = files.filter(file => {
       if (file.size > MAX_SIZE) {
-        alert(`File ${file.name} is too large (>${MAX_SIZE / 1024 / 1024}MB).`);
+        setAnalysisError(`File ${file.name} is too large (>${MAX_SIZE / 1024 / 1024}MB).`);
         return false;
       }
       return true;

@@ -256,7 +256,9 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
     };
     
     const handleDisconnected = () => {
+      connectionInstanceRef.current += 1;
       setGitlabConnectionStatus('disconnected');
+      setGitlabUsername(null);
       setGitlabProjects([]);
       setHasFetchedRepos(false);
       setIsFetchingProjects(false);
@@ -272,7 +274,7 @@ export function useGitlab(activeWorkflow: string, user?: User | null) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('gitlab_connected');
       window.history.replaceState({}, '', newUrl.toString());
-      handleConnected();
+      window.dispatchEvent(new CustomEvent('codevibe_gitlab_connected'));
     }
     
     window.addEventListener('codevibe_gitlab_connected', handleConnected);

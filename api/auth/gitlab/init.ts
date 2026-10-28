@@ -62,12 +62,15 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const origin = req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "localhost:5173"}`;
+
     const { data: stateRecord, error: dbError } = await admin
       .from("oauth_states")
       .insert({
         user_id: user.id,
         provider: "gitlab",
         expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        origin,
       })
       .select("id")
       .single();
@@ -81,8 +84,6 @@ export default async function handler(req: any, res: any) {
     const gitlabAuthUrl = new URL("https://gitlab.com/oauth/authorize");
     gitlabAuthUrl.searchParams.set("client_id", clientId);
     gitlabAuthUrl.searchParams.set("response_type", "code");
-    
-    const origin = req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "localhost:5173"}`;
     gitlabAuthUrl.searchParams.set("redirect_uri", `${origin}/api/auth/gitlab/callback`);
     gitlabAuthUrl.searchParams.set("state", state);
     gitlabAuthUrl.searchParams.set("scope", "read_user read_api read_repository");

@@ -27,7 +27,7 @@ export default async function handler(req: any, res: any) {
     const redirectUrl = new URL(req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "localhost:5173"}`);
     redirectUrl.pathname = "/sync";
     redirectUrl.searchParams.set("workflow", "bitbucket");
-    redirectUrl.searchParams.set("error", encodeURIComponent(msg));
+    redirectUrl.searchParams.set("error", msg);
     res.setHeader("Location", redirectUrl.toString());
     return res.end();
   };
@@ -59,7 +59,7 @@ export default async function handler(req: any, res: any) {
       .eq("id", state)
       .gt("expires_at", new Date().toISOString())
       .or(`locked_at.is.null,locked_at.lt.${oneMinuteAgo}`)
-      .select("user_id, expires_at");
+      .select("user_id, expires_at, origin");
 
     if (stateError || !stateRecords || stateRecords.length === 0) {
       return redirectError("Invalid, expired, or currently processing authorization session");
@@ -67,6 +67,7 @@ export default async function handler(req: any, res: any) {
 
     const stateRecord = stateRecords[0];
     const userId = stateRecord.user_id;
+    const origin = stateRecord.origin || req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "code-security-review.vercel.app"}`;
 
     const cleanupState = async (isTransient: boolean = false) => {
       if (isTransient) {
@@ -183,7 +184,7 @@ export default async function handler(req: any, res: any) {
     await cleanupState(false);
 
     res.statusCode = 302;
-    const successUrl = new URL(req.headers.origin || process.env.PUBLIC_SITE_URL || `https://${req.headers.host || "localhost:5173"}`);
+    const successUrl = new URL(origin);
     successUrl.pathname = "/sync";
     successUrl.searchParams.set("workflow", "bitbucket");
     successUrl.searchParams.set("bitbucket_connected", "true");

@@ -366,7 +366,7 @@ async function handleStoreProviderToken(req: any, res: any, admin: any) {
     return sendJson(res, 400, { error: "Missing provider token" });
   }
 
-  const validProviders = ["github", "gitlab", "azure"];
+  const validProviders = ["github", "gitlab", "bitbucket", "azure"];
   if (!requestedProvider || !validProviders.includes(requestedProvider)) {
     return sendJson(res, 400, { error: "Missing or invalid provider" });
   }
@@ -387,6 +387,20 @@ async function handleStoreProviderToken(req: any, res: any, admin: any) {
     }
     const gitlabUser = await gitlabUserRes.json();
     providerUserId = String(gitlabUser.id);
+
+  } else if (provider === "bitbucket") {
+    const bbUserRes = await fetch("https://api.bitbucket.org/2.0/user", {
+      headers: {
+        Authorization: `Bearer ${providerToken}`,
+        Accept: "application/json",
+        "User-Agent": "CodeVibe-Vercel-Function",
+      },
+    });
+    if (!bbUserRes.ok) {
+      return sendJson(res, 400, { error: "Failed to validate Bitbucket token with provider" });
+    }
+    const bbUser = await bbUserRes.json();
+    providerUserId = String(bbUser.account_id || bbUser.uuid || bbUser.username || "bitbucket_user");
 
   } else if (provider === "azure") {
     const azureUserRes = await fetch(
@@ -603,16 +617,23 @@ async function handleFetchGitlabProjects(req: any, res: any, admin: any) {
   const mapped = projects.map((p: any) => ({
     id: p.id,
     name: p.name,
-    path_with_namespace: p.path_with_namespace,
+    name_with_namespace: p.name_with_namespace || p.name,
+    path: p.path,
+    path_with_namespace: p.path_with_namespace || `${p.namespace?.path || ""}/${p.path || ""}`,
     description: p.description || "",
-    default_branch: p.default_branch,
-    visibility: p.visibility,
+    default_branch: p.default_branch || "main",
+    visibility: p.visibility || "private",
     web_url: p.web_url,
-    last_activity_at: p.last_activity_at,
+    last_activity_at: p.last_activity_at || p.updated_at || new Date().toISOString(),
     avatar_url: p.avatar_url || "",
+    star_count: p.star_count || 0,
     namespace: {
+      id: p.namespace?.id,
       name: p.namespace?.name,
+      path: p.namespace?.path,
+      kind: p.namespace?.kind,
       full_path: p.namespace?.full_path,
+      avatar_url: p.namespace?.avatar_url || null,
     },
   }));
 
@@ -989,23 +1010,40 @@ async function handleFetchAzurePrs(req: any, res: any, admin: any) {
   }
 
   const prsData = await prsRes.json();
-  const mappedPRs = (prsData.value || []).map((pr: any) => ({
-    id: String(pr.pullRequestId),
-    pullRequestId: pr.pullRequestId,
-    title: pr.title,
-    description: pr.description || "",
-    status: pr.status?.toLowerCase() || "active",
-    created_at: pr.creationDate,
-    author: {
-      displayName: pr.createdBy?.displayName || "Unknown",
-      uniqueName: pr.createdBy?.uniqueName || "unknown",
-      imageUrl: pr.createdBy?._links?.avatar?.href || "",
-    },
-    sourceRefName: pr.sourceRefName?.replace("refs/heads/", "") || "",
-    targetRefName: pr.targetRefName?.replace("refs/heads/", "") || "",
-    mergeStatus: pr.mergeStatus,
-    lastMergeCommit: pr.lastMergeCommit?.commitId || "",
-  }));
+  const mappedPRs = (prsData.value || []).map((pr: any) => {
+    const sourceBranch = pr.sourceRefName?.replace(/^refs\/heads\//, "") || "";
+    const targetBranch = pr.targetRefName?.replace(/^refs\/heads\//, "") || "";
+    const authorName = pr.createdBy?.displayName || "Unknown";
+    const authorUsername = pr.createdBy?.uniqueName || "unknown";
+    const authorAvatar = pr.createdBy?._links?.avatar?.href || pr.createdBy?.imageUrl || "";
+    const sha = pr.lastMergeSourceCommit?.commitId || pr.lastMergeCommit?.commitId || "";
+    return {
+      id: pr.pullRequestId,
+      number: pr.pullRequestId,
+      pullRequestId: pr.pullRequestId,
+      title: pr.title,
+      description: pr.description || "",
+      state: pr.status || "active",
+      status: pr.status?.toLowerCase() || "active",
+      created_at: pr.creationDate,
+      web_url: pr.url || "",
+      author: {
+        name: authorName,
+        username: authorUsername,
+        avatar_url: authorAvatar,
+        displayName: authorName,
+        uniqueName: authorUsername,
+        imageUrl: authorAvatar,
+      },
+      source_branch: sourceBranch,
+      target_branch: targetBranch,
+      sourceRefName: sourceBranch,
+      targetRefName: targetBranch,
+      mergeStatus: pr.mergeStatus,
+      sha,
+      lastMergeCommit: pr.lastMergeCommit?.commitId || "",
+    };
+  });
 
   return sendJson(res, 200, mappedPRs);
 }

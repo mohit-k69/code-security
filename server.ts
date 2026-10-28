@@ -12,6 +12,12 @@ import {
   createStepUpReauthToken,
   verifyCurrentPassword,
 } from "./src/lib/recoveryReauth";
+import githubCallbackHandler from "./api/auth/github/callback";
+import gitlabInitHandler from "./api/auth/gitlab/init";
+import gitlabCallbackHandler from "./api/auth/gitlab/callback";
+import bitbucketInitHandler from "./api/auth/bitbucket/init";
+import bitbucketCallbackHandler from "./api/auth/bitbucket/callback";
+import vercelFunctionsHandler from "./api/functions/[name]";
 
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -947,23 +953,40 @@ Otherwise, return JSON:
       }
 
       const prsData = await prsRes.json();
-      const mappedPRs = (prsData.value || []).map((pr: any) => ({
-        id: String(pr.pullRequestId),
-        pullRequestId: pr.pullRequestId,
-        title: pr.title,
-        description: pr.description || '',
-        status: pr.status?.toLowerCase() || 'active',
-        created_at: pr.creationDate,
-        author: {
-          displayName: pr.createdBy?.displayName || 'Unknown',
-          uniqueName: pr.createdBy?.uniqueName || 'unknown',
-          imageUrl: pr.createdBy?._links?.avatar?.href || '',
-        },
-        sourceRefName: pr.sourceRefName?.replace('refs/heads/', '') || '',
-        targetRefName: pr.targetRefName?.replace('refs/heads/', '') || '',
-        mergeStatus: pr.mergeStatus,
-        lastMergeCommit: pr.lastMergeCommit?.commitId || '',
-      }));
+      const mappedPRs = (prsData.value || []).map((pr: any) => {
+        const sourceBranch = pr.sourceRefName?.replace('refs/heads/', '') || '';
+        const targetBranch = pr.targetRefName?.replace('refs/heads/', '') || '';
+        const authorName = pr.createdBy?.displayName || 'Unknown';
+        const authorUsername = pr.createdBy?.uniqueName || 'unknown';
+        const authorAvatar = pr.createdBy?._links?.avatar?.href || pr.createdBy?.imageUrl || '';
+        const sha = pr.lastMergeSourceCommit?.commitId || pr.lastMergeCommit?.commitId || '';
+        return {
+          id: pr.pullRequestId,
+          number: pr.pullRequestId,
+          pullRequestId: pr.pullRequestId,
+          title: pr.title,
+          description: pr.description || '',
+          state: pr.status || 'active',
+          status: pr.status?.toLowerCase() || 'active',
+          created_at: pr.creationDate,
+          web_url: pr.url || '',
+          author: {
+            name: authorName,
+            username: authorUsername,
+            avatar_url: authorAvatar,
+            displayName: authorName,
+            uniqueName: authorUsername,
+            imageUrl: authorAvatar,
+          },
+          source_branch: sourceBranch,
+          target_branch: targetBranch,
+          sourceRefName: sourceBranch,
+          targetRefName: targetBranch,
+          mergeStatus: pr.mergeStatus,
+          sha,
+          lastMergeCommit: pr.lastMergeCommit?.commitId || '',
+        };
+      });
 
       return res.json(mappedPRs);
     } catch (err: any) {
@@ -1037,6 +1060,21 @@ Otherwise, return JSON:
       console.error('[fetch-github-pull-requests] error:', err);
       return res.status(500).json({ error: 'Internal server error while fetching GitHub pull requests.' });
     }
+  });
+
+  // 9. OAuth Init & Callback Routes (GitHub, GitLab, Bitbucket)
+  app.all("/api/auth/github/callback", (req, res) => githubCallbackHandler(req, res));
+  app.all("/api/auth/gitlab/init", (req, res) => gitlabInitHandler(req, res));
+  app.all("/api/auth/gitlab/callback", (req, res) => gitlabCallbackHandler(req, res));
+  app.all("/api/auth/bitbucket/init", (req, res) => bitbucketInitHandler(req, res));
+  app.all("/api/auth/bitbucket/callback", (req, res) => bitbucketCallbackHandler(req, res));
+
+  // 10. Dynamic Dispatcher for remaining /api/functions/:name endpoints
+  // (e.g. check-github-connection, check-gitlab-connection, check-bitbucket-connection,
+  // disconnect-github, disconnect-gitlab, disconnect-bitbucket, github-init, upload-ocr)
+  app.all(["/api/functions/:name", "/functions/v1/:name"], (req, res) => {
+    req.query = { ...req.query, name: req.params.name };
+    return vercelFunctionsHandler(req, res);
   });
 
   // Vite middleware for development
